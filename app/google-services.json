@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "63668005534",
+    "project_id": "kaiza-ac130",
+    "storage_bucket": "kaiza-ac130.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:63668005534:android:d3b5753c9c536ee7c2698f",
+        "android_client_info": {
+          "package_name": "com.rnandresy.lol"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFQZ3zZ4dIT8nedNoMecsprViI8xdx7RY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
