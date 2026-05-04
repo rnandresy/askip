@@ -584,7 +584,7 @@ fun AdminBadge() {
         modifier = Modifier.border(1.dp, Color(0xFFFFD700), RoundedCornerShape(6.dp))
     ) {
         Text(
-            "👑 ADMIN",
+            "👑",
             modifier   = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
             fontSize   = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700)
         )

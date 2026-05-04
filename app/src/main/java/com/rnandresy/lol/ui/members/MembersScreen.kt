@@ -72,7 +72,7 @@ fun MembersScreen(
     ) { pad ->
         if (sorted.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) {
-                Text("Aucun membre 😢", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Tsisy membre 😢", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(pad)) {
@@ -87,6 +87,7 @@ fun MembersScreen(
                     ) {
                         UserAvatar(
                             username = profile.username,
+                            photoUrl = profile.photoUrl,
                             size     = 50,
                             isAdmin  = userIsAdmin,
                             onClick  = { onOpenProfile(profile.userId) }

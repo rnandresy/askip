@@ -79,7 +79,7 @@ fun LoginScreen(
         ) {
             Text("🔥", fontSize = 64.sp)
             Spacer(Modifier.height(4.dp))
-            Text("Askip", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+            Text("askip", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
             Text("Les rumeurs du campus 👀", style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.5f))
             Spacer(Modifier.height(32.dp))

@@ -6,28 +6,32 @@ data class Post(
     val id: String = "",
     val userId: String = "",
     val username: String = "",
-    val content: String = "",
     val userPhotoUrl: String = "",
+    val content: String = "",
     val postType: String = "normal",
     @get:PropertyName("isAnonymous")
     @set:PropertyName("isAnonymous")
     var isAnonymous: Boolean = false,
-    // ── Média ─────────────────────────────────────────────────────────────────
+    // Médias
     val imageUrl: String = "",
     val videoUrl: String = "",
-    // ── Sondage ───────────────────────────────────────────────────────────────
+    val audioUrl: String = "",        // note vocale dans le post
+    val audioDuration: Int = 0,
+    val fileUrl: String = "",
+    val fileName: String = "",
+    // Sondage
     val pollOption1: String = "",
     val pollOption2: String = "",
     val pollVotes1: Int = 0,
     val pollVotes2: Int = 0,
     val pollVoters: List<String> = emptyList(),
-    // ── Réactions ─────────────────────────────────────────────────────────────
+    // Réactions
     val likedBy: List<String> = emptyList(),
-    val fireBy: List<String> = emptyList(),
-    val lolBy: List<String> = emptyList(),
-    val shockBy: List<String> = emptyList(),
-    val eyesBy: List<String> = emptyList(),
-    // ── Meta ──────────────────────────────────────────────────────────────────
+    val fireBy: List<String>   = emptyList(),
+    val lolBy: List<String>    = emptyList(),
+    val shockBy: List<String>  = emptyList(),
+    val eyesBy: List<String>   = emptyList(),
+    // Meta
     val commentCount: Int = 0,
     @get:PropertyName("isPinned")
     @set:PropertyName("isPinned")
@@ -52,8 +56,8 @@ data class Post(
         else -> 0
     }
 
-    val totalReactions get() =
-        likedBy.size + fireBy.size + lolBy.size + shockBy.size + eyesBy.size
+    fun hasMedia() = imageUrl.isNotBlank() || videoUrl.isNotBlank()
+            || audioUrl.isNotBlank() || fileUrl.isNotBlank()
 
     companion object {
         fun reactionFieldFor(emoji: String) = when (emoji) {

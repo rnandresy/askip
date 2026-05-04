@@ -73,7 +73,7 @@ fun ConfessionsScreen(
                     Column {
                         Text("Confessions 🎭", fontWeight = FontWeight.ExtraBold)
                         Text(
-                            "Tout le monde est anonyme ici 🤫 ...ou pas",
+                            "Tout le monde est anonyme ici 🤫 même l'admin ne peut pas tout voir..",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -131,7 +131,7 @@ fun ConfessionsScreen(
                             onReaction    = { emoji -> vm.toggleReaction(post, emoji) },
                             onVotePoll    = { },
                             onComment     = { onOpenComments(post.id) },
-                            onPin         = { vm.togglePin(post) },
+                            onPin         = { },
                             onDelete      = { vm.deletePost(post.id) }
                         )
                     }
@@ -159,7 +159,7 @@ fun ConfessionsScreen(
             text = {
                 Column {
                     Text(
-                        "Personne ne saura que c'est toi 🤫",
+                        "Personne ne saura que c'est toi 🤫 vazzyyy!!!",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

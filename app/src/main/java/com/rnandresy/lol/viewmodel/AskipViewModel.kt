@@ -1,7 +1,9 @@
 package com.rnandresy.lol.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -20,9 +22,11 @@ import com.rnandresy.lol.utils.CloudinaryUploader
 import com.rnandresy.lol.utils.DataUsageTracker
 import com.rnandresy.lol.utils.NotificationHelper
 import com.rnandresy.lol.utils.SettingsRepository
+import com.rnandresy.lol.utils.VoiceRecorder
 import com.rnandresy.lol.utils.isAdmin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +34,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.io.File
 
 class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -120,6 +126,15 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     private val _uploadProgress = MutableStateFlow(0)
     val uploadProgress: StateFlow<Int> = _uploadProgress
 
+    private val _isRecording     = MutableStateFlow(false)
+    val isRecording: StateFlow<Boolean> = _isRecording
+
+    private val _recordingSeconds = MutableStateFlow(0)
+    val recordingSeconds: StateFlow<Int> = _recordingSeconds
+
+    private var voiceRecorder: VoiceRecorder? = null
+    private var recordingTimerJob: Job? = null
+
     fun uploadAvatar(uri: Uri) = viewModelScope.launch {
         loading.value = true
         _uploadProgress.value = 0
@@ -156,7 +171,9 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         pollOpt1: String = "",
         pollOpt2: String = "",
         imageUri: Uri? = null,
-        videoUri: Uri? = null
+        videoUri: Uri? = null,
+        audioFile: File? = null,          // ← note vocale dans le post
+        fileUri: Uri? = null
     ) {
         val profile    = _myProfile.value ?: return
         val isConf     = type == "confession"
@@ -165,80 +182,60 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         val postContent = if (type != "poll") "Askip $content" else content
 
         viewModelScope.launch {
-            loading.value = true
-            _uploadProgress.value = 0
+            loading.value = true; _uploadProgress.value = 0
             runCatching {
-                var imageUrl = ""
-                var videoUrl = ""
+                var imageUrl      = ""; var videoUrl = ""; var audioUrl = ""
+                var audioDuration = 0; var fileUrl = ""; var fileName = ""
+
                 imageUri?.let {
-                    imageUrl = CloudinaryUploader.uploadImage(
-                        context    = getApplication(),
-                        uri        = it,
-                        onProgress = { p -> _uploadProgress.value = p / 2 }        // 0-50%
-                    )
+                    imageUrl = CloudinaryUploader.uploadImage(getApplication(), it) { p -> _uploadProgress.value = p / 4 }
                 }
                 videoUri?.let {
-                    videoUrl = CloudinaryUploader.uploadVideo(
-                        context    = getApplication(),
-                        uri        = it,
-                        onProgress = { p -> _uploadProgress.value = 50 + p / 2 }  // 50-100%
-                    )
+                    videoUrl = CloudinaryUploader.uploadVideo(getApplication(), it) { p -> _uploadProgress.value = p / 4 }
+                }
+                audioFile?.let {
+                    audioUrl      = CloudinaryUploader.uploadAudio(it) { p -> _uploadProgress.value = 50 + p / 4 }
+                    audioDuration = 0  // durée connue à l'enregistrement
+                    audioFile.delete()
+                }
+                fileUri?.let {
+                    val (url, name) = CloudinaryUploader.uploadFile(getApplication(), it) { p -> _uploadProgress.value = 75 + p / 4 }
+                    fileUrl = url; fileName = name
                 }
 
                 val postId = repo.createPost(mapOf(
-                    "userId"       to currentUserId,
-                    "username"     to displayName,
-                    "userPhotoUrl" to if (isConf) "" else (profile.photoUrl),
-                    "content"      to postContent,
-                    "postType"     to type,
-                    "isAnonymous"  to isConf,
-                    "imageUrl"     to imageUrl,
-                    "videoUrl"     to videoUrl,
-                    "pollOption1"  to pollOpt1,
-                    "pollOption2"  to pollOpt2,
-                    "pollVotes1"   to 0,
-                    "pollVotes2"   to 0,
-                    "pollVoters"   to emptyList<String>(),
-                    "likedBy"      to emptyList<String>(),
-                    "fireBy"       to emptyList<String>(),
-                    "lolBy"        to emptyList<String>(),
-                    "shockBy"      to emptyList<String>(),
-                    "eyesBy"       to emptyList<String>(),
-                    "commentCount" to 0,
-                    "isPinned"     to false,
-                    "timestamp"    to System.currentTimeMillis()
+                    "userId" to currentUserId, "username" to displayName,
+                    "userPhotoUrl" to if (isConf) "" else profile.photoUrl,
+                    "content" to postContent, "postType" to type, "isAnonymous" to isConf,
+                    "imageUrl" to imageUrl, "videoUrl" to videoUrl,
+                    "audioUrl" to audioUrl, "audioDuration" to audioDuration,
+                    "fileUrl" to fileUrl, "fileName" to fileName,
+                    "pollOption1" to pollOpt1, "pollOption2" to pollOpt2,
+                    "pollVotes1" to 0, "pollVotes2" to 0, "pollVoters" to emptyList<String>(),
+                    "likedBy" to emptyList<String>(), "fireBy" to emptyList<String>(),
+                    "lolBy" to emptyList<String>(), "shockBy" to emptyList<String>(), "eyesBy" to emptyList<String>(),
+                    "commentCount" to 0, "isPinned" to false, "timestamp" to System.currentTimeMillis()
                 ))
 
-                val counterField = when (type) {
-                    "confession" -> "confessionsCount"
-                    "poll"       -> "pollsCount"
-                    else         -> "postsCount"
-                }
+                val counterField = when (type) { "confession" -> "confessionsCount"; "poll" -> "pollsCount"; else -> "postsCount" }
                 repo.incrementCounter(currentUserId, counterField)
                 repo.updateStreak(currentUserId)
                 repo.getProfile(currentUserId)?.let { checkAchievements(it) }
 
                 if (!isConf) {
                     val now = System.currentTimeMillis()
-                    val notifBase = mapOf(
-                        "type"           to if (fromAdmin) "new_post_admin" else "new_post",
-                        "fromUserId"     to currentUserId,
-                        "fromUsername"   to profile.username,
-                        "fromIsAdmin"    to fromAdmin,
-                        "postId"         to postId,
-                        "conversationId" to "",
-                        "content"        to postContent.take(150),
-                        "isRead"         to false,
-                        "timestamp"      to now
-                    )
-                    repo.createNotificationsForAll(notifBase, currentUserId)
+                    repo.createNotificationsForAll(mapOf(
+                        "type" to if (fromAdmin) "new_post_admin" else "new_post",
+                        "fromUserId" to currentUserId, "fromUsername" to profile.username,
+                        "fromIsAdmin" to fromAdmin, "postId" to postId, "conversationId" to "",
+                        "content" to postContent.take(150), "isRead" to false, "timestamp" to now
+                    ), currentUserId)
                     if (fromAdmin) notif.showAdminPostNotification(profile.username, postContent)
                     else if (notifyPosts.value) notif.showPostNotification(profile.username, postContent)
                     handleMentions(postContent, currentUserId, displayName, fromAdmin, postId)
                 }
             }.onFailure { error.value = it.message }
-            loading.value = false
-            _uploadProgress.value = 0
+            loading.value = false; _uploadProgress.value = 0
         }
     }
 
@@ -384,6 +381,8 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                 profile?.let {
                     _myBadges.value = _allBadges.value.filter { b -> b.id in it.badgeIds }
                     _profilesMap.value = _profilesMap.value + (it.userId to it)
+                    // ← Fix : vérifie les achievements à chaque mise à jour du profil
+                    checkAchievements(it)
                 }
             }
         }
@@ -449,34 +448,56 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun checkAchievements(profile: UserProfile) = viewModelScope.launch {
         val uid      = currentUserId
-        val unlocked = _myAchievements.value.map { it.id }.toSet()
+        // Recharge depuis Firestore pour avoir l'état le plus frais
+        val fetched  = repo.getAchievements(uid)
+        _myAchievements.value = fetched
+        val unlocked = fetched.map { it.id }.toSet()
+
         suspend fun unlock(id: String) {
             if (id !in unlocked) {
                 repo.unlockAchievement(uid, id)
-                _myAchievements.value = repo.getAchievements(uid)
+                // Mise à jour locale immédiate
+                _myAchievements.value = _myAchievements.value +
+                        Achievement(id = id, unlockedAt = System.currentTimeMillis())
             }
         }
-        if (profile.postsCount >= 1)   unlock("first_post")
-        if (profile.postsCount >= 10)  unlock("ten_posts")
-        if (profile.postsCount >= 25)  unlock("twenty_five_p")
-        if (profile.postsCount >= 50)  unlock("fifty_posts")
+
+        // Poster
+        if (profile.postsCount >= 1)  unlock("first_post")
+        if (profile.postsCount >= 10) unlock("ten_posts")
+        if (profile.postsCount >= 25) unlock("twenty_five_p")
+        if (profile.postsCount >= 50) unlock("fifty_posts")
+
+        // Commenter
         if (profile.commentsCount >= 1)  unlock("first_comment")
         if (profile.commentsCount >= 20) unlock("commentator")
         if (profile.commentsCount >= 50) unlock("deep_comment")
+
+        // Confessions
         if (profile.confessionsCount >= 1) unlock("confessor")
         if (profile.confessionsCount >= 5) unlock("dark_confessor")
-        if (profile.pollsCount >= 3)   unlock("poll_creator")
-        if (profile.pollsCount >= 10)  unlock("poll_master")
+
+        // Sondages
+        if (profile.pollsCount >= 3)  unlock("poll_creator")
+        if (profile.pollsCount >= 10) unlock("poll_master")
+
+        // Stories
         if (profile.storiesCount >= 1)  unlock("first_story")
         if (profile.storiesCount >= 10) unlock("storyteller")
+
+        // Social
         if (profile.convsStarted >= 5)  unlock("social")
         if (profile.convsStarted >= 20) unlock("social_plus")
+
+        // Streak
         if (profile.streak >= 3)  unlock("streak_3")
         if (profile.streak >= 7)  unlock("streak_7")
         if (profile.streak >= 30) unlock("streak_30")
-        if (profile.hasBadgeENI)            unlock("eni_pride")
-        if (profile.badgeIds.isNotEmpty())  unlock("badge_maker")
-        if (profile.moodEmoji.isNotBlank()) unlock("mood_master")
+
+        // Identité
+        if (profile.hasBadgeENI)                unlock("eni_pride")
+        if (profile.badgeIds.isNotEmpty())       unlock("badge_maker")
+        if (profile.moodEmoji.isNotBlank())      unlock("mood_master")
     }
 
     // ── BADGES ────────────────────────────────────────────────────────────────
@@ -592,10 +613,16 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun markNotificationRead(notifId: String) = viewModelScope.launch {
+        _notifications.value = _notifications.value.map { n ->
+            if (n.id == notifId) n.copy(isRead = true) else n
+        }
         repo.markNotificationRead(notifId)
     }
 
     fun markAllNotificationsRead() = viewModelScope.launch {
+        _notifications.value = _notifications.value.map { n ->
+            if (!n.isRead) n.copy(isRead = true) else n
+        }
         repo.markAllNotificationsRead(currentUserId)
     }
 
@@ -680,17 +707,53 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
      */
 
 
+    // ── deletePost : décrémente le compteur ───────────────────────────────────
     fun deletePost(postId: String) = viewModelScope.launch {
-        runCatching { repo.deletePost(postId) }
+        runCatching {
+            val post = _allPosts.value.find { it.id == postId }
+            repo.deletePost(postId)
+            // ← Fix : décrémente le compteur du bon auteur
+            post?.let {
+                val field = when (it.postType) {
+                    "confession" -> "confessionsCount"; "poll" -> "pollsCount"; else -> "postsCount"
+                }
+                repo.incrementCounter(it.userId, field, -1L)
+            }
+        }
     }
 
-    fun togglePin(post: Post) = viewModelScope.launch {
-        runCatching { repo.togglePin(post.id, post.isPinned) }
+    // In AskipViewModel.kt
+
+    fun togglePin(post: Post) {
+        val newState = !post.isPinned
+        // On utilise repo.db car c'est là que l'instance Firestore est définie
+        repo.db.collection("posts").document(post.id)
+            .update("isPinned", newState)
+            .addOnFailureListener { e ->
+                // Optionnel : logger l'erreur
+                Log.e("AskipViewModel", "Erreur pin: ${e.message}")
+            }
     }
 
+    // ── toggleReaction : update optimiste immédiat ────────────────────────────
     fun toggleReaction(post: Post, emoji: String) {
         val uid     = currentUserId
         val current = post.getUserReaction(uid)
+        // Mise à jour optimiste
+        _allPosts.value = _allPosts.value.map { p ->
+            if (p.id != post.id) return@map p
+            val removed = when (current) {
+                "❤️" -> p.copy(likedBy = p.likedBy - uid); "🔥" -> p.copy(fireBy  = p.fireBy  - uid)
+                "😂" -> p.copy(lolBy   = p.lolBy   - uid); "😱" -> p.copy(shockBy = p.shockBy - uid)
+                "👀" -> p.copy(eyesBy  = p.eyesBy  - uid); else -> p
+            }
+            if (current == emoji) removed
+            else when (emoji) {
+                "❤️" -> removed.copy(likedBy = removed.likedBy + uid); "🔥" -> removed.copy(fireBy  = removed.fireBy  + uid)
+                "😂" -> removed.copy(lolBy   = removed.lolBy   + uid); "😱" -> removed.copy(shockBy = removed.shockBy + uid)
+                "👀" -> removed.copy(eyesBy  = removed.eyesBy  + uid); else -> removed
+            }
+        }
         viewModelScope.launch {
             runCatching {
                 if (current == emoji) repo.removeReaction(post.id, uid, emoji)
@@ -700,6 +763,24 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
         }
+    }
+
+    // ── Photo de profil : résolution URL depuis le cache ──────────────────────
+    fun resolvePhotoUrl(userId: String): String =
+        _profilesMap.value[userId]?.photoUrl ?: ""
+
+    // ── Suppression photo de profil ───────────────────────────────────────────
+    fun deleteProfilePhoto() = viewModelScope.launch {
+        runCatching {
+            repo.updateProfile(currentUserId, mapOf("photoUrl" to ""))
+        }.onFailure { error.value = it.message }
+    }
+
+    // ── Suppression couverture ────────────────────────────────────────────────
+    fun deleteCoverPhoto() = viewModelScope.launch {
+        runCatching {
+            repo.updateProfile(currentUserId, mapOf("coverUrl" to ""))
+        }.onFailure { error.value = it.message }
     }
 
     fun votePoll(postId: String, option: Int) {
@@ -748,7 +829,12 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteStory(storyId: String) = viewModelScope.launch {
-        runCatching { repo.deleteStory(storyId) }
+        runCatching {
+            repo.deleteStory(storyId)
+            // Décrémente le compteur
+            val story = _stories.value.find { it.id == storyId }
+            story?.let { repo.incrementCounter(it.userId, "storiesCount", -1L) }
+        }
     }
 
     // ── COMMENTS ──────────────────────────────────────────────────────────────
@@ -860,6 +946,136 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                 ))
             }
         }
+    }
+
+    fun sendMessageWithMedia(
+        convId: String,
+        content: String = "",
+        imageUri: Uri? = null,
+        videoUri: Uri? = null,
+        fileUri: Uri? = null
+    ) {
+        val profile    = _myProfile.value ?: return
+        val conv       = _rawConversations.value.find { it.id == convId } ?: return
+        val receiverId = conv.participants.firstOrNull { it != currentUserId } ?: return
+        val fromAdmin  = isAdmin(currentUserId) || profile.isAdmin
+
+        viewModelScope.launch {
+            loading.value = true; _uploadProgress.value = 0
+            runCatching {
+                var mediaUrl = ""; var mediaType = ""; var mediaName = ""; var mediaDuration = 0
+
+                when {
+                    imageUri != null -> {
+                        mediaUrl  = CloudinaryUploader.uploadImage(getApplication(), imageUri) { _uploadProgress.value = it }
+                        mediaType = "image"
+                    }
+                    videoUri != null -> {
+                        mediaUrl  = CloudinaryUploader.uploadVideo(getApplication(), videoUri) { _uploadProgress.value = it }
+                        mediaType = "video"
+                    }
+                    fileUri != null -> {
+                        val (url, name) = CloudinaryUploader.uploadFile(getApplication(), fileUri) { _uploadProgress.value = it }
+                        mediaUrl  = url; mediaType = "file"; mediaName = name
+                    }
+                }
+
+                val notifContent = when (mediaType) {
+                    "image" -> "📸 Photo"; "video" -> "🎥 Vidéo"
+                    "file"  -> "📎 $mediaName"; "audio" -> "🎤 Message vocal"
+                    else    -> content.take(100)
+                }
+
+                repo.sendMessage(convId, mapOf(
+                    "conversationId" to convId, "senderId" to currentUserId,
+                    "senderUsername" to profile.username, "content" to content,
+                    "mediaUrl" to mediaUrl, "mediaType" to mediaType,
+                    "mediaName" to mediaName, "mediaDuration" to mediaDuration,
+                    "timestamp" to System.currentTimeMillis()
+                ), receiverId)
+
+                repo.createNotification(mapOf(
+                    "targetUserId" to receiverId, "type" to "message",
+                    "fromUserId" to currentUserId, "fromUsername" to profile.username,
+                    "fromIsAdmin" to fromAdmin, "postId" to "", "conversationId" to convId,
+                    "content" to notifContent, "isRead" to false,
+                    "timestamp" to System.currentTimeMillis()
+                ))
+            }.onFailure { error.value = it.message }
+            loading.value = false; _uploadProgress.value = 0
+        }
+    }
+
+    fun startVoiceRecording(context: Context) {
+        if (_isRecording.value) return
+        voiceRecorder = VoiceRecorder(context)
+        runCatching { voiceRecorder?.start() }
+            .onSuccess {
+                _isRecording.value = true; _recordingSeconds.value = 0
+                recordingTimerJob = viewModelScope.launch {
+                    while (isActive) {
+                        delay(1000L)
+                        _recordingSeconds.value++
+                        if (_recordingSeconds.value >= 120) stopAndSendVoice("") // sécurité 2min
+                    }
+                }
+            }
+            .onFailure { error.value = "Micro non disponible"; voiceRecorder = null }
+    }
+
+    fun stopAndSendVoice(convId: String) {
+        recordingTimerJob?.cancel()
+        val result = voiceRecorder?.stop()
+        voiceRecorder = null
+        _isRecording.value = false
+
+        if (result == null || convId.isBlank()) return
+        val (file, durationSec) = result
+
+        val profile    = _myProfile.value ?: run { file.delete(); return }
+        val conv       = _rawConversations.value.find { it.id == convId } ?: run { file.delete(); return }
+        val receiverId = conv.participants.firstOrNull { it != currentUserId } ?: run { file.delete(); return }
+        val fromAdmin  = isAdmin(currentUserId) || profile.isAdmin
+
+        viewModelScope.launch {
+            loading.value = true; _uploadProgress.value = 0
+            runCatching {
+                val url = CloudinaryUploader.uploadAudio(file) { _uploadProgress.value = it }
+                file.delete()
+                repo.sendMessage(convId, mapOf(
+                    "conversationId" to convId, "senderId" to currentUserId,
+                    "senderUsername" to profile.username, "content" to "",
+                    "mediaUrl" to url, "mediaType" to "audio",
+                    "mediaName" to "vocal_${durationSec}s.m4a", "mediaDuration" to durationSec,
+                    "timestamp" to System.currentTimeMillis()
+                ), receiverId)
+                repo.createNotification(mapOf(
+                    "targetUserId" to receiverId, "type" to "message",
+                    "fromUserId" to currentUserId, "fromUsername" to profile.username,
+                    "fromIsAdmin" to fromAdmin, "postId" to "", "conversationId" to convId,
+                    "content" to "🎤 Message vocal (${durationSec}s)",
+                    "isRead" to false, "timestamp" to System.currentTimeMillis()
+                ))
+            }.onFailure { error.value = it.message; file.delete() }
+            loading.value = false; _uploadProgress.value = 0
+        }
+    }
+
+    fun stopRecordingForPost(): Pair<File, Int>? {
+        recordingTimerJob?.cancel()
+        val result = voiceRecorder?.stop()
+        voiceRecorder = null
+        _isRecording.value    = false
+        _recordingSeconds.value = 0
+        return result
+    }
+
+    fun cancelVoiceRecording() {
+        recordingTimerJob?.cancel()
+        voiceRecorder?.cancel()
+        voiceRecorder = null
+        _isRecording.value = false
+        _recordingSeconds.value = 0
     }
 
     fun markRead(convId: String) = viewModelScope.launch {

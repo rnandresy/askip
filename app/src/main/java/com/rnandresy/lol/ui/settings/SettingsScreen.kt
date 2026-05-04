@@ -188,7 +188,7 @@ fun SettingsScreen(
                     SettingsSwitchRow(
                         icon     = Icons.Default.Campaign,
                         title    = "Annonces de l'Admin 👑",
-                        subtitle = "Toujours activé — obligatoire",
+                        subtitle = "Toujours activé",
                         checked  = true,
                         enabled  = false
                     ) { /* non modifiable */ }
@@ -226,7 +226,7 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Askip 🔥", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text("Version 1.0 — Les rumeurs du campus", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Version 1.0.3.24 — Les rumeurs du campus", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Développé avec ❤️ pour l'ENI, par 3077, 3073, 3189", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

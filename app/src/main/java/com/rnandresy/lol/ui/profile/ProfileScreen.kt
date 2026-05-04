@@ -197,8 +197,6 @@ fun ProfileScreen(
             // ── Bannière / Couverture ─────────────────────────────────────────
             item {
                 Box(modifier = Modifier.fillMaxWidth().height(150.dp)) {
-
-                    // Image de couverture ou dégradé thème
                     if (profile.coverUrl.isNotBlank()) {
                         AsyncImage(
                             model              = profile.coverUrl,
@@ -220,14 +218,11 @@ fun ProfileScreen(
                         )
                     }
 
-                    // Humeur du jour (overlay bas-gauche)
                     if (profile.moodEmoji.isNotBlank()) {
                         Surface(
                             color    = Color.Black.copy(alpha = 0.3f),
                             shape    = RoundedCornerShape(20.dp),
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(10.dp)
+                            modifier = Modifier.align(Alignment.BottomStart).padding(10.dp)
                         ) {
                             Row(
                                 modifier              = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -236,47 +231,56 @@ fun ProfileScreen(
                             ) {
                                 Text(profile.moodEmoji, fontSize = 16.sp)
                                 if (profile.moodText.isNotBlank()) {
-                                    Text(
-                                        profile.moodText,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White
-                                    )
+                                    Text(profile.moodText, style = MaterialTheme.typography.labelSmall, color = Color.White)
                                 }
                             }
                         }
                     }
 
-                    // Barre de progression upload couverture
+                    // Barre de progression upload
                     if (isMe && loading && uploadProgress in 1..99) {
                         LinearProgressIndicator(
                             progress = { uploadProgress / 100f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
+                            modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)
                         )
                     }
 
-                    // Bouton changer couverture
                     if (isMe) {
-                        IconButton(
-                            onClick  = {
-                                coverPicker.launch(
-                                    PickVisualMediaRequest(
-                                        ActivityResultContracts.PickVisualMedia.ImageOnly
-                                    )
-                                )
-                            },
-                            enabled  = !loading,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(8.dp)
+                        Row(
+                            modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Surface(shape = CircleShape, color = Color.Black.copy(alpha = 0.5f)) {
-                                Icon(
-                                    Icons.Default.AddPhotoAlternate, null,
-                                    tint     = Color.White,
-                                    modifier = Modifier.padding(8.dp).size(18.dp)
-                                )
+                            // Bouton supprimer couverture (visible seulement si photo existe)
+                            if (profile.coverUrl.isNotBlank()) {
+                                IconButton(
+                                    onClick  = { vm.deleteCoverPhoto() },
+                                    enabled  = !loading
+                                ) {
+                                    Surface(shape = CircleShape, color = Color.Black.copy(alpha = 0.5f)) {
+                                        Icon(
+                                            Icons.Default.Delete, null,
+                                            tint     = Color.White,
+                                            modifier = Modifier.padding(6.dp).size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            // Bouton changer couverture
+                            IconButton(
+                                onClick  = {
+                                    coverPicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                enabled  = !loading
+                            ) {
+                                Surface(shape = CircleShape, color = Color.Black.copy(alpha = 0.5f)) {
+                                    Icon(
+                                        Icons.Default.AddPhotoAlternate, null,
+                                        tint     = Color.White,
+                                        modifier = Modifier.padding(8.dp).size(18.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -299,9 +303,7 @@ fun ProfileScreen(
                                 if (isMe && !loading)
                                     Modifier.clickable {
                                         avatarPicker.launch(
-                                            PickVisualMediaRequest(
-                                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                                            )
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                         )
                                     }
                                 else Modifier
@@ -315,7 +317,6 @@ fun ProfileScreen(
                                 modifier           = Modifier.fillMaxSize()
                             )
                         } else {
-                            // Avatar lettres initiale
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -331,7 +332,7 @@ fun ProfileScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text       = profile.username.firstOrNull()?.uppercase() ?: "?",
+                                    profile.username.firstOrNull()?.uppercase() ?: "?",
                                     fontSize   = 32.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color      = if (userIsAdmin) Color(0xFFFFD700) else themeColor
@@ -340,45 +341,64 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Indicateur caméra / progression
+                    // Indicateurs bas-droite de l'avatar
                     if (isMe) {
-                        Surface(
-                            shape    = CircleShape,
-                            color    = if (loading) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(26.dp)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            if (loading) {
-                                CircularProgressIndicator(
-                                    modifier    = Modifier.padding(5.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Default.CameraAlt, null,
-                                    tint     = Color.White,
-                                    modifier = Modifier.padding(5.dp)
-                                )
+                            // Bouton supprimer la photo (si photo existe)
+                            if (profile.photoUrl.isNotBlank()) {
+                                Surface(
+                                    shape    = CircleShape,
+                                    color    = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .clickable(enabled = !loading) { vm.deleteProfilePhoto() }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close, null,
+                                        tint     = Color.White,
+                                        modifier = Modifier.padding(4.dp)
+                                    )
+                                }
+                                Spacer(Modifier.height(2.dp))
+                            }
+                            // Bouton appareil photo (changer)
+                            Surface(
+                                shape    = CircleShape,
+                                color    = if (loading) MaterialTheme.colorScheme.surfaceVariant
+                                else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                if (loading) {
+                                    CircularProgressIndicator(
+                                        modifier    = Modifier.padding(5.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Default.CameraAlt, null,
+                                        tint     = Color.White,
+                                        modifier = Modifier.padding(5.dp)
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // Cadre avatar (emoji en overlay)
+                    // Cadre avatar
                     if (profile.avatarFrame != "none") {
                         val frameEmoji = when (profile.avatarFrame) {
-                            "fire"    -> "🔥"
-                            "star"    -> "⭐"
-                            "rainbow" -> "🌈"
-                            "gold"    -> "👑"
-                            else      -> ""
+                            "fire"    -> "🔥"; "star" -> "⭐"
+                            "rainbow" -> "🌈"; "gold" -> "👑"
+                            else -> ""
                         }
                         if (frameEmoji.isNotBlank()) {
                             Text(
                                 frameEmoji,
                                 fontSize = 18.sp,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .offset(x = (-2).dp, y = 2.dp)
+                                modifier = Modifier.align(Alignment.TopStart).offset(x = (-2).dp, y = 2.dp)
                             )
                         }
                     }
@@ -474,7 +494,7 @@ fun ProfileScreen(
                     Spacer(Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                         StatBlock("${profile.postsCount}",    "posts")
-                        StatBlock("${profile.commentsCount}", "commentaires")
+                        StatBlock("${profile.commentsCount}", "coms")
                         StatBlock("${profile.storiesCount}",  "stories")
                     }
 

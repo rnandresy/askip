@@ -28,6 +28,7 @@ fun ChatListScreen(
 ) {
     val conversations by vm.conversations.collectAsState()
     val allProfiles   by vm.allProfiles.collectAsState()
+    val profilesMap   by vm.profilesMap.collectAsState()   // ← pour les photos
     val uid            = vm.currentUserId
     var showPicker    by remember { mutableStateOf(false) }
 
@@ -63,10 +64,11 @@ fun ChatListScreen(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(pad)) {
                 items(conversations, key = { it.id }) { conv ->
-                    val otherId   = conv.participants.firstOrNull { it != uid } ?: ""
-                    val otherName = conv.participantNames[otherId] ?: "Utilisateur"
-                    val unread    = vm.getUnread(conv)
-                    val hasUnread = unread > 0
+                    val otherId    = conv.participants.firstOrNull { it != uid } ?: ""
+                    val otherName  = conv.participantNames[otherId] ?: "Utilisateur"
+                    val otherPhoto = profilesMap[otherId]?.photoUrl ?: ""   // ← photo résolue
+                    val unread     = vm.getUnread(conv)
+                    val hasUnread  = unread > 0
 
                     Row(
                         modifier          = Modifier
@@ -80,6 +82,7 @@ fun ChatListScreen(
                     ) {
                         UserAvatar(
                             username = otherName,
+                            photoUrl = otherPhoto,
                             size     = 52,
                             isAdmin  = isAdmin(otherId),
                             onClick  = { onOpenProfile(otherId) }
@@ -107,9 +110,7 @@ fun ChatListScreen(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
-                                    if (hasUnread) {
-                                        Badge { Text("$unread") }
-                                    }
+                                    if (hasUnread) Badge { Text("$unread") }
                                 }
                             }
                             Spacer(Modifier.height(2.dp))
@@ -132,17 +133,13 @@ fun ChatListScreen(
             }
         }
 
-        // ── Dialog nouvelle conversation ──────────────────────────────────────
         if (showPicker) {
             AlertDialog(
                 onDismissRequest = { showPicker = false },
                 title            = { Text("Nouvelle conversation 💬") },
                 text             = {
                     if (allProfiles.isEmpty()) {
-                        Text(
-                            "Aucun autre membre disponible",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("Aucun membre disponible", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
                             items(allProfiles, key = { it.userId }) { profile ->
@@ -150,10 +147,7 @@ fun ChatListScreen(
                                     modifier          = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            vm.startConversation(
-                                                profile.userId,
-                                                profile.username
-                                            ) { convId ->
+                                            vm.startConversation(profile.userId, profile.username) { convId ->
                                                 showPicker = false
                                                 onOpenChat(convId)
                                             }
@@ -163,6 +157,7 @@ fun ChatListScreen(
                                 ) {
                                     UserAvatar(
                                         username = profile.username,
+                                        photoUrl = profile.photoUrl,   // ← photo depuis profil
                                         size     = 40,
                                         isAdmin  = isAdmin(profile.userId)
                                     )

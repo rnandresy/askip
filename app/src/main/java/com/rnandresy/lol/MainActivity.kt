@@ -260,15 +260,18 @@ fun AskipApp() {
                 route     = "chat/{convId}",
                 arguments = listOf(navArgument("convId") { type = NavType.StringType })
             ) {
-                val convId    = it.arguments?.getString("convId") ?: ""
-                val myId      = vm.currentUserId
-                val conv      = vm.conversations.collectAsState().value.find { c -> c.id == convId }
-                val otherId   = conv?.participants?.firstOrNull { p -> p != myId } ?: ""
-                val otherName = conv?.participantNames?.get(otherId) ?: "Utilisateur"
+                val convId      = it.arguments?.getString("convId") ?: ""
+                val myId        = vm.currentUserId
+                val conv        = vm.conversations.collectAsState().value.find { c -> c.id == convId }
+                val otherId     = conv?.participants?.firstOrNull { p -> p != myId } ?: ""
+                val otherName   = conv?.participantNames?.get(otherId) ?: "Utilisateur"
+                val profilesMap by vm.profilesMap.collectAsState()
+                val otherPhoto  = profilesMap[otherId]?.photoUrl ?: ""
                 ChatScreen(vm,
                     convId        = convId,
                     otherUserId   = otherId,
                     otherUsername = otherName,
+                    otherPhotoUrl = otherPhoto,
                     onOpenProfile = goProfile,
                     onBack        = { nav.popBackStack() }
                 )

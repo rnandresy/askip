@@ -281,15 +281,16 @@ class FirebaseRepository {
     fun listenToNotifications(uid: String): Flow<List<AppNotification>> = callbackFlow {
         val l = db.collection("notifications")
             .whereEqualTo("targetUserId", uid)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
-            .limit(80)
-            .addSnapshotListener { s, err ->
+            .addSnapshotListener { snap, err ->
                 if (err != null) { trySend(emptyList()); return@addSnapshotListener }
-                trySend(
-                    s?.documents?.mapNotNull {
-                        it.toObject(AppNotification::class.java)?.copy(id = it.id)
-                    } ?: emptyList()
-                )
+                val list = snap?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(AppNotification::class.java)?.copy(id = doc.id)
+                    }
+                    ?.sortedByDescending { it.timestamp }
+                    ?.take(80)
+                    ?: emptyList()
+                trySend(list)
             }
         awaitClose { l.remove() }
     }
@@ -317,21 +318,31 @@ class FirebaseRepository {
 
     suspend fun markNotificationRead(notifId: String) {
         runCatching {
-            db.collection("notifications").document(notifId)
-                .update("isRead", true).await()
+            db.collection("notifications")
+                .document(notifId)
+                .update("isRead", true)
+                .await()
         }
     }
 
     suspend fun markAllNotificationsRead(uid: String) {
         runCatching {
+            // 1 seule condition whereEqualTo → pas d'index composite requis
             val snap = db.collection("notifications")
                 .whereEqualTo("targetUserId", uid)
-                .whereEqualTo("isRead", false)
-                .get().await()
-            if (snap.isEmpty) return@runCatching
-            snap.documents.chunked(400).forEach { chunk ->
+                .get()
+                .await()
+
+            // Filtre côté client pour ne prendre que les non lus
+            val unreadDocs = snap.documents.filter {
+                it.getBoolean("isRead") == false
+            }
+            if (unreadDocs.isEmpty()) return@runCatching
+
+            // Batch updates (max 400 par batch)
+            unreadDocs.chunked(400).forEach { chunk ->
                 val batch = db.batch()
-                chunk.forEach { batch.update(it.reference, "isRead", true) }
+                chunk.forEach { doc -> batch.update(doc.reference, "isRead", true) }
                 batch.commit().await()
             }
         }
@@ -380,7 +391,6 @@ class FirebaseRepository {
             batch.update(ref, Post.reactionFieldFor(oldEmoji), FieldValue.arrayRemove(uid))
         batch.update(ref, Post.reactionFieldFor(emoji), FieldValue.arrayUnion(uid))
         batch.commit().await()
-        // ❌ Supprimé : incrementCounter(postOwnerId, "totalReactionsReceived")
     }
 
     suspend fun removeReaction(postId: String, uid: String, emoji: String) {

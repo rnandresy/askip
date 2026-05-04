@@ -2,129 +2,156 @@ package com.rnandresy.lol.utils
 
 import android.content.Context
 import android.net.Uri
+import com.cloudinary.android.MediaManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.DataOutputStream
-import java.io.InputStreamReader
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
-// ⚠️ Remplace par tes vraies valeurs Cloudinary
+// ⚠️ Remplace par tes valeurs Cloudinary
 private const val CLOUD_NAME    = "di6bq2h1d"
 private const val UPLOAD_PRESET = "postaskip"
 
-enum class MediaType { IMAGE, VIDEO }
-
 object CloudinaryUploader {
 
-    private const val BOUNDARY   = "AskipBoundary"
+    private const val BOUNDARY   = "AskipBoundary7C4DFF"
     private const val LINE_END   = "\r\n"
     private const val TWO_DASHES = "--"
 
-    /**
-     * Upload un fichier image ou vidéo depuis un Uri Android.
-     * Retourne l'URL publique (secure_url) ou lance une exception.
-     * Pas de dépendance externe — uniquement HttpURLConnection.
-     */
+    // ── Méthodes publiques ────────────────────────────────────────────────────
+
+    private var initialized = false
+
     fun init(context: Context) {
-        // Official Cloudinary SDK initialization
-        val config = mapOf(
-            "cloud_name" to "di6bq2h1d",
-            "secure" to true
-        )
-        com.cloudinary.android.MediaManager.init(context, config)
+        if (!initialized) {
+            val config = mapOf(
+                "di6bq2h1d" to CLOUD_NAME, // Utilise votre constante "di6bq2h1d"
+                "secure"     to true
+            )
+            try {
+                MediaManager.init(context, config)
+                initialized = true
+            } catch (e: Exception) {
+                // Évite le crash si déjà initialisé par ailleurs
+                initialized = true
+            }
+        }
     }
-    suspend fun upload(
-        context: Context,
-        uri: Uri,
-        mediaType: MediaType = MediaType.IMAGE,
+
+    suspend fun uploadImage(
+        context: Context, uri: Uri,
         onProgress: ((Int) -> Unit)? = null
-    ): String = withContext(Dispatchers.IO) {
+    ): String {
+        val (bytes, mime, name) = readUri(context, uri)
+        return uploadBytes(bytes, mime, name, resourceEndpoint("image"), onProgress)
+    }
 
-        val resource = if (mediaType == MediaType.VIDEO) "video" else "image"
-        val apiUrl   = "https://api.cloudinary.com/v1_1/$CLOUD_NAME/$resource/upload"
+    suspend fun uploadVideo(
+        context: Context, uri: Uri,
+        onProgress: ((Int) -> Unit)? = null
+    ): String {
+        val (bytes, mime, name) = readUri(context, uri)
+        return uploadBytes(bytes, mime, name, resourceEndpoint("video"), onProgress)
+    }
 
-        // Lit les bytes du fichier
-        val bytes = context.contentResolver
-            .openInputStream(uri)
-            ?.use { it.readBytes() }
+    /** Upload un fichier audio (m4a) depuis un File local (après enregistrement) */
+    suspend fun uploadAudio(
+        file: File,
+        onProgress: ((Int) -> Unit)? = null
+    ): String {
+        val bytes = file.readBytes()
+        return uploadBytes(
+            bytes, "audio/m4a", file.name,
+            resourceEndpoint("video"),    // Cloudinary gère l'audio via le endpoint video
+            onProgress
+        )
+    }
+
+    /** Upload un fichier quelconque (PDF, doc, etc.) via l'URI Android */
+    suspend fun uploadFile(
+        context: Context, uri: Uri,
+        onProgress: ((Int) -> Unit)? = null
+    ): Pair<String, String> {          // URL, nom original
+        val (bytes, mime, name) = readUri(context, uri)
+        val url = uploadBytes(bytes, mime, name, resourceEndpoint("raw"), onProgress)
+        return url to name
+    }
+
+    // ── Interne ───────────────────────────────────────────────────────────────
+
+    private fun resourceEndpoint(type: String) =
+        "https://api.cloudinary.com/v1_1/$CLOUD_NAME/$type/upload"
+
+    private data class UriData(val bytes: ByteArray, val mime: String, val name: String)
+
+    private fun readUri(context: Context, uri: Uri): UriData {
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: error("Impossible de lire le fichier")
+        val mime  = context.contentResolver.getType(uri) ?: "application/octet-stream"
+        val name  = getFileName(context, uri)
+        return UriData(bytes, mime, name)
+    }
 
-        val mime = context.contentResolver.getType(uri)
-            ?: if (mediaType == MediaType.VIDEO) "video/mp4" else "image/jpeg"
-
-        val fileName = "upload_${System.currentTimeMillis()}"
-
-        // Construit la requête multipart
-        val url  = URL(apiUrl)
-        val conn = (url.openConnection() as HttpURLConnection).apply {
+    private suspend fun uploadBytes(
+        bytes: ByteArray,
+        mime: String,
+        fileName: String,
+        apiUrl: String,
+        onProgress: ((Int) -> Unit)?
+    ): String = withContext(Dispatchers.IO) {
+        val conn = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
             doInput        = true
             doOutput       = true
             useCaches      = false
             requestMethod  = "POST"
             connectTimeout = 30_000
-            readTimeout    = 120_000
+            readTimeout    = 180_000
             setRequestProperty("Connection", "Keep-Alive")
             setRequestProperty("Content-Type", "multipart/form-data; boundary=$BOUNDARY")
         }
 
         DataOutputStream(conn.outputStream).use { out ->
-            // Champ upload_preset
+            // upload_preset
             out.writeBytes("$TWO_DASHES$BOUNDARY$LINE_END")
-            out.writeBytes("Content-Disposition: form-data; name=\"upload_preset\"$LINE_END")
-            out.writeBytes(LINE_END)
+            out.writeBytes("Content-Disposition: form-data; name=\"upload_preset\"$LINE_END$LINE_END")
             out.writeBytes(UPLOAD_PRESET)
             out.writeBytes(LINE_END)
-
-            // Champ file
+            // file
             out.writeBytes("$TWO_DASHES$BOUNDARY$LINE_END")
             out.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"$fileName\"$LINE_END")
-            out.writeBytes("Content-Type: $mime$LINE_END")
-            out.writeBytes(LINE_END)
-
-            // Écrit les bytes avec progression
-            val chunkSize   = 8192
-            var uploaded    = 0
-            var offset      = 0
+            out.writeBytes("Content-Type: $mime$LINE_END$LINE_END")
+            // écriture par chunks avec progression
+            val chunk = 8192
+            var offset = 0
             while (offset < bytes.size) {
-                val end = minOf(offset + chunkSize, bytes.size)
+                val end = minOf(offset + chunk, bytes.size)
                 out.write(bytes, offset, end - offset)
-                uploaded += end - offset
-                offset    = end
-                val percent = (uploaded * 100 / bytes.size)
-                onProgress?.invoke(percent)
+                offset = end
+                onProgress?.invoke(offset * 100 / bytes.size)
             }
-
             out.writeBytes(LINE_END)
             out.writeBytes("$TWO_DASHES$BOUNDARY$TWO_DASHES$LINE_END")
             out.flush()
         }
 
-        val responseCode = conn.responseCode
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            val err = conn.errorStream?.bufferedReader()?.readText() ?: "Erreur inconnue"
-            error("Upload échoué ($responseCode): $err")
+        val code = conn.responseCode
+        if (code != HttpURLConnection.HTTP_OK) {
+            val err = conn.errorStream?.bufferedReader()?.readText() ?: "Erreur $code"
+            error("Upload échoué ($code): $err")
         }
-
-        val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+        val resp = conn.inputStream.bufferedReader().readText()
         conn.disconnect()
-
-        JSONObject(response).getString("secure_url")
+        JSONObject(resp).getString("secure_url")
     }
 
-    /** Raccourci pour une image */
-    suspend fun uploadImage(
-        context: Context,
-        uri: Uri,
-        onProgress: ((Int) -> Unit)? = null
-    ): String = upload(context, uri, MediaType.IMAGE, onProgress)
-
-    /** Raccourci pour une vidéo */
-    suspend fun uploadVideo(
-        context: Context,
-        uri: Uri,
-        onProgress: ((Int) -> Unit)? = null
-    ): String = upload(context, uri, MediaType.VIDEO, onProgress)
+    private fun getFileName(context: Context, uri: Uri): String = runCatching {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val col = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            cursor.moveToFirst()
+            cursor.getString(col)
+        }
+    }.getOrNull() ?: "file_${System.currentTimeMillis()}"
 }
