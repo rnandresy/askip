@@ -1,31 +1,28 @@
 package com.rnandresy.lol.ui.auth
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,18 +35,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rnandresy.lol.ui.theme.AskipPurple
-import com.rnandresy.lol.ui.theme.DarkBg
-import com.rnandresy.lol.ui.theme.DarkSurf
+import com.rnandresy.lol.ui.components.AskipButton
+import com.rnandresy.lol.ui.components.AskipTextField
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
 @Composable
@@ -62,71 +55,162 @@ fun LoginScreen(
     val loading    by vm.loading.collectAsState()
     val error      by vm.error.collectAsState()
 
-    var email   by remember { mutableStateOf("") }
-    var pwd     by remember { mutableStateOf("") }
-    var showPwd by remember { mutableStateOf(false) }
+    var email    by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showPwd  by remember { mutableStateOf(false) }
 
     LaunchedEffect(isLoggedIn) { if (isLoggedIn) onSuccess() }
 
     Box(
-        modifier = Modifier.fillMaxSize()
-            .background(Brush.verticalGradient(listOf(DarkBg, Color(0xFF1A0040)))),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        MaterialTheme.colorScheme.background
+                    )
+                )
+            )
     ) {
         Column(
-            modifier            = Modifier.fillMaxWidth().padding(horizontal = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier            = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text("🔥", fontSize = 64.sp)
-            Spacer(Modifier.height(4.dp))
-            Text("askip", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-            Text("Les rumeurs du campus 👀", style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.5f))
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(60.dp))
 
-            Card(
-                shape     = RoundedCornerShape(24.dp),
-                colors    = CardDefaults.cardColors(containerColor = DarkSurf),
-                elevation = CardDefaults.cardElevation(10.dp)
+            // ── Logo ──────────────────────────────────────────────────────────
+            Text("🔥", fontSize = 56.sp)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "ASKIP",
+                style       = MaterialTheme.typography.displaySmall,
+                fontWeight  = FontWeight.Black,
+                color       = MaterialTheme.colorScheme.onBackground,
+                letterSpacing = 6.sp
+            )
+            Text(
+                "Le réseau du campus ENI",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(48.dp))
+
+            // ── Formulaire ────────────────────────────────────────────────────
+            Surface(
+                modifier  = Modifier.fillMaxWidth(),
+                shape     = RoundedCornerShape(20.dp),
+                color     = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp,
+                border    = androidx.compose.foundation.BorderStroke(
+                    1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text("Connexion", style = MaterialTheme.typography.titleLarge, color = Color.White)
-                    Spacer(Modifier.height(16.dp))
+                Column(
+                    modifier            = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        "Connexion",
+                        style      = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
 
-                    AskipField(email, { email = it }, "Email", Icons.Default.Email,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next))
-                    Spacer(Modifier.height(10.dp))
-                    AskipField(pwd, { pwd = it }, "Mot de passe", Icons.Default.Lock,
-                        isPassword = true, showPwd = showPwd,
-                        onToggle   = { showPwd = !showPwd },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done))
+                    AskipTextField(
+                        value         = email,
+                        onValueChange = { email = it },
+                        label         = "Email",
+                        leadingIcon   = { Icon(Icons.Default.Email, null, modifier = Modifier.size(18.dp)) },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction    = ImeAction.Next
+                        )
+                    )
 
-                    error?.let { e ->
-                        Spacer(Modifier.height(8.dp))
-                        Text(e, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                        LaunchedEffect(e) { vm.clearError() }
+                    AskipTextField(
+                        value             = password,
+                        onValueChange     = { password = it },
+                        label             = "Mot de passe",
+                        isPassword        = true,
+                        showPassword      = showPwd,
+                        onTogglePassword  = { showPwd = !showPwd },
+                        leadingIcon       = { Icon(Icons.Default.Lock, null, modifier = Modifier.size(18.dp)) },
+                        keyboardOptions   = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction    = ImeAction.Done
+                        )
+                    )
+
+                    // ── Erreur ────────────────────────────────────────────────
+                    AnimatedVisibility(visible = error != null) {
+                        Surface(
+                            color  = MaterialTheme.colorScheme.errorContainer,
+                            shape  = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier          = Modifier.fillMaxWidth().padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("⚠", fontSize = 14.sp)
+                                Text(
+                                    error ?: "",
+                                    style  = MaterialTheme.typography.bodySmall,
+                                    color  = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(
+                                    onClick         = { vm.clearError() },
+                                    contentPadding  = PaddingValues(0.dp),
+                                    modifier        = Modifier.size(28.dp)
+                                ) {
+                                    Text("✕", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        }
                     }
 
-                    Spacer(Modifier.height(20.dp))
-                    Button(
-                        onClick  = { vm.login(email, pwd) },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        shape    = RoundedCornerShape(14.dp),
-                        enabled  = !loading && email.isNotBlank() && pwd.isNotBlank()
-                    ) {
-                        if (loading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                        else Text("Entrer dans le campus 🚀", fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    TextButton(onClick = onGoRegister, modifier = Modifier.fillMaxWidth()) {
-                        Text("Pas de compte ? Rejoindre ->", color = AskipPurple)
-                    }
+                    AskipButton(
+                        text      = "Entrer",
+                        onClick   = { vm.login(email, password) },
+                        modifier  = Modifier.fillMaxWidth(),
+                        enabled   = email.isNotBlank() && password.isNotBlank(),
+                        isLoading = loading
+                    )
                 }
             }
+
+            Spacer(Modifier.height(20.dp))
+
+            // ── Inscription ───────────────────────────────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Pas de compte ?",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(onClick = onGoRegister) {
+                    Text(
+                        "S'inscrire",
+                        style      = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(40.dp))
         }
     }
 }
 
+// ── Écran inscription ─────────────────────────────────────────────────────────
 @Composable
 fun RegisterScreen(
     vm: AskipViewModel,
@@ -139,108 +223,109 @@ fun RegisterScreen(
 
     var username by remember { mutableStateOf("") }
     var email    by remember { mutableStateOf("") }
-    var pwd      by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var showPwd  by remember { mutableStateOf(false) }
 
     LaunchedEffect(isLoggedIn) { if (isLoggedIn) onSuccess() }
 
     Box(
-        modifier = Modifier.fillMaxSize()
-            .background(Brush.verticalGradient(listOf(DarkBg, Color(0xFF1A0040)))),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
-            modifier            = Modifier.fillMaxWidth().padding(horizontal = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier            = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text("🎓", fontSize = 56.sp)
-            Spacer(Modifier.height(4.dp))
-            Text("Rejoindre Askip", style = MaterialTheme.typography.titleLarge,
-                color = Color.White, fontWeight = FontWeight.ExtraBold)
-            Text("Le réseau des ragoteurs de l'ENI 😈", style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.5f))
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(60.dp))
 
-            Card(
-                shape     = RoundedCornerShape(24.dp),
-                colors    = CardDefaults.cardColors(containerColor = DarkSurf),
-                elevation = CardDefaults.cardElevation(10.dp)
+            Text("🎓", fontSize = 48.sp)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Rejoindre Askip",
+                style      = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Le réseau des étudiants de l'ENI",
+                style     = MaterialTheme.typography.bodySmall,
+                color     = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(36.dp))
+
+            Surface(
+                modifier  = Modifier.fillMaxWidth(),
+                shape     = RoundedCornerShape(20.dp),
+                color     = MaterialTheme.colorScheme.surface,
+                border    = androidx.compose.foundation.BorderStroke(
+                    1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text("Inscription", style = MaterialTheme.typography.titleLarge, color = Color.White)
-                    Spacer(Modifier.height(16.dp))
+                Column(
+                    modifier            = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text("Inscription", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
-                    AskipField(username, { username = it }, "Pseudo", Icons.Default.Person,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
-                    Spacer(Modifier.height(10.dp))
-                    AskipField(email, { email = it }, "Email", Icons.Default.Email,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next))
-                    Spacer(Modifier.height(10.dp))
-                    AskipField(pwd, { pwd = it }, "Mot de passe (6+)", Icons.Default.Lock,
-                        isPassword = true, showPwd = showPwd,
-                        onToggle   = { showPwd = !showPwd },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done))
+                    AskipTextField(
+                        value         = username,
+                        onValueChange = { username = it },
+                        label         = "Pseudo",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                    )
+                    AskipTextField(
+                        value         = email,
+                        onValueChange = { email = it },
+                        label         = "Email",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
+                    )
+                    AskipTextField(
+                        value            = password,
+                        onValueChange    = { password = it },
+                        label            = "Mot de passe (6 min)",
+                        isPassword       = true,
+                        showPassword     = showPwd,
+                        onTogglePassword = { showPwd = !showPwd },
+                        keyboardOptions  = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
+                    )
 
-                    error?.let { e ->
-                        Spacer(Modifier.height(8.dp))
-                        Text(e, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    AnimatedVisibility(visible = error != null) {
+                        Surface(color = MaterialTheme.colorScheme.errorContainer, shape = RoundedCornerShape(10.dp)) {
+                            Text(
+                                error ?: "",
+                                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                style    = MaterialTheme.typography.bodySmall,
+                                color    = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
                     }
 
-                    Spacer(Modifier.height(20.dp))
-                    Button(
-                        onClick  = { vm.register(email, pwd, username) },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        shape    = RoundedCornerShape(14.dp),
-                        enabled  = !loading && username.isNotBlank() && email.isNotBlank() && pwd.length >= 6
-                    ) {
-                        if (loading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                        else Text("Rejoindre le campus ! 🎉", fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    TextButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
-                        Text("Déjà inscrit ? Se connecter", color = AskipPurple)
-                    }
+                    AskipButton(
+                        text      = "Créer mon compte",
+                        onClick   = { vm.register(email, password, username) },
+                        modifier  = Modifier.fillMaxWidth(),
+                        enabled   = username.isNotBlank() && email.isNotBlank() && password.length >= 6,
+                        isLoading = loading
+                    )
                 }
             }
+
+            Spacer(Modifier.height(20.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Déjà inscrit ?", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onGoLogin) {
+                    Text("Se connecter", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(Modifier.height(40.dp))
         }
     }
-}
-
-@Composable
-fun AskipField(
-    value: String, onValueChange: (String) -> Unit,
-    label: String, icon: ImageVector,
-    isPassword: Boolean = false, showPwd: Boolean = false,
-    onToggle: (() -> Unit)? = null,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
-) {
-    OutlinedTextField(
-        value               = value,
-        onValueChange       = onValueChange,
-        label               = { Text(label) },
-        leadingIcon         = { Icon(icon, null, tint = Color.White.copy(alpha = 0.6f)) },
-        trailingIcon        = if (isPassword && onToggle != null) {
-            { IconButton(onClick = onToggle) {
-                Icon(if (showPwd) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    null, tint = Color.White.copy(alpha = 0.6f))
-            }}
-        } else null,
-        visualTransformation = if (isPassword && !showPwd) PasswordVisualTransformation()
-        else VisualTransformation.None,
-        keyboardOptions     = keyboardOptions,
-        singleLine          = true,
-        modifier            = Modifier.fillMaxWidth(),
-        shape               = RoundedCornerShape(14.dp),
-        colors              = OutlinedTextFieldDefaults.colors(
-            focusedTextColor        = Color.White,
-            unfocusedTextColor      = Color.White,
-            cursorColor             = AskipPurple,
-            focusedBorderColor      = AskipPurple,
-            unfocusedBorderColor    = Color.White.copy(alpha = 0.25f),
-            focusedLabelColor       = AskipPurple,
-            unfocusedLabelColor     = Color.White.copy(alpha = 0.5f),
-            focusedContainerColor   = Color.White.copy(alpha = 0.05f),
-            unfocusedContainerColor = Color.White.copy(alpha = 0.03f)
-        )
-    )
 }

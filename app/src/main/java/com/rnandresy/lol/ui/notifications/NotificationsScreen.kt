@@ -13,14 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -43,7 +42,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rnandresy.lol.model.AppNotification
-import com.rnandresy.lol.ui.feed.formatTs
+import com.rnandresy.lol.ui.components.EmptyState
+import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.theme.AdminGold
+import com.rnandresy.lol.ui.theme.AdminGoldBg
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,50 +64,37 @@ fun NotificationsScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Notifications 🔔", fontWeight = FontWeight.ExtraBold)
+                        Text("Notifications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         if (unread > 0) {
                             Text(
                                 "$unread non lue(s)",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    if (unread > 0) {
+                        TextButton(onClick = { vm.markAllNotificationsRead() }) {
+                            Text(
+                                "Tout lire",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                actions = {
-                    if (unread > 0) {
-                        IconButton(onClick = { vm.markAllNotificationsRead() }) {
-                            Icon(Icons.Default.DoneAll, "Tout marquer lu",
-                                tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                }
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { pad ->
         if (notifications.isEmpty()) {
-            Box(
-                modifier         = Modifier.fillMaxSize().padding(pad),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                    Text("🔕", fontSize = 56.sp)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Aucune notification",
-                        style     = MaterialTheme.typography.titleMedium,
-                        color     = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "Tes mentions, messages et annonces apparaîtront eto",
-                        style  = MaterialTheme.typography.bodySmall,
-                        color  = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {
+                EmptyState("🔕", "Aucune notification", "Les mentions et annonces apparaîtront ici")
             }
         } else {
             LazyColumn(
@@ -113,10 +102,10 @@ fun NotificationsScreen(
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
                 items(notifications, key = { it.id }) { notif ->
-                    NotificationRow(
+                    NotifRow(
                         notif    = notif,
                         onClick  = {
-                            if (!notif.isRead) vm.markNotificationRead(notif.id)
+                            vm.markNotificationRead(notif.id)
                             when {
                                 notif.postId.isNotBlank()         -> onOpenPost(notif.postId)
                                 notif.conversationId.isNotBlank() -> onOpenConversation(notif.conversationId)
@@ -126,8 +115,8 @@ fun NotificationsScreen(
                         onDelete = { vm.deleteNotification(notif.id) }
                     )
                     HorizontalDivider(
-                        color    = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
-                        modifier = Modifier.padding(start = 72.dp)
+                        color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
+                        thickness = 0.5.dp
                     )
                 }
             }
@@ -136,41 +125,62 @@ fun NotificationsScreen(
 }
 
 @Composable
-fun NotificationRow(
-    notif: AppNotification,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
-) {
+private fun NotifRow(notif: AppNotification, onClick: () -> Unit, onDelete: () -> Unit) {
     val isUnread    = !notif.isRead
-    val isMandatory = notif.isMandatory()
     val fromAdmin   = notif.isFromAdmin()
-
-    // Couleur de fond selon état
-    val bgColor = when {
-        isMandatory && isUnread -> Color(0xFFFFD700).copy(alpha = 0.07f)
-        isUnread                -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.10f)
-        else                    -> Color.Transparent   // ←  transparent si lu
-    }
+    val isMandatory = notif.isMandatory()
 
     Row(
         modifier          = Modifier
             .fillMaxWidth()
-            .background(bgColor)
+            .background(
+                when {
+                    isMandatory && isUnread -> AdminGoldBg
+                    isUnread                -> MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)
+                    else                    -> Color.Transparent
+                }
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ── Icône ─────────────────────────────────────────────────────────────
-        NotifIconBox(type = notif.type, fromAdmin = fromAdmin)
+        // Icône
+        Box(
+            modifier         = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(
+                    when (notif.type) {
+                        "new_post_admin"   -> AdminGoldBg
+                        "mention_everyone" -> MaterialTheme.colorScheme.tertiaryContainer
+                        "mention"          -> if (fromAdmin) AdminGoldBg
+                        else MaterialTheme.colorScheme.primaryContainer
+                        "message"          -> if (fromAdmin) AdminGoldBg
+                        else MaterialTheme.colorScheme.surfaceVariant
+                        else               -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                when (notif.type) {
+                    "new_post_admin"   -> "📣"
+                    "new_post"         -> "📢"
+                    "mention_everyone" -> "📣"
+                    "mention"          -> if (fromAdmin) "👑" else "💬"
+                    "message"          -> if (fromAdmin) "👑" else "✉️"
+                    else               -> "🔔"
+                },
+                fontSize = 18.sp
+            )
+        }
 
-        Spacer(Modifier.width(12.dp))
-
-        // ── Corps ─────────────────────────────────────────────────────────────
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment     = Alignment.Top
             ) {
                 Row(
                     modifier          = Modifier.weight(1f).padding(end = 8.dp),
@@ -178,28 +188,26 @@ fun NotificationRow(
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     Text(
-                        text       = notifTitle(notif),
+                        notifTitle(notif),
                         style      = MaterialTheme.typography.titleSmall,
-                        fontWeight = if (isUnread) FontWeight.ExtraBold else FontWeight.SemiBold,
-                        color      = when {
-                            fromAdmin && isMandatory -> Color(0xFFE6B800)
-                            isUnread                -> MaterialTheme.colorScheme.onSurface
-                            else                    -> MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
+                        color      = if (fromAdmin && isMandatory) AdminGold
+                        else MaterialTheme.colorScheme.onSurface,
+                        maxLines   = 1,
+                        overflow   = TextOverflow.Ellipsis
                     )
                     if (isMandatory) {
                         Surface(
-                            color  = Color(0xFFFFD700).copy(alpha = 0.15f),
+                            color  = AdminGoldBg,
                             shape  = RoundedCornerShape(4.dp)
                         ) {
                             Text(
-                                "\uD83D\uDC51",
+                                "ADMIN",
                                 modifier   = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                fontSize   = 7.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color      = Color(0xFFE6B800)
+                                style      = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color      = AdminGold,
+                                fontSize   = 8.sp
                             )
                         }
                     }
@@ -214,7 +222,7 @@ fun NotificationRow(
             if (notif.content.isNotBlank()) {
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text     = notif.content,
+                    notif.content,
                     style    = MaterialTheme.typography.bodySmall,
                     color    = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -223,9 +231,6 @@ fun NotificationRow(
             }
         }
 
-        Spacer(Modifier.width(6.dp))
-
-        // ── Indicateurs droite ────────────────────────────────────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -233,57 +238,30 @@ fun NotificationRow(
             if (isUnread) {
                 Box(
                     modifier = Modifier
-                        .size(8.dp)
+                        .size(7.dp)
                         .clip(CircleShape)
                         .background(
-                            if (isMandatory) Color(0xFFFFD700)
-                            else MaterialTheme.colorScheme.primary
+                            if (isMandatory) AdminGold
+                            else MaterialTheme.colorScheme.onSurface
                         )
                 )
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(22.dp)) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(20.dp)) {
                 Icon(
                     Icons.Default.Close, null,
-                    tint     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                    modifier = Modifier.size(13.dp)
+                    modifier = Modifier.size(12.dp),
+                    tint     = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.4f)
                 )
             }
         }
     }
 }
 
-@Composable
-private fun NotifIconBox(type: String, fromAdmin: Boolean) {
-    val (emoji, bgColor) = when (type) {
-        "new_post_admin"   -> "📣" to Color(0xFFFFD700).copy(alpha = 0.18f)
-        "new_post"         -> "📢" to MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-        "mention_everyone" -> "📣" to Color(0xFFE91E63).copy(alpha = 0.18f)
-        "mention"          ->
-            if (fromAdmin) "👑" to Color(0xFFFFD700).copy(alpha = 0.18f)
-            else "💬" to Color(0xFF7C4DFF).copy(alpha = 0.18f)
-        "message"          ->
-            if (fromAdmin) "👑" to Color(0xFFFFD700).copy(alpha = 0.18f)
-            else "✉️" to MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
-        else               -> "🔔" to MaterialTheme.colorScheme.surfaceVariant
-    }
-
-    Box(
-        modifier         = Modifier.size(46.dp).clip(CircleShape).background(bgColor),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(emoji, fontSize = 20.sp)
-    }
-}
-
-private fun notifTitle(notif: AppNotification) = when (notif.type) {
-    "new_post_admin"   -> "📣 ${notif.fromUsername}"
-    "new_post"         -> "🔥 ${notif.fromUsername} a posté"
-    "mention_everyone" -> "📢 ${notif.fromUsername} interpelle tout le monde"
-    "mention"          ->
-        if (notif.isFromAdmin()) "👑 ${notif.fromUsername} te mentionne !"
-        else "💬 ${notif.fromUsername} te mentionne"
-    "message"          ->
-        if (notif.isFromAdmin()) "👑 Message de ${notif.fromUsername}"
-        else "✉️ ${notif.fromUsername} t'a écrit"
-    else -> "Notification"
+private fun notifTitle(notif: AppNotification): String = when (notif.type) {
+    "new_post_admin"   -> "${notif.fromUsername} a posté une annonce"
+    "new_post"         -> "${notif.fromUsername} a publié un post"
+    "mention_everyone" -> "${notif.fromUsername} interpelle tout le monde"
+    "mention"          -> "${notif.fromUsername} te mentionne"
+    "message"          -> "Message de ${notif.fromUsername}"
+    else               -> "Notification"
 }

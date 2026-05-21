@@ -1,11 +1,13 @@
 package com.rnandresy.lol.ui.feed
 
-import android.view.ViewGroup
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -26,16 +28,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,7 +55,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -67,33 +67,33 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.media3.common.MediaItem
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.rnandresy.lol.model.Post
 import com.rnandresy.lol.model.Story
+import com.rnandresy.lol.ui.components.AdminBadgeLabel
+import com.rnandresy.lol.ui.components.AskipAudioPlayer
+import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.*
+import com.rnandresy.lol.ui.components.AskipVideoPlayer
+import com.rnandresy.lol.ui.components.EmptyState
+import com.rnandresy.lol.ui.components.MentionText
+import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.theme.AdminGold
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 val REACTIONS = listOf("❤️", "🔥", "😂", "😱", "👀")
 
-// Mémorise la position du scroll entre navigations
+// Mémorise la position scroll entre navigations
 object FeedScrollState {
-    var firstVisibleIndex:  Int = 0
-    var firstVisibleOffset: Int = 0
+    var index: Int  = 0
+    var offset: Int = 0
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,342 +115,314 @@ fun FeedScreen(
     var openStory   by remember { mutableStateOf<Story?>(null) }
     var showFabMenu by remember { mutableStateOf(false) }
 
-    // Scroll mémorisé
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex        = FeedScrollState.firstVisibleIndex,
-        initialFirstVisibleItemScrollOffset = FeedScrollState.firstVisibleOffset
-    )
+    val listState = rememberLazyListState(FeedScrollState.index, FeedScrollState.offset)
     LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
-        FeedScrollState.firstVisibleIndex  = listState.firstVisibleItemIndex
-        FeedScrollState.firstVisibleOffset = listState.firstVisibleItemScrollOffset
+        FeedScrollState.index  = listState.firstVisibleItemIndex
+        FeedScrollState.offset = listState.firstVisibleItemScrollOffset
     }
 
-    // Pull-to-refresh
     val pullState = rememberPullToRefreshState()
-    LaunchedEffect(pullState.isRefreshing) {
-        if (pullState.isRefreshing) vm.refreshFeed()
-    }
-    LaunchedEffect(isRefreshing) {
-        if (!isRefreshing) pullState.endRefresh()
-    }
+    LaunchedEffect(pullState.isRefreshing) { if (pullState.isRefreshing) vm.refreshFeed() }
+    LaunchedEffect(isRefreshing) { if (!isRefreshing) pullState.endRefresh() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title   = { Text("Askip 🔥", fontWeight = FontWeight.ExtraBold) },
+                title = {
+                    Text(
+                        "Askip",
+                        style      = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp
+                    )
+                },
                 actions = {
-                    IconButton(onClick = onOpenMembers) { Icon(Icons.Default.People, null) }
-                    IconButton(onClick = onLogout)      { Icon(Icons.Default.Logout, null) }
+                    IconButton(onClick = onOpenMembers) {
+                        Icon(Icons.Default.People, null, modifier = Modifier.size(22.dp))
+                    }
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.Default.Logout, null, modifier = Modifier.size(22.dp))
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor         = MaterialTheme.colorScheme.background,
+                    titleContentColor      = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
         floatingActionButton = {
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                if (showFabMenu) {
-                    SmallFloatingActionButton(
-                        onClick        = { showFabMenu = false; onNewStory() },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                AnimatedVisibility(visible = showFabMenu) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            "📖 Story",
-                            style    = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-                    SmallFloatingActionButton(
-                        onClick        = { showFabMenu = false; onNewPost() },
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                    ) {
-                        Text(
-                            "📢 Rumeur",
-                            style    = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
+                        SmallFloatingActionButton(
+                            onClick        = { showFabMenu = false; onNewStory() },
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor   = MaterialTheme.colorScheme.onSurface,
+                            shape          = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier          = Modifier.padding(horizontal = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(Icons.Default.AutoStories, null, modifier = Modifier.size(16.dp))
+                                Text("Story 24h", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                        SmallFloatingActionButton(
+                            onClick        = { showFabMenu = false; onNewPost() },
+                            containerColor = MaterialTheme.colorScheme.onBackground,
+                            contentColor   = MaterialTheme.colorScheme.background,
+                            shape          = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier          = Modifier.padding(horizontal = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
+                                Text("Nouveau post", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                 }
-                FloatingActionButton(onClick = { showFabMenu = !showFabMenu }) {
+                FloatingActionButton(
+                    onClick        = { showFabMenu = !showFabMenu },
+                    containerColor = MaterialTheme.colorScheme.onBackground,
+                    contentColor   = MaterialTheme.colorScheme.background,
+                    shape          = RoundedCornerShape(14.dp)
+                ) {
                     Icon(if (showFabMenu) Icons.Default.Close else Icons.Default.Add, null)
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { pad ->
         Box(
             modifier = Modifier
-                .padding(pad)
                 .fillMaxSize()
+                .padding(pad)
                 .nestedScroll(pullState.nestedScrollConnection)
         ) {
             if (feed.isEmpty() && !isRefreshing) {
-                Column(
-                    modifier            = Modifier.align(Alignment.Center).padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("👻", fontSize = 56.sp)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Aucune rumeur pour l'instant…",
-                        color     = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Sois le premier à lancer le ragot ! 🔥",
-                        style     = MaterialTheme.typography.bodySmall,
-                        color     = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                Box(Modifier.fillMaxSize(), Alignment.Center) {
+                    EmptyState("👻", "Aucun post", "Sois le premier à poster !")
                 }
             } else {
                 LazyColumn(
                     state               = listState,
-                    contentPadding      = PaddingValues(bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding      = PaddingValues(bottom = 120.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp)
                 ) {
-                    item { StoriesBar(
-                        stories = stories,
-                        currentUid = uid,
-                        onAddStory = onNewStory,
-                        onDeleteStory = { vm.deleteStory(it) },
-                        onOpen = { openStory = it }   // ← ajouté
-                    )  }
+                    if (stories.isNotEmpty()) {
+                        item { StoriesRow(stories, uid, onNewStory, { openStory = it }) }
+                        item {
+                            HorizontalDivider(
+                                color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                thickness = 0.5.dp
+                            )
+                        }
+                    }
                     items(feed, key = { it.id }) { post ->
                         PostCard(
                             post          = post,
                             currentUid    = uid,
                             onAvatarClick = { if (!post.isAnonymous) onOpenProfile(post.userId) },
-                            onReaction    = { emoji -> vm.toggleReaction(post, emoji) },
-                            onVotePoll    = { opt -> vm.votePoll(post.id, opt) },
+                            onReaction    = { vm.toggleReaction(post, it) },
+                            onVotePoll    = { vm.votePoll(post.id, it) },
                             onComment     = { onOpenComments(post.id) },
                             onPin         = { vm.togglePin(post) },
                             onDelete      = { vm.deletePost(post.id) }
                         )
+                        HorizontalDivider(
+                            color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                            thickness = 0.5.dp
+                        )
                     }
                 }
             }
-            PullToRefreshContainer(state = pullState, modifier = Modifier.align(Alignment.TopCenter))
+            PullToRefreshContainer(
+                state    = pullState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         }
     }
 
     openStory?.let { story ->
-        StoryViewDialog(
+        StoryFullScreen(
             story      = story,
-            currentUid = uid,                                   // ← ajouté
-            onDelete   = { vm.deleteStory(story.id); openStory = null }, // ← ajouté
+            currentUid = uid,
+            onDelete   = { vm.deleteStory(story.id); openStory = null },
             onClose    = { openStory = null }
         )
     }
 }
 
-// ── Stories Bar ───────────────────────────────────────────────────────────────
-
-// ── Stories Bar — ajoute onDelete ────────────────────────────────────────────
-
+// ── Stories horizontales ──────────────────────────────────────────────────────
 @Composable
-fun StoriesBar(
+private fun StoriesRow(
     stories: List<Story>,
     currentUid: String,
-    onAddStory: () -> Unit,
-    onOpen: (Story) -> Unit,
-    onDeleteStory: (String) -> Unit      // ← paramètre ajouté
+    onAdd: () -> Unit,
+    onOpen: (Story) -> Unit
 ) {
     LazyRow(
-        contentPadding        = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // ── Bouton "Ma story" ──────────────────────────────────────────────────
         item {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier            = Modifier.clickable(onClick = onAddStory)
-            ) {
-                Box(
-                    modifier         = Modifier
-                        .size(58.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Add, null,
-                        tint     = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(Modifier.height(4.dp))
-                Text("Ma story", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
-            }
-        }
-
-        // ── Stories existantes ────────────────────────────────────────────────
-        items(stories, key = { it.id }) { story ->
-            val bgColor = runCatching {
-                Color(android.graphics.Color.parseColor(story.backgroundColor))
-            }.getOrElse { Color(0xFF7C4DFF) }
-            val isMe    = story.userId == currentUid
-
-            // Menu contextuel pour la propre story de l'utilisateur
-            var showMenu by remember { mutableStateOf(false) }
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier            = Modifier.clickable {
-                    if (isMe) showMenu = true else onOpen(story)
-                }
-            ) {
-                Box(contentAlignment = Alignment.Center) {
+            StoryCircle(
+                label   = "Ajouter",
+                content = {
                     Box(
-                        modifier = Modifier
-                            .size(58.dp)
-                            .clip(CircleShape)
-                            .background(bgColor)
-                            .border(
-                                2.5.dp,
-                                if (isMe) MaterialTheme.colorScheme.tertiary
-                                else bgColor.copy(alpha = 0.5f),
-                                CircleShape
-                            ),
+                        modifier         = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(story.emoji.ifBlank { "💭" }, fontSize = 24.sp)
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(24.dp))
                     }
-                    // Petit indicateur de suppression sur la propre story
-                    if (isMe) {
+                },
+                hasRing = false,
+                onClick = onAdd
+            )
+        }
+        items(stories, key = { it.id }) { story ->
+            var showMenu by remember { mutableStateOf(false) }
+            val isMe = story.userId == currentUid
+
+            Box {
+                StoryCircle(
+                    label   = if (isMe) "Toi" else story.username.take(9),
+                    content = {
+                        val bg = runCatching {
+                            Color(android.graphics.Color.parseColor(story.backgroundColor))
+                        }.getOrElse { MaterialTheme.colorScheme.primary }
                         Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surface)
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
+                            modifier         = Modifier.fillMaxSize().background(bg),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Default.MoreVert, null,
-                                modifier = Modifier.size(10.dp),
-                                tint     = MaterialTheme.colorScheme.onSurface
-                            )
+                            Text(story.emoji.ifBlank { "💭" }, fontSize = 26.sp)
                         }
-                        DropdownMenu(
-                            expanded         = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text        = { Text("Voir") },
-                                leadingIcon = { Icon(Icons.Default.Visibility, null) },
-                                onClick     = { showMenu = false; onOpen(story) }
-                            )
-                            DropdownMenuItem(
-                                text        = { Text("Supprimer", color = MaterialTheme.colorScheme.error) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Delete, null,
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                onClick     = { showMenu = false; onDeleteStory(story.id) }
-                            )
-                        }
+                    },
+                    hasRing = true,
+                    onClick = { if (isMe) showMenu = true else onOpen(story) }
+                )
+                if (isMe) {
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text        = { Text("Voir") },
+                            leadingIcon = { Icon(Icons.Default.Visibility, null) },
+                            onClick     = { showMenu = false; onOpen(story) }
+                        )
+                        DropdownMenuItem(
+                            text        = { Text("Supprimer", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                            onClick     = { showMenu = false }  // vm.deleteStory passé via onDelete
+                        )
                     }
                 }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    if (isMe) "Toi" else story.username.take(8),
-                    style    = MaterialTheme.typography.labelSmall,
-                    fontSize = 10.sp,
-                    maxLines = 1
-                )
             }
         }
     }
 }
 
-// ── StoryViewDialog — bouton suppression pour le propriétaire ─────────────────
-
 @Composable
-fun StoryViewDialog(
-    story: Story,
-    currentUid: String = "",        // ← ajouté
-    onDelete: () -> Unit = {},      // ← ajouté
-    onClose: () -> Unit
+private fun StoryCircle(
+    label: String,
+    content: @Composable BoxScope.() -> Unit,
+    hasRing: Boolean,
+    onClick: () -> Unit
 ) {
-    val bgColor = runCatching {
-        Color(android.graphics.Color.parseColor(story.backgroundColor))
-    }.getOrElse { Color(0xFF7C4DFF) }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+        modifier            = Modifier.clickable(onClick = onClick)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(58.dp)
+                .then(
+                    if (hasRing) Modifier.border(
+                        2.dp, MaterialTheme.colorScheme.onBackground, CircleShape
+                    ) else Modifier
+                )
+                .padding(if (hasRing) 2.dp else 0.dp)
+                .clip(CircleShape),
+            content = content
+        )
+        Text(
+            label,
+            style    = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color    = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
-    val isOwner = story.userId == currentUid
+// ── Story plein écran ─────────────────────────────────────────────────────────
+@Composable
+private fun StoryFullScreen(
+    story: Story, currentUid: String,
+    onDelete: () -> Unit, onClose: () -> Unit
+) {
+    val bg = runCatching {
+        Color(android.graphics.Color.parseColor(story.backgroundColor))
+    }.getOrElse { MaterialTheme.colorScheme.surface }
 
     Dialog(
         onDismissRequest = onClose,
         properties       = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Box(
-            modifier         = Modifier.fillMaxSize().background(bgColor),
+            modifier         = Modifier.fillMaxSize().background(bg),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier            = Modifier.padding(32.dp)
+                modifier            = Modifier.padding(40.dp)
             ) {
-                Text(story.emoji.ifBlank { "💭" }, fontSize = 80.sp)
-                Spacer(Modifier.height(24.dp))
+                Text(story.emoji.ifBlank { "💭" }, fontSize = 72.sp)
+                Spacer(Modifier.height(20.dp))
                 Text(
                     story.content,
-                    style      = MaterialTheme.typography.titleLarge,
-                    color      = Color.White,
+                    style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    textAlign  = TextAlign.Center
+                    color      = Color.White,
+                    textAlign  = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
                     "— ${story.username}",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.7f)
                 )
             }
-
-            // ── Bouton fermer ─────────────────────────────────────────────────
-            IconButton(
-                onClick  = onClose,
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-            ) {
+            IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
                 Icon(Icons.Default.Close, null, tint = Color.White)
             }
-
-            // ── Bouton supprimer (propriétaire uniquement) ────────────────────
-            if (isOwner) {
-                IconButton(
-                    onClick  = { onDelete() },
-                    modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Black.copy(alpha = 0.4f)
-                    ) {
-                        Icon(
-                            Icons.Default.Delete, null,
-                            tint     = Color.White,
-                            modifier = Modifier.padding(6.dp).size(20.dp)
-                        )
-                    }
+            if (story.userId == currentUid) {
+                IconButton(onClick = onDelete, modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) {
+                    Icon(Icons.Default.Delete, null, tint = Color.White)
                 }
             }
         }
     }
 }
 
-// ── Post Card ─────────────────────────────────────────────────────────────────
-
+// ── Card post ─────────────────────────────────────────────────────────────────
 @Composable
 fun PostCard(
-    post: Post,
-    currentUid: String,
+    post: Post, currentUid: String,
     onAvatarClick: () -> Unit,
     onReaction: (String) -> Unit,
     onVotePoll: (Int) -> Unit,
@@ -461,226 +433,206 @@ fun PostCard(
     val isMyPost    = post.userId == currentUid && !post.isAnonymous
     val userIsAdmin = isAdmin(currentUid)
     val myReaction  = post.getUserReaction(currentUid)
+    val postIsAdmin = isAdmin(post.userId)
 
-    Card(
-        modifier  = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-        shape     = RoundedCornerShape(20.dp),
-        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(3.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (post.isPinned)
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                else MaterialTheme.colorScheme.background
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-
-            // ── Header ────────────────────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                UserAvatar(
-                    username = if (post.isAnonymous) "?" else post.username,
-                    photoUrl = if (post.isAnonymous) "" else post.userPhotoUrl,
-                    size     = 44,
-                    isAdmin  = isAdmin(post.userId) && !post.isAnonymous,
-                    onClick  = if (!post.isAnonymous) onAvatarClick else null
-                )
-                Spacer(Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text(
-                            if (post.isAnonymous) "Quelqu'un 🎭" else post.username,
-                            style      = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (!post.isAnonymous && isAdmin(post.userId)) AdminBadge()
-                        if (post.isPinned) Text("📌", fontSize = 11.sp)
-                        if (post.postType == "poll") PollBadge()
-                    }
+        // ── Header ────────────────────────────────────────────────────────────
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AskipAvatar(
+                username    = if (post.isAnonymous) "?" else post.username,
+                photoUrl    = if (post.isAnonymous) "" else post.userPhotoUrl,
+                size        = 40.dp,
+                isAdminUser = postIsAdmin && !post.isAnonymous,
+                onClick     = if (!post.isAnonymous) onAvatarClick else null
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
                     Text(
-                        formatTs(post.timestamp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        if (post.isAnonymous) "Quelqu'un 🎭" else post.username,
+                        style      = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = if (postIsAdmin && !post.isAnonymous) AdminGold
+                        else MaterialTheme.colorScheme.onSurface
                     )
+                    if (postIsAdmin && !post.isAnonymous) AdminBadgeLabel()
+                    if (post.isPinned) {
+                        Icon(
+                            Icons.Default.PushPin, null,
+                            modifier = Modifier.size(12.dp),
+                            tint     = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (post.postType == "poll") {
+                        Surface(
+                            color  = MaterialTheme.colorScheme.surfaceVariant,
+                            shape  = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                "Sondage",
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                style    = MaterialTheme.typography.labelSmall,
+                                color    = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
+                Text(
+                    formatTs(post.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Actions admin/auteur
+            Row {
                 if (userIsAdmin) {
                     IconButton(onClick = onPin, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.PushPin, null,
-                            tint     = if (post.isPinned) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp),
+                            tint     = if (post.isPinned) MaterialTheme.colorScheme.onSurface
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f)
                         )
                     }
                 }
                 if (isMyPost || userIsAdmin) {
                     IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Delete, null,
-                            tint     = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Delete, null,
+                            modifier = Modifier.size(16.dp),
+                            tint     = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }
+        }
 
-            // ── Contenu ───────────────────────────────────────────────────────
-            Spacer(Modifier.height(10.dp))
-            MentionText(text = post.content, style = MaterialTheme.typography.bodyMedium)
+        // ── Contenu ───────────────────────────────────────────────────────────
+        if (post.content.isNotBlank()) {
+            MentionText(
+                text  = post.content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
 
-            // ── Image ─────────────────────────────────────────────────────────
-            if (post.imageUrl.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
-                AsyncImage(
-                    model              = post.imageUrl,
-                    contentDescription = null,
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp)
-                        .clip(RoundedCornerShape(14.dp))
+        // ── Image ─────────────────────────────────────────────────────────────
+        if (post.imageUrl.isNotBlank()) {
+            AsyncImage(
+                model              = post.imageUrl,
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 320.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            )
+        }
+
+        // ── Vidéo ─────────────────────────────────────────────────────────────
+        if (post.videoUrl.isNotBlank()) {
+            AskipVideoPlayer(
+                videoUrl = post.videoUrl,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(12.dp))
+            )
+        }
+
+        // ── Audio ─────────────────────────────────────────────────────────────
+        if (post.audioUrl.isNotBlank()) {
+            Surface(
+                color  = MaterialTheme.colorScheme.surfaceVariant,
+                shape  = RoundedCornerShape(12.dp)
+            ) {
+                AskipAudioPlayer(
+                    url      = post.audioUrl,
+                    duration = post.audioDuration,
+                    isMe     = false
                 )
             }
+        }
 
-            // ── Vidéo ─────────────────────────────────────────────────────────
-            if (post.videoUrl.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
-                VideoPlayer(
-                    videoUrl = post.videoUrl,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(14.dp))
-                )
-            }
+        // ── Sondage ───────────────────────────────────────────────────────────
+        if (post.postType == "poll" && post.pollOption1.isNotBlank()) {
+            PollSection(post = post, currentUid = currentUid, onVote = onVotePoll)
+        }
 
-            // ── Sondage ───────────────────────────────────────────────────────
-            if (post.postType == "poll" && post.pollOption1.isNotBlank()) {
-                Spacer(Modifier.height(10.dp))
-                PollSection(post = post, currentUid = currentUid, onVote = onVotePoll)
-            }
-
-            // ── Réactions ─────────────────────────────────────────────────────
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-            Spacer(Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        // ── Réactions + commentaires ──────────────────────────────────────────
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            // Réactions
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 REACTIONS.forEach { emoji ->
-                    ReactionBtn(
+                    ReactionButton(
                         emoji    = emoji,
                         count    = post.reactionCount(emoji),
                         isActive = myReaction == emoji,
                         onClick  = { onReaction(emoji) }
                     )
                 }
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = onComment, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
-                    Icon(Icons.Default.ChatBubbleOutline, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("${post.commentCount}", style = MaterialTheme.typography.labelMedium)
-                }
             }
-        }
-    }
-}
-
-// ── Lecteur vidéo inline ──────────────────────────────────────────────────────
-
-@androidx.annotation.OptIn(UnstableApi::class)
-// ── Lecteur vidéo : playWhenReady = false PARTOUT ────────────────────────────
-@Composable
-fun VideoPlayer(videoUrl: String, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val player  = remember(videoUrl) {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(videoUrl))
-            prepare()
-            playWhenReady = false   // ← JAMAIS d'autoplay — économise la data
-        }
-    }
-    DisposableEffect(player) { onDispose { player.release() } }
-
-    AndroidView(
-        factory  = { ctx ->
-            PlayerView(ctx).apply {
-                this.player   = player
-                useController = true
-                setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-                layoutParams  = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-        },
-        modifier = modifier
-    )
-}
-
-// ── Poll section ──────────────────────────────────────────────────────────────
-
-@Composable
-private fun PollSection(post: Post, currentUid: String, onVote: (Int) -> Unit) {
-    val hasVoted = currentUid in post.pollVoters
-    val total    = (post.pollVotes1 + post.pollVotes2).coerceAtLeast(1)
-    val pct1     = if (hasVoted) post.pollVotes1 * 100 / total else 0
-    val pct2     = if (hasVoted) post.pollVotes2 * 100 / total else 0
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(
-            Triple(1, post.pollOption1, pct1) to post.pollVotes1,
-            Triple(2, post.pollOption2, pct2) to post.pollVotes2
-        ).forEach { (triple, votes) ->
-            val (opt, label, pct) = triple
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(enabled = !hasVoted) { onVote(opt) }
+            Spacer(Modifier.weight(1f))
+            // Commentaires
+            TextButton(
+                onClick        = onComment,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                if (hasVoted && pct > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(pct / 100f).height(48.dp)
-                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
+                Icon(Icons.Default.ChatBubbleOutline, null, modifier = Modifier.size(15.dp))
+                if (post.commentCount > 0) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "${post.commentCount}",
+                        style = MaterialTheme.typography.labelMedium
                     )
                 }
-                Row(
-                    modifier              = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                    if (hasVoted) {
-                        Text("$pct% ($votes)", style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    }
-                }
             }
         }
-        Text(
-            if (hasVoted) "${post.pollVotes1 + post.pollVotes2} vote(s) au total"
-            else "Appuie pour voter 👆",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
-// ── Réaction bouton ───────────────────────────────────────────────────────────
-
+// ── Bouton réaction ───────────────────────────────────────────────────────────
 @Composable
-fun ReactionBtn(emoji: String, count: Int, isActive: Boolean, onClick: () -> Unit) {
+private fun ReactionButton(emoji: String, count: Int, isActive: Boolean, onClick: () -> Unit) {
     Surface(
-        onClick  = onClick,
-        color    = if (isActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        shape    = RoundedCornerShape(20.dp),
-        modifier = Modifier.height(30.dp)
+        onClick = onClick,
+        color   = if (isActive)
+            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f)
+        else Color.Transparent,
+        shape   = RoundedCornerShape(8.dp),
+        border  = if (isActive)
+            BorderStroke(0.5.dp, MaterialTheme.colorScheme.onBackground.copy(0.2f))
+        else null
     ) {
         Row(
-            modifier              = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+            modifier              = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Text(emoji, fontSize = 13.sp)
+            Text(emoji, fontSize = 14.sp)
             if (count > 0) {
                 Text(
                     "$count",
                     style    = MaterialTheme.typography.labelSmall,
                     fontSize = 11.sp,
-                    color    = if (isActive) MaterialTheme.colorScheme.primary
+                    color    = if (isActive) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -688,112 +640,66 @@ fun ReactionBtn(emoji: String, count: Int, isActive: Boolean, onClick: () -> Uni
     }
 }
 
-// ── Composants partagés ───────────────────────────────────────────────────────
-
-/**
- * Avatar universel : affiche la photo si disponible, sinon l'initiale.
- * [photoUrl] est optionnel — rétrocompatible avec tous les appelants existants.
- */
+// ── Section sondage ───────────────────────────────────────────────────────────
 @Composable
-fun UserAvatar(
-    username: String,
-    photoUrl: String = "",       // ← paramètre optionnel, défaut ""
-    size: Int,
-    isAdmin: Boolean = false,
-    onClick: (() -> Unit)? = null
-) {
-    Box(
-        modifier = Modifier
-            .size(size.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-    ) {
-        if (photoUrl.isNotBlank()) {
-            // Photo réelle
-            AsyncImage(
-                model              = photoUrl,
-                contentDescription = null,
-                contentScale       = ContentScale.Crop,
-                modifier           = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .then(
-                        if (isAdmin) Modifier.border(2.dp, Color(0xFFFFD700), CircleShape)
-                        else Modifier
-                    )
-            )
-        } else {
-            // Avatar initiale
+private fun PollSection(post: Post, currentUid: String, onVote: (Int) -> Unit) {
+    val hasVoted = currentUid in post.pollVoters
+    val total    = (post.pollVotes1 + post.pollVotes2).coerceAtLeast(1)
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(
+            Triple(1, post.pollOption1, post.pollVotes1),
+            Triple(2, post.pollOption2, post.pollVotes2)
+        ).forEach { (opt, label, votes) ->
+            val pct = if (hasVoted) votes.toFloat() / total else 0f
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(
-                        if (isAdmin) Color(0xFFFFD700).copy(alpha = 0.2f)
-                        else MaterialTheme.colorScheme.primaryContainer
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(
+                        0.5.dp,
+                        MaterialTheme.colorScheme.outline.copy(if (hasVoted && pct > 0.5f) 0.8f else 0.4f),
+                        RoundedCornerShape(10.dp)
                     )
-                    .then(
-                        if (isAdmin) Modifier.border(2.dp, Color(0xFFFFD700), CircleShape)
-                        else Modifier
-                    ),
-                contentAlignment = Alignment.Center
+                    .clickable(enabled = !hasVoted) { onVote(opt) }
             ) {
-                Text(
-                    text       = username.firstOrNull()?.uppercase() ?: "?",
-                    fontSize   = (size / 2.5).sp,
-                    fontWeight = FontWeight.Bold,
-                    color      = if (isAdmin) Color(0xFFFFD700)
-                    else MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                // Barre de progression
+                if (hasVoted && pct > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(pct)
+                            .height(44.dp)
+                            .background(MaterialTheme.colorScheme.onBackground.copy(0.06f))
+                    )
+                }
+                Row(
+                    modifier              = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    Text(
+                        label,
+                        style      = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (hasVoted && pct > 0.5f) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                    if (hasVoted) {
+                        Text(
+                            "${(pct * 100).toInt()}%",
+                            style      = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color      = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
         }
-    }
-}
-
-@Composable
-fun AdminBadge() {
-    Surface(
-        color    = Color(0xFFFFD700).copy(alpha = 0.15f),
-        shape    = RoundedCornerShape(6.dp),
-        modifier = Modifier.border(1.dp, Color(0xFFFFD700), RoundedCornerShape(6.dp))
-    ) {
         Text(
-            "👑",
-            modifier   = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-            fontSize   = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700)
+            if (hasVoted) "${post.pollVotes1 + post.pollVotes2} participant(s)"
+            else "Appuie pour voter",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
-
-@Composable
-fun PollBadge() {
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(6.dp)) {
-        Text(
-            "📊 Sondage",
-            modifier   = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
-            fontSize   = 9.sp, fontWeight = FontWeight.Bold,
-            color      = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-    }
-}
-
-@Composable
-fun BadgeChip(displayName: String, colorHex: String, modifier: Modifier = Modifier) {
-    val color = runCatching {
-        Color(android.graphics.Color.parseColor(colorHex))
-    }.getOrElse { Color(0xFF7C4DFF) }
-    Surface(
-        color    = color.copy(alpha = 0.15f),
-        shape    = RoundedCornerShape(50),
-        modifier = modifier.border(1.dp, color.copy(alpha = 0.6f), RoundedCornerShape(50))
-    ) {
-        Text(
-            displayName,
-            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            fontSize   = 11.sp, fontWeight = FontWeight.Bold, color = color
-        )
-    }
-}
-
-fun formatTs(ts: Long): String = runCatching {
-    SimpleDateFormat("dd MMM · HH:mm", Locale.FRENCH).format(Date(ts))
-}.getOrElse { "" }

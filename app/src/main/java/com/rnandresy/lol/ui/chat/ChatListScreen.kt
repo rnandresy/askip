@@ -49,8 +49,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rnandresy.lol.model.Group
-import com.rnandresy.lol.ui.feed.UserAvatar
-import com.rnandresy.lol.ui.feed.formatTs
+import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.components.*
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
@@ -128,8 +128,8 @@ fun ChatListScreen(
                                         .padding(horizontal = 16.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    UserAvatar(username = otherName, photoUrl = otherPhoto,
-                                        size = 52, isAdmin = isAdmin(otherId),
+                                    AskipAvatar(username = otherName, photoUrl = otherPhoto,
+                                        size = 52.dp, isAdminUser = isAdmin(otherId),
                                         onClick = { onOpenProfile(otherId) })
                                     Spacer(Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
@@ -197,8 +197,8 @@ fun ChatListScreen(
                                         .padding(vertical = 8.dp, horizontal = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    UserAvatar(username = profile.username, photoUrl = profile.photoUrl,
-                                        size = 40, isAdmin = isAdmin(profile.userId))
+                                    AskipAvatar(username = profile.username, photoUrl = profile.photoUrl,
+                                        size = 40.dp, isAdminUser = isAdmin(profile.userId))
                                     Spacer(Modifier.width(12.dp))
                                     Column {
                                         Text(profile.username, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)

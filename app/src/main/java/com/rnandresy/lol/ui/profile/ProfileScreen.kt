@@ -80,8 +80,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.rnandresy.lol.model.Badge
 import com.rnandresy.lol.model.UserProfile
-import com.rnandresy.lol.ui.feed.AdminBadge
-import com.rnandresy.lol.ui.feed.BadgeChip
+import com.rnandresy.lol.ui.components.AdminBadgeLabel
+import com.rnandresy.lol.ui.components.CustomBadgeChip
 import com.rnandresy.lol.utils.ADMIN_BADGE_NAME
 import com.rnandresy.lol.utils.ALL_ACHIEVEMENTS
 import com.rnandresy.lol.utils.BADGE_COLORS
@@ -427,7 +427,7 @@ fun ProfileScreen(
                             style      = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold
                         )
-                        if (userIsAdmin) AdminBadge()
+                        if (userIsAdmin) AdminBadgeLabel()
                         if (profile.hasBadgeENI) ENIBadge()
                     }
 
@@ -465,7 +465,7 @@ fun ProfileScreen(
                                         }
                                     )
                                 } else {
-                                    BadgeChip(badge.displayName, badge.colorHex)
+                                    CustomBadgeChip(badge.displayName, badge.colorHex)
                                 }
                             }
                         }
@@ -785,7 +785,7 @@ fun BadgeManagerDialog(
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 items(myBadges, key = { it.id }) { badge ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        BadgeChip(badge.displayName, badge.colorHex)
+                                        CustomBadgeChip(badge.displayName, badge.colorHex)
                                         Spacer(Modifier.width(2.dp))
                                         IconButton(
                                             onClick  = { vm.unwearBadge(badge.id) },
@@ -904,7 +904,7 @@ fun BadgeManagerDialog(
                                     "Aperçu : ",
                                     style = MaterialTheme.typography.labelSmall
                                 )
-                                BadgeChip(badgeName, badgeColor)
+                                CustomBadgeChip(badgeName, badgeColor)
                             }
                         }
                     }
@@ -941,7 +941,7 @@ fun BadgeManagerDialog(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment     = Alignment.CenterVertically
                                     ) {
-                                        BadgeChip(badge.displayName, badge.colorHex)
+                                        CustomBadgeChip(badge.displayName, badge.colorHex)
                                         Icon(
                                             Icons.Default.ChevronRight, null,
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -976,7 +976,7 @@ fun BadgeManagerDialog(
                                 Spacer(Modifier.height(8.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("Aperçu : ", style = MaterialTheme.typography.labelSmall)
-                                    BadgeChip(badgeName, badgeColor)
+                                    CustomBadgeChip(badgeName, badgeColor)
                                 }
                             }
 

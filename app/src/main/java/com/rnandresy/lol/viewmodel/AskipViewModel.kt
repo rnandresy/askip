@@ -5,12 +5,38 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.rnandresy.lol.model.*
+import com.rnandresy.lol.model.Achievement
+import com.rnandresy.lol.model.AppNotification
+import com.rnandresy.lol.model.Badge
+import com.rnandresy.lol.model.Comment
+import com.rnandresy.lol.model.Conversation
+import com.rnandresy.lol.model.Group
+import com.rnandresy.lol.model.GroupMessage
+import com.rnandresy.lol.model.Message
+import com.rnandresy.lol.model.Post
+import com.rnandresy.lol.model.Story
+import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.repository.FirebaseRepository
 import com.rnandresy.lol.ui.theme.AppTheme
-import com.rnandresy.lol.utils.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import com.rnandresy.lol.utils.ADMIN_BADGE_NAME
+import com.rnandresy.lol.utils.CloudinaryUploader
+import com.rnandresy.lol.utils.DataUsageTracker
+import com.rnandresy.lol.utils.NotificationHelper
+import com.rnandresy.lol.utils.SettingsRepository
+import com.rnandresy.lol.utils.VoiceRecorder
+import com.rnandresy.lol.utils.isAdmin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.io.File
 
 class AskipViewModel(application: Application) : AndroidViewModel(application) {
@@ -321,7 +347,11 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         profilesJob?.cancel()
         profilesJob = viewModelScope.launch {
             repo.listenToAllProfiles().collect { profiles ->
-                _profilesMap.value = profiles.associateBy { it.userId }
+                // Double filtre : username non vide ET userId non vide
+                val valid = profiles.filter {
+                    it.userId.isNotBlank() && it.username.isNotBlank()
+                }
+                _profilesMap.value = valid.associateBy { it.userId }
                 _myProfile.value?.let { me ->
                     _myBadges.value = _allBadges.value.filter { b -> b.id in me.badgeIds }
                 }
@@ -525,33 +555,75 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         notifJob?.cancel()
         notifJob = viewModelScope.launch {
             repo.listenToNotifications(currentUserId)
-                .catch { }
+                .catch { /* index manquant ou erreur réseau — silencieux */ }
                 .collect { notifs ->
+                    // Résolution des pseudos sans écraser l'état isRead de Firestore
                     _notifications.value = notifs.map { n ->
                         val live = _profilesMap.value[n.fromUserId]?.username
-                        if (live != null && live != n.fromUsername) n.copy(fromUsername = live) else n
+                        if (live != null && live != n.fromUsername)
+                            n.copy(fromUsername = live)
+                        else n
                     }
                 }
         }
     }
 
     fun markNotificationRead(notifId: String) = viewModelScope.launch {
+        // 1. Optimiste local immédiat
         val prev = _notifications.value
-        _notifications.value = prev.map { if (it.id == notifId) it.copy(isRead = true) else it }
-        runCatching { repo.markNotificationRead(notifId) }
-            .onFailure { _notifications.value = prev }
+        _notifications.value = prev.map {
+            if (it.id == notifId) it.copy(isRead = true) else it
+        }
+        // 2. Persistance Firestore — revert si échec
+        runCatching {
+            repo.markNotificationRead(notifId)
+        }.onFailure {
+            _notifications.value = prev   // revert local
+        }
     }
 
     fun markAllNotificationsRead() = viewModelScope.launch {
+        // 1. Optimiste local
         val prev = _notifications.value
         _notifications.value = prev.map { it.copy(isRead = true) }
-        runCatching { repo.markAllNotificationsRead(currentUserId) }
-            .onFailure { _notifications.value = prev }
+        // 2. Persistance Firestore — revert si échec
+        runCatching {
+            repo.markAllNotificationsRead(currentUserId)
+        }.onFailure {
+            _notifications.value = prev   // revert local
+        }
     }
 
     fun deleteNotification(notifId: String) = viewModelScope.launch {
         _notifications.value = _notifications.value.filter { it.id != notifId }
         repo.deleteNotification(notifId)
+    }
+
+    // ── SUPPRESSION DE COMPTE ─────────────────────────────────────────────────
+    fun deleteAccount(
+        password: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = viewModelScope.launch {
+        loading.value = true
+        runCatching {
+            val bytes = dataTracker.getSessionBytes()
+            if (bytes > 0) settings.addBytes(bytes)
+            repo.deleteAccount(currentUserId, password)
+        }.onSuccess {
+            stopAll()
+            onSuccess()
+        }.onFailure { e ->
+            val msg = when {
+                e.message?.contains("password", ignoreCase = true) == true ->
+                    "Mot de passe incorrect"
+                e.message?.contains("recent", ignoreCase = true) == true   ->
+                    "Reconnecte-toi d'abord et réessaie"
+                else -> e.message ?: "Erreur lors de la suppression"
+            }
+            onError(msg)
+        }
+        loading.value = false
     }
 
     private suspend fun handleMentions(

@@ -58,6 +58,111 @@ class FirebaseRepository {
     fun currentEmail()  = auth.currentUser?.email ?: ""
     fun isLoggedIn()    = auth.currentUser != null
 
+    // ── SUPPRESSION DE COMPTE ─────────────────────────────────────────────────
+    /**
+     * Supprime toutes les données de l'utilisateur puis son compte Auth.
+     * L'ordre est important : données Firestore en premier, Auth en dernier.
+     */
+    suspend fun deleteAccount(uid: String, password: String) {
+        val user = auth.currentUser ?: error("Non connecté")
+
+        // Réauthentification obligatoire avant deleteUser()
+        user.reauthenticate(
+            EmailAuthProvider.getCredential(user.email ?: "", password)
+        ).await()
+
+        // 1. Posts de l'utilisateur + leurs commentaires
+        val posts = db.collection("posts").whereEqualTo("userId", uid).get().await()
+        posts.documents.chunked(400).forEach { chunk ->
+            val batch = db.batch()
+            chunk.forEach { postDoc ->
+                // Supprime les commentaires du post
+                db.collection("posts").document(postDoc.id)
+                    .collection("comments").get().await()
+                    .documents.forEach { cDoc -> batch.delete(cDoc.reference) }
+                batch.delete(postDoc.reference)
+            }
+            batch.commit().await()
+        }
+
+        // 2. Commentaires de l'utilisateur sur les posts des autres
+        db.collectionGroup("comments")
+            .whereEqualTo("userId", uid).get().await()
+            .documents.chunked(400).forEach { chunk ->
+                val batch = db.batch()
+                chunk.forEach { batch.delete(it.reference) }
+                batch.commit().await()
+            }
+
+        // 3. Stories
+        db.collection("stories").whereEqualTo("userId", uid).get().await()
+            .documents.chunked(400).forEach { chunk ->
+                val batch = db.batch()
+                chunk.forEach { batch.delete(it.reference) }
+                batch.commit().await()
+            }
+
+        // 4. Notifications envoyées et reçues
+        listOf(
+            db.collection("notifications").whereEqualTo("fromUserId", uid).get().await(),
+            db.collection("notifications").whereEqualTo("targetUserId", uid).get().await()
+        ).forEach { snap ->
+            snap.documents.chunked(400).forEach { chunk ->
+                val batch = db.batch()
+                chunk.forEach { batch.delete(it.reference) }
+                batch.commit().await()
+            }
+        }
+
+        // 5. Badges créés par cet utilisateur → retiré des profils porteurs
+        db.collection("badges").whereEqualTo("createdBy", uid).get().await()
+            .documents.forEach { badgeDoc ->
+                val badgeId = badgeDoc.id
+                db.collection("profiles").whereArrayContains("badgeIds", badgeId)
+                    .get().await().documents.forEach { profileDoc ->
+                        profileDoc.reference.update("badgeIds", FieldValue.arrayRemove(badgeId))
+                    }
+                badgeDoc.reference.delete()
+            }
+
+        // 6. Retrait des groupes
+        db.collection("groups").whereArrayContains("members", uid).get().await()
+            .documents.chunked(400).forEach { chunk ->
+                val batch = db.batch()
+                chunk.forEach { groupDoc ->
+                    batch.update(
+                        groupDoc.reference,
+                        "members", FieldValue.arrayRemove(uid)
+                    )
+                }
+                batch.commit().await()
+            }
+
+        // 7. Messages privés — on les garde mais on anonymise l'expéditeur
+        db.collectionGroup("messages")
+            .whereEqualTo("senderId", uid).get().await()
+            .documents.chunked(400).forEach { chunk ->
+                val batch = db.batch()
+                chunk.forEach { batch.update(it.reference, "senderUsername", "Compte supprimé") }
+                batch.commit().await()
+            }
+
+        // 8. Sous-collection achievements
+        db.collection("profiles").document(uid)
+            .collection("achievements").get().await()
+            .documents.chunked(400).forEach { chunk ->
+                val batch = db.batch()
+                chunk.forEach { batch.delete(it.reference) }
+                batch.commit().await()
+            }
+
+        // 9. Profil
+        db.collection("profiles").document(uid).delete().await()
+
+        // 10. Compte Firebase Auth (en dernier)
+        user.delete().await()
+    }
+
     // ── PROFILES ──────────────────────────────────────────────────────────────
 
     suspend fun createDefaultProfile(uid: String, username: String) {
@@ -87,14 +192,28 @@ class FirebaseRepository {
     }.getOrNull()
 
     fun listenToAllProfiles(): Flow<List<UserProfile>> = callbackFlow {
-        val l = db.collection("profiles").addSnapshotListener { s, _ ->
-            trySend(s?.documents?.mapNotNull { it.toObject(UserProfile::class.java) } ?: emptyList())
-        }
+        val l = db.collection("profiles")
+            .addSnapshotListener { s, _ ->
+                val valid = s?.documents
+                    ?.mapNotNull { doc ->
+                        // Le document existe ET a un username non vide
+                        if (!doc.exists()) return@mapNotNull null
+                        val profile = doc.toObject(UserProfile::class.java)
+                            ?: return@mapNotNull null
+                        // Filtre les profils "fantômes" (username vide)
+                        if (profile.username.isBlank()) return@mapNotNull null
+                        profile
+                    } ?: emptyList()
+                trySend(valid)
+            }
         awaitClose { l.remove() }
     }
 
     suspend fun getAllUserIds(): List<String> = runCatching {
-        db.collection("profiles").get().await().documents.map { it.id }
+        // Retourne uniquement les UIDs avec un profil valide
+        db.collection("profiles")
+            .whereNotEqualTo("username", "")
+            .get().await().documents.map { it.id }
     }.getOrElse { emptyList() }
 
     suspend fun findProfileByUsername(username: String): UserProfile? = runCatching {
@@ -240,12 +359,14 @@ class FirebaseRepository {
             .whereEqualTo("targetUserId", uid)
             .addSnapshotListener { snap, err ->
                 if (err != null) { trySend(emptyList()); return@addSnapshotListener }
-                trySend(
-                    snap?.documents
-                        ?.mapNotNull { it.toObject(AppNotification::class.java)?.copy(id = it.id) }
-                        ?.sortedByDescending { it.timestamp }
-                        ?.take(80) ?: emptyList()
-                )
+                val list = snap?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(AppNotification::class.java)?.copy(id = doc.id)
+                    }
+                    ?.sortedByDescending { it.timestamp }
+                    ?.take(80)
+                    ?: emptyList()
+                trySend(list)
             }
         awaitClose { l.remove() }
     }
@@ -273,13 +394,18 @@ class FirebaseRepository {
     }
 
     suspend fun markAllNotificationsRead(uid: String) {
-        val snap = db.collection("notifications").whereEqualTo("targetUserId", uid).get().await()
+        val snap = db.collection("notifications")
+            .whereEqualTo("targetUserId", uid)
+            .get().await()
         if (snap.isEmpty) return
-        val unread = snap.documents.filter { it.getBoolean("isRead") == false }
-        if (unread.isEmpty()) return
-        unread.chunked(400).forEach { chunk ->
+
+        // Filtre côté client : tout ce qui n'est pas explicitement true
+        val toUpdate = snap.documents.filter { it.getBoolean("isRead") != true }
+        if (toUpdate.isEmpty()) return
+
+        toUpdate.chunked(400).forEach { chunk ->
             val batch = db.batch()
-            chunk.forEach { batch.update(it.reference, "isRead", true) }
+            chunk.forEach { doc -> batch.update(doc.reference, "isRead", true) }
             batch.commit().await()
         }
     }

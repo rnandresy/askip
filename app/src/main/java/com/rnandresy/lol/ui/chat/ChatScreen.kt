@@ -77,8 +77,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.rnandresy.lol.model.Message
-import com.rnandresy.lol.ui.feed.UserAvatar
-import com.rnandresy.lol.ui.feed.formatTs
+import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 import kotlinx.coroutines.delay
@@ -136,11 +136,11 @@ fun ChatScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier          = Modifier.clickable { onOpenProfile(otherUserId) }
                     ) {
-                        UserAvatar(
+                        AskipAvatar(
                             username = otherUsername,
                             photoUrl = otherPhotoUrl,
-                            size     = 34,
-                            isAdmin  = isAdmin(otherUserId)
+                            size     = 34.dp,
+                            isAdminUser  = isAdmin(otherUserId)
                         )
                         Spacer(Modifier.width(10.dp))
                         Column {
@@ -312,10 +312,10 @@ fun ChatScreen(
                     verticalAlignment     = Alignment.Bottom
                 ) {
                     if (!isMe) {
-                        UserAvatar(
+                        AskipAvatar(
                             username = msg.senderUsername,
                             photoUrl = senderPhoto,
-                            size     = 28,
+                            size     = 28.dp,
                             onClick  = { onOpenProfile(msg.senderId) }
                         )
                         Spacer(Modifier.width(6.dp))

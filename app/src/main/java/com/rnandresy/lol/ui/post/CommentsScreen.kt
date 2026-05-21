@@ -47,10 +47,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rnandresy.lol.model.Comment
-import com.rnandresy.lol.ui.feed.MentionText
+import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.MentionText
+import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.ui.feed.MentionTextField
-import com.rnandresy.lol.ui.feed.UserAvatar
-import com.rnandresy.lol.ui.feed.formatTs
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
@@ -169,11 +169,11 @@ fun CommentRow(
     val canDelete = comment.userId == currentUid || isAdmin(currentUid)
 
     Row(verticalAlignment = Alignment.Top) {
-        UserAvatar(
+        AskipAvatar(
             username = comment.username,
             photoUrl = photoUrl,     // ← photo résolue
-            size     = 36,
-            isAdmin  = isAdmin(comment.userId),
+            size     = 36.dp,
+            isAdminUser  = isAdmin(comment.userId),
             onClick  = onAvatarClick
         )
         Spacer(Modifier.width(8.dp))

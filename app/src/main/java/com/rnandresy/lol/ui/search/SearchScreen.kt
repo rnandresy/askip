@@ -47,9 +47,9 @@ import androidx.compose.ui.unit.sp
 import com.rnandresy.lol.model.Group
 import com.rnandresy.lol.model.Post
 import com.rnandresy.lol.model.UserProfile
-import com.rnandresy.lol.ui.feed.AdminBadge
-import com.rnandresy.lol.ui.feed.UserAvatar
-import com.rnandresy.lol.ui.feed.formatTs
+import com.rnandresy.lol.ui.components.AdminBadgeLabel
+import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
@@ -240,11 +240,11 @@ private fun SearchUserRow(user: UserProfile, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        UserAvatar(username = user.username, photoUrl = user.photoUrl, size = 44, isAdmin = userIsAdmin)
+        AskipAvatar(username = user.username, photoUrl = user.photoUrl, size = 44.dp, isAdminUser = userIsAdmin)
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(user.username, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                if (userIsAdmin) AdminBadge()
+                if (userIsAdmin) AdminBadgeLabel()
             }
             if (user.classeENI.isNotBlank()) {
                 Text("🎓 ${user.classeENI}", style = MaterialTheme.typography.bodySmall,

@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rnandresy.lol.ui.feed.UserAvatar
+import com.rnandresy.lol.ui.components.*
 import com.rnandresy.lol.utils.STORY_EMOJIS
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
@@ -117,7 +117,7 @@ fun CreateGroupScreen(
                             if (p != null) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box {
-                                        UserAvatar(username = p.username, photoUrl = p.photoUrl, size = 40)
+                                        AskipAvatar(username = p.username, photoUrl = p.photoUrl, size = 40.dp)
                                         IconButton(
                                             onClick  = { selected.remove(uid) },
                                             modifier = Modifier.size(16.dp).align(Alignment.TopEnd)
@@ -163,7 +163,7 @@ fun CreateGroupScreen(
                         .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    UserAvatar(username = profile.username, photoUrl = profile.photoUrl, size = 42, isAdmin = userIsAdmin)
+                    AskipAvatar(username = profile.username, photoUrl = profile.photoUrl, size = 42.dp, isAdminUser = userIsAdmin)
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(profile.username, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)

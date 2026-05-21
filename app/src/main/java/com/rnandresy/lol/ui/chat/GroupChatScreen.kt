@@ -76,8 +76,8 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.rnandresy.lol.model.Group
 import com.rnandresy.lol.model.GroupMessage
-import com.rnandresy.lol.ui.feed.UserAvatar
-import com.rnandresy.lol.ui.feed.formatTs
+import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 import kotlinx.coroutines.delay
@@ -238,7 +238,7 @@ fun GroupChatScreen(
                     horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start,
                     verticalAlignment = Alignment.Bottom) {
                     if (!isMe) {
-                        UserAvatar(username = msg.senderUsername, photoUrl = senderPhoto, size = 28,
+                        AskipAvatar(username = msg.senderUsername, photoUrl = senderPhoto, size = 28.dp,
                             onClick = { onOpenProfile(msg.senderId) })
                         Spacer(Modifier.width(6.dp))
                     }
@@ -286,7 +286,7 @@ fun GroupChatScreen(
                         val name  = group.memberNames[memberId] ?: memberId
                         val photo = group.memberPhotos[memberId] ?: ""
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-                            UserAvatar(username = name, photoUrl = photo, size = 28, isAdmin = isAdmin(memberId) || memberId == group.createdBy)
+                            AskipAvatar(username = name, photoUrl = photo, size = 28.dp, isAdminUser = isAdmin(memberId) || memberId == group.createdBy)
                             Spacer(Modifier.width(8.dp))
                             Text(name, style = MaterialTheme.typography.bodySmall)
                             if (memberId == group.createdBy) {

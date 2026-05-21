@@ -1,5 +1,6 @@
 package com.rnandresy.lol.ui.feed
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,72 +13,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.rnandresy.lol.model.UserProfile
+import com.rnandresy.lol.ui.components.AdminBadgeLabel
+import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.theme.AdminGold
 import com.rnandresy.lol.utils.isAdmin
-
-// ── Couleur des mentions ──────────────────────────────────────────────────────
-
-val MentionColor      = Color(0xFF7C4DFF)
-val MentionEveryoneColor = Color(0xFFE91E63)
-
-// ── Texte avec mentions colorées (affichage) ──────────────────────────────────
-
-@Composable
-fun MentionText(
-    text: String,
-    style: TextStyle = LocalTextStyle.current,
-    modifier: Modifier = Modifier
-) {
-    val annotated = buildAnnotatedString {
-        val words = text.split(" ")
-        words.forEachIndexed { i, word ->
-            when {
-                word == "@everyone" || word == "@tout_le_monde" -> {
-                    withStyle(
-                        SpanStyle(
-                            color      = MentionEveryoneColor,
-                            fontWeight = FontWeight.Bold,
-                            background = MentionEveryoneColor.copy(alpha = 0.1f)
-                        )
-                    ) { append(word) }
-                }
-                word.startsWith("@") && word.length > 1 -> {
-                    withStyle(
-                        SpanStyle(
-                            color      = MentionColor,
-                            fontWeight = FontWeight.Bold,
-                            background = MentionColor.copy(alpha = 0.1f)
-                        )
-                    ) { append(word) }
-                }
-                else -> append(word)
-            }
-            if (i < words.lastIndex) append(" ")
-        }
-    }
-    Text(text = annotated, style = style, modifier = modifier)
-}
-
-// ── Champ texte avec auto-complétion des mentions ─────────────────────────────
 
 @Composable
 fun MentionTextField(
@@ -86,128 +40,114 @@ fun MentionTextField(
     allProfiles: List<UserProfile>,
     currentUserId: String,
     isAdminUser: Boolean,
-    placeholder: String = "Écris quelque chose moa …",
-    modifier: Modifier = Modifier,
-    maxLines: Int = 8,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
+    placeholder: String    = "Écris quelque chose…",
+    modifier: Modifier     = Modifier,
+    maxLines: Int          = 8,
+    shape: Shape           = RoundedCornerShape(12.dp),
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
-    // Détecte si on est en train d'écrire une mention
-    val text        = value.text
-    val cursor      = value.selection.start.coerceIn(0, text.length)
-    val textBefore  = text.substring(0, cursor)
-    val atIndex     = textBefore.lastIndexOf('@')
-    val isTypingMention = atIndex >= 0 &&
-            textBefore.substring(atIndex).none { it == ' ' }
-    val mentionQuery    = if (isTypingMention) textBefore.substring(atIndex + 1).lowercase() else ""
+    val text       = value.text
+    val cursor     = value.selection.start.coerceIn(0, text.length)
+    val atIndex    = text.substring(0, cursor).lastIndexOf('@')
+    val typing     = atIndex >= 0 && text.substring(atIndex).none { it == ' ' }
+    val query      = if (typing) text.substring(atIndex + 1).lowercase() else ""
 
-    // Suggestions filtrées
-    val suggestions = remember(mentionQuery, allProfiles, isAdminUser) {
+    val suggestions = remember(query, allProfiles, isAdminUser) {
         buildList {
-            // @everyone uniquement pour l'admin
-            if (isAdminUser && ("everyone".startsWith(mentionQuery) ||
-                        "tout_le_monde".startsWith(mentionQuery) ||
-                        "tous".startsWith(mentionQuery))
-            ) {
-                add(null) // null = @everyone
-            }
-            // Utilisateurs normaux
+            if (isAdminUser && (query.isBlank() || "everyone".startsWith(query) ||
+                        "tous".startsWith(query))) add(null)
             addAll(
-                allProfiles
-                    .filter { it.userId != currentUserId }
-                    .filter {
-                        mentionQuery.isBlank() ||
-                                it.username.lowercase().startsWith(mentionQuery)
-                    }
-                    .take(6)
+                allProfiles.filter {
+                    it.userId != currentUserId &&
+                            (query.isBlank() || it.username.lowercase().startsWith(query))
+                }.take(6)
             )
         }
     }
 
-    val showSuggestions = isTypingMention && suggestions.isNotEmpty()
-
     Column(modifier = modifier) {
         OutlinedTextField(
-            value         = value,
-            onValueChange = onValueChange,
-            placeholder   = { Text(placeholder) },
-            modifier      = Modifier.fillMaxWidth(),
-            shape         = shape,
-            maxLines      = maxLines,
-            keyboardOptions = keyboardOptions
+            value           = value,
+            onValueChange   = onValueChange,
+            placeholder     = { Text(placeholder, style = MaterialTheme.typography.bodyMedium) },
+            modifier        = Modifier.fillMaxWidth(),
+            shape           = shape,
+            maxLines        = maxLines,
+            keyboardOptions = keyboardOptions,
+            colors          = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor   = MaterialTheme.colorScheme.onSurface,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
         )
 
-        // ── Dropdown suggestions ──────────────────────────────────────────────
-        if (showSuggestions) {
+        if (typing && suggestions.isNotEmpty()) {
             Surface(
+                modifier  = Modifier.fillMaxWidth(),
                 shape     = RoundedCornerShape(12.dp),
+                color     = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp,
-                shadowElevation = 6.dp,
-                modifier  = Modifier.fillMaxWidth()
+                border    = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline)
             ) {
-                LazyColumn(modifier = Modifier.heightIn(max = 220.dp)) {
+                LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                     items(suggestions) { profile ->
                         if (profile == null) {
-                            // @everyone (admin only)
+                            // @everyone
                             Row(
                                 modifier          = Modifier
                                     .fillMaxWidth()
                                     .clickable {
                                         onValueChange(insertMention(value, atIndex, "everyone"))
                                     }
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Surface(
-                                    color  = MentionEveryoneColor.copy(alpha = 0.15f),
-                                    shape  = RoundedCornerShape(50)
+                                    color  = AdminGold.copy(alpha = 0.1f),
+                                    shape  = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
                                         "@everyone",
-                                        modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                        fontSize   = 12.sp,
+                                        modifier   = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        style      = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color      = MentionEveryoneColor
+                                        color      = AdminGold
                                     )
                                 }
                                 Text(
-                                    "Mentionner tout le monde 📢",
+                                    "Mentionner tout le monde",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         } else {
-                            // Utilisateur normal
                             Row(
                                 modifier          = Modifier
                                     .fillMaxWidth()
                                     .clickable {
                                         onValueChange(insertMention(value, atIndex, profile.username))
                                     }
-                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    .padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                UserAvatar(
-                                    username = profile.username,
-                                    size     = 32,
-                                    isAdmin  = isAdmin(profile.userId)
+                                AskipAvatar(
+                                    username    = profile.username,
+                                    photoUrl    = profile.photoUrl,
+                                    size        = 32.dp,
+                                    isAdminUser = isAdmin(profile.userId)
                                 )
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Row(
-                                        verticalAlignment     = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                                     ) {
                                         Text(
                                             "@${profile.username}",
                                             style      = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color      = MentionColor
+                                            fontWeight = FontWeight.SemiBold
                                         )
-                                        if (isAdmin(profile.userId) || profile.isAdmin) {
-                                            AdminBadge()
-                                        }
+                                        if (isAdmin(profile.userId)) AdminBadgeLabel()
                                     }
                                     if (profile.classeENI.isNotBlank()) {
                                         Text(
@@ -219,7 +159,7 @@ fun MentionTextField(
                                 }
                             }
                         }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                     }
                 }
             }
@@ -227,22 +167,12 @@ fun MentionTextField(
     }
 }
 
-// ── Utilitaire : insère la mention dans le texte ──────────────────────────────
-
-private fun insertMention(
-    current: TextFieldValue,
-    atIndex: Int,
-    username: String
-): TextFieldValue {
-    val text      = current.text
-    val cursor    = current.selection.start.coerceIn(0, text.length)
-    val before    = text.substring(0, atIndex)            // texte avant le @
-    val after     = text.substring(cursor)                // texte après le curseur
-    val inserted  = "@$username "
-    val newText   = "$before$inserted$after"
-    val newCursor = before.length + inserted.length
-    return TextFieldValue(
-        text      = newText,
-        selection = TextRange(newCursor)
-    )
+private fun insertMention(current: TextFieldValue, atIndex: Int, username: String): TextFieldValue {
+    val text     = current.text
+    val cursor   = current.selection.start.coerceIn(0, text.length)
+    val before   = text.substring(0, atIndex)
+    val after    = text.substring(cursor)
+    val inserted = "@$username "
+    val newText  = "$before$inserted$after"
+    return TextFieldValue(text = newText, selection = TextRange(before.length + inserted.length))
 }

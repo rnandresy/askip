@@ -9,165 +9,176 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// ── Couleur admin — dorée dans TOUS les thèmes ────────────────────────────────
-val AdminGold        = Color(0xFFFFD700)
-val AdminGoldLight   = Color(0xFFFFE566)
-val AdminGoldDim     = Color(0xFFB8860B)
+// ── Couleurs admin — dorées dans TOUS les thèmes ─────────────────────────────
+val AdminGold      = Color(0xFFFFD700)
+val AdminGoldSoft  = Color(0xFFFFE566)
+val AdminGoldDim   = Color(0xFFB8860B)
+val AdminGoldBg    = Color(0x1AFFD700)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THÈME 1 — NOIR & BLANC (défaut)
+// NOIR & BLANC — thème par défaut
 // ─────────────────────────────────────────────────────────────────────────────
-
-private val BW_Bg        = Color(0xFF080808)
-private val BW_Surf      = Color(0xFF111111)
-private val BW_SurfV     = Color(0xFF1C1C1C)
-private val BW_SurfTint  = Color(0xFF242424)
-private val BW_Primary   = Color(0xFFFFFFFF)
-private val BW_OnPrimary = Color(0xFF000000)
-private val BW_Gray      = Color(0xFF888888)
-private val BW_LightGray = Color(0xFFAAAAAA)
-private val BW_Outline   = Color(0xFF2E2E2E)
-private val BW_Error     = Color(0xFFFF4444)
+private val bwBlack      = Color(0xFF050505)
+private val bwBlackCard  = Color(0xFF0F0F0F)
+private val bwBlackSurf  = Color(0xFF1A1A1A)
+private val bwBlackSurf2 = Color(0xFF242424)
+private val bwWhite      = Color(0xFFFFFFFF)
+private val bwGray1      = Color(0xFFCCCCCC)
+private val bwGray2      = Color(0xFF888888)
+private val bwGray3      = Color(0xFF444444)
+private val bwGray4      = Color(0xFF2A2A2A)
+private val bwRed        = Color(0xFFFF3B3B)
 
 private val BlackWhiteScheme = darkColorScheme(
-    primary             = BW_Primary,
-    onPrimary           = BW_OnPrimary,
-    primaryContainer    = BW_SurfV,
-    onPrimaryContainer  = BW_Primary,
-    secondary           = BW_Gray,
-    onSecondary         = BW_Primary,
-    secondaryContainer  = BW_SurfTint,
-    onSecondaryContainer = BW_LightGray,
-    tertiary            = BW_LightGray,
-    onTertiary          = BW_OnPrimary,
-    tertiaryContainer   = BW_SurfV,
-    background          = BW_Bg,
-    onBackground        = BW_Primary,
-    surface             = BW_Surf,
-    onSurface           = BW_Primary,
-    surfaceVariant      = BW_SurfV,
-    onSurfaceVariant    = BW_LightGray,
-    outline             = BW_Outline,
-    error               = BW_Error,
-    onError             = Color.White,
-    errorContainer      = Color(0xFF330000),
-    onErrorContainer    = BW_Error
+    primary              = bwWhite,
+    onPrimary            = bwBlack,
+    primaryContainer     = bwBlackSurf,
+    onPrimaryContainer   = bwWhite,
+    secondary            = bwGray2,
+    onSecondary          = bwWhite,
+    secondaryContainer   = bwBlackSurf2,
+    onSecondaryContainer = bwGray1,
+    tertiary             = bwGray1,
+    onTertiary           = bwBlack,
+    tertiaryContainer    = bwBlackSurf,
+    onTertiaryContainer  = bwWhite,
+    background           = bwBlack,
+    onBackground         = bwWhite,
+    surface              = bwBlackCard,
+    onSurface            = bwWhite,
+    surfaceVariant       = bwBlackSurf,
+    onSurfaceVariant     = bwGray2,
+    outline              = bwGray4,
+    outlineVariant       = bwGray3,
+    error                = bwRed,
+    onError              = bwWhite,
+    errorContainer       = Color(0xFF2A0000),
+    onErrorContainer     = bwRed,
+    inverseSurface       = bwWhite,
+    inverseOnSurface     = bwBlack,
+    inversePrimary       = bwBlack,
+    scrim                = Color(0x99000000)
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THÈME 2 — NÉON MODERNE
+// NÉON — violet et cyan sur noir profond
 // ─────────────────────────────────────────────────────────────────────────────
-
-private val Neo_Bg        = Color(0xFF040408)
-private val Neo_Surf      = Color(0xFF08080F)
-private val Neo_SurfV     = Color(0xFF0E0E1A)
-private val Neo_SurfTint  = Color(0xFF14142A)
-private val Neo_Purple    = Color(0xFFAA55FF)
-private val Neo_Cyan      = Color(0xFF00EEFF)
-private val Neo_Pink      = Color(0xFFFF2D78)
-private val Neo_Outline   = Color(0xFF2A1A4A)
-private val Neo_OnBg      = Color(0xFFE8E8FF)
+private val nBg     = Color(0xFF02020A)
+private val nCard   = Color(0xFF07071A)
+private val nSurf   = Color(0xFF0D0D28)
+private val nSurf2  = Color(0xFF141438)
+private val nPurple = Color(0xFF9D4EDD)
+private val nCyan   = Color(0xFF00D4FF)
+private val nPink   = Color(0xFFFF1E8C)
+private val nText   = Color(0xFFE8E0FF)
+private val nGray   = Color(0xFF7A6B99)
+private val nOut    = Color(0xFF1E1845)
 
 private val NeonScheme = darkColorScheme(
-    primary             = Neo_Purple,
-    onPrimary           = Color.White,
-    primaryContainer    = Color(0xFF220055),
-    onPrimaryContainer  = Neo_Purple,
-    secondary           = Neo_Cyan,
-    onSecondary         = Color(0xFF001A1F),
-    secondaryContainer  = Color(0xFF002530),
-    onSecondaryContainer = Neo_Cyan,
-    tertiary            = Neo_Pink,
-    onTertiary          = Color.White,
-    tertiaryContainer   = Color(0xFF30001A),
-    background          = Neo_Bg,
-    onBackground        = Neo_OnBg,
-    surface             = Neo_Surf,
-    onSurface           = Neo_OnBg,
-    surfaceVariant      = Neo_SurfV,
-    onSurfaceVariant    = Color(0xFFAA99CC),
-    outline             = Neo_Outline,
-    error               = Color(0xFFFF4466),
-    onError             = Color.White,
-    errorContainer      = Color(0xFF2A0011),
-    onErrorContainer    = Color(0xFFFF4466)
+    primary              = nPurple,
+    onPrimary            = Color.White,
+    primaryContainer     = Color(0xFF1A0040),
+    onPrimaryContainer   = nPurple,
+    secondary            = nCyan,
+    onSecondary          = Color(0xFF001A22),
+    secondaryContainer   = Color(0xFF002233),
+    onSecondaryContainer = nCyan,
+    tertiary             = nPink,
+    onTertiary           = Color.White,
+    tertiaryContainer    = Color(0xFF2A0018),
+    onTertiaryContainer  = nPink,
+    background           = nBg,
+    onBackground         = nText,
+    surface              = nCard,
+    onSurface            = nText,
+    surfaceVariant       = nSurf,
+    onSurfaceVariant     = nGray,
+    outline              = nOut,
+    outlineVariant       = Color(0xFF130F2A),
+    error                = Color(0xFFFF4060),
+    onError              = Color.White,
+    errorContainer       = Color(0xFF220010),
+    onErrorContainer     = Color(0xFFFF4060),
+    inverseSurface       = nText,
+    inverseOnSurface     = nBg,
+    inversePrimary       = nPurple
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THÈME 3 — NOSTALGIQUE
+// NOSTALGIQUE — sépia chaud sur brun foncé
 // ─────────────────────────────────────────────────────────────────────────────
-
-private val Nos_Bg        = Color(0xFF0C0804)
-private val Nos_Surf      = Color(0xFF18110A)
-private val Nos_SurfV     = Color(0xFF241A0F)
-private val Nos_SurfTint  = Color(0xFF2E2014)
-private val Nos_Gold      = Color(0xFFC8A96E)
-private val Nos_Amber     = Color(0xFF8B6A3E)
-private val Nos_Parchment = Color(0xFFE8D5B0)
-private val Nos_Outline   = Color(0xFF3D2B14)
+private val xBg     = Color(0xFF0A0702)
+private val xCard   = Color(0xFF140E05)
+private val xSurf   = Color(0xFF1E1509)
+private val xSurf2  = Color(0xFF281C0D)
+private val xGold   = Color(0xFFD4A847)
+private val xAmber  = Color(0xFF8B6A30)
+private val xCream  = Color(0xFFE8D5A0)
+private val xGray   = Color(0xFF8A7355)
+private val xOut    = Color(0xFF3A2A10)
 
 private val NostalgicScheme = darkColorScheme(
-    primary             = Nos_Gold,
-    onPrimary           = Color(0xFF1A0F00),
-    primaryContainer    = Color(0xFF3D2800),
-    onPrimaryContainer  = Nos_Gold,
-    secondary           = Nos_Amber,
-    onSecondary         = Color(0xFF1A0F00),
-    secondaryContainer  = Color(0xFF2A1A08),
-    onSecondaryContainer = Nos_Gold,
-    tertiary            = Color(0xFFB09060),
-    onTertiary          = Color(0xFF1A0F00),
-    background          = Nos_Bg,
-    onBackground        = Nos_Parchment,
-    surface             = Nos_Surf,
-    onSurface           = Nos_Parchment,
-    surfaceVariant      = Nos_SurfV,
-    onSurfaceVariant    = Color(0xFFAA9070),
-    outline             = Nos_Outline,
-    error               = Color(0xFFCC4444),
-    onError             = Color.White,
-    errorContainer      = Color(0xFF2A0A00),
-    onErrorContainer    = Color(0xFFCC4444)
+    primary              = xGold,
+    onPrimary            = Color(0xFF0A0702),
+    primaryContainer     = Color(0xFF2A1E00),
+    onPrimaryContainer   = xGold,
+    secondary            = xAmber,
+    onSecondary          = Color(0xFF0A0702),
+    secondaryContainer   = Color(0xFF1E1400),
+    onSecondaryContainer = xGold,
+    tertiary             = Color(0xFFB09060),
+    onTertiary           = Color(0xFF0A0702),
+    background           = xBg,
+    onBackground         = xCream,
+    surface              = xCard,
+    onSurface            = xCream,
+    surfaceVariant       = xSurf,
+    onSurfaceVariant     = xGray,
+    outline              = xOut,
+    outlineVariant       = Color(0xFF1E1508),
+    error                = Color(0xFFCC4433),
+    onError              = Color.White,
+    errorContainer       = Color(0xFF220A00),
+    onErrorContainer     = Color(0xFFCC4433),
+    inverseSurface       = xCream,
+    inverseOnSurface     = xBg,
+    inversePrimary       = xGold
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ENUM + COMPOSABLE PRINCIPAL
-// ─────────────────────────────────────────────────────────────────────────────
-
 enum class AppTheme(val displayName: String, val emoji: String) {
-    BLACK_WHITE("Noir & Blanc", "◼️"),
+    BLACK_WHITE("Noir & Blanc", "◼"),
     NEON("Néon", "💜"),
-    NOSTALGIC("Nostalgique", "🕯️")
+    NOSTALGIC("Nostalgique", "🕯")
 }
-
-@Composable
-fun AskipTheme(
-    appTheme: AppTheme = AppTheme.BLACK_WHITE,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when (appTheme) {
-        AppTheme.BLACK_WHITE -> BlackWhemeScheme
-        AppTheme.NEON        -> NeonScheme
-        AppTheme.NOSTALGIC   -> NostalgicScheme
-    }
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography  = AskipTypography,
-        content     = content
-    )
-}
-
-private val BlackWhemeScheme = BlackWhiteScheme
 
 val AskipTypography = Typography(
-    displayLarge  = TextStyle(fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, letterSpacing = (-0.5).sp),
-    titleLarge    = TextStyle(fontWeight = FontWeight.Bold,      fontSize = 20.sp),
+    displayLarge  = TextStyle(fontWeight = FontWeight.Black,     fontSize = 34.sp, letterSpacing = (-1).sp, lineHeight = 40.sp),
+    displayMedium = TextStyle(fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, letterSpacing = (-0.5).sp),
+    displaySmall  = TextStyle(fontWeight = FontWeight.Bold,      fontSize = 24.sp),
+    headlineLarge = TextStyle(fontWeight = FontWeight.Bold,      fontSize = 22.sp),
+    headlineMedium= TextStyle(fontWeight = FontWeight.SemiBold,  fontSize = 20.sp),
+    headlineSmall = TextStyle(fontWeight = FontWeight.SemiBold,  fontSize = 18.sp),
+    titleLarge    = TextStyle(fontWeight = FontWeight.Bold,      fontSize = 18.sp),
     titleMedium   = TextStyle(fontWeight = FontWeight.SemiBold,  fontSize = 16.sp),
     titleSmall    = TextStyle(fontWeight = FontWeight.SemiBold,  fontSize = 14.sp),
-    bodyLarge     = TextStyle(fontSize = 16.sp, lineHeight = 24.sp),
-    bodyMedium    = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
-    bodySmall     = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
-    labelLarge    = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
-    labelMedium   = TextStyle(fontSize = 12.sp),
-    labelSmall    = TextStyle(fontSize = 11.sp)
+    bodyLarge     = TextStyle(fontWeight = FontWeight.Normal,    fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium    = TextStyle(fontWeight = FontWeight.Normal,    fontSize = 14.sp, lineHeight = 22.sp),
+    bodySmall     = TextStyle(fontWeight = FontWeight.Normal,    fontSize = 12.sp, lineHeight = 18.sp),
+    labelLarge    = TextStyle(fontWeight = FontWeight.SemiBold,  fontSize = 14.sp, letterSpacing = 0.1.sp),
+    labelMedium   = TextStyle(fontWeight = FontWeight.Medium,    fontSize = 12.sp, letterSpacing = 0.1.sp),
+    labelSmall    = TextStyle(fontWeight = FontWeight.Medium,    fontSize = 11.sp, letterSpacing = 0.2.sp)
 )
+
+@Composable
+fun AskipTheme(appTheme: AppTheme = AppTheme.BLACK_WHITE, content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = when (appTheme) {
+            AppTheme.BLACK_WHITE -> BlackWhiteScheme
+            AppTheme.NEON        -> NeonScheme
+            AppTheme.NOSTALGIC   -> NostalgicScheme
+        },
+        typography = AskipTypography,
+        content    = content
+    )
+}
