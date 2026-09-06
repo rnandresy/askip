@@ -559,7 +559,7 @@ private fun StoriesRow(
                     contentAlignment = Alignment.Center
                 ) {
                     AskipGlyph(
-                        kind = GlyphKind.SPARKLE,
+                        kind = GlyphKind.PLUS,
                         size = 21.dp,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )

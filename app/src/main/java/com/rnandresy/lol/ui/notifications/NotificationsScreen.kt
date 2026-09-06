@@ -299,7 +299,7 @@ private fun NotifErrorBanner(message: String, onClose: () -> Unit) {
             .padding(horizontal = Space.md, vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AskipGlyph(kind = GlyphKind.FLAG, size = 13.dp)
+        AskipGlyph(kind = GlyphKind.ALERT, size = 13.dp)
         Spacer(Modifier.width(Space.sm))
         Text(
             message,

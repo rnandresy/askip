@@ -154,7 +154,18 @@ enum class GlyphKind {
     REPLY,
 
     /** Deux silhouettes — les membres, un groupe. */
-    PEOPLE
+    PEOPLE,
+
+    /** La croix pleine — ajouter, créer. */
+    PLUS,
+
+    /**
+     * Le triangle d'attention — une erreur, un avertissement.
+     *
+     * Distinct de [FLAG], qui veut dire « signaler à l'administration ».
+     * Confondre les deux revenait à demander de dénoncer un mot de passe raté.
+     */
+    ALERT
 }
 
 /**
@@ -242,10 +253,11 @@ private fun defaultTintFor(
     GlyphKind.CHART -> Color(0xFF6E93C4)
     GlyphKind.LINK -> Color(0xFF8D9AAE)
     GlyphKind.TICKET -> scoop
-    GlyphKind.FLAG -> Color(0xFFCB5A63)
+    GlyphKind.FLAG, GlyphKind.ALERT -> Color(0xFFCB5A63)
     GlyphKind.PHOTO, GlyphKind.PLAY, GlyphKind.WAVE, GlyphKind.DOC,
     GlyphKind.SEARCH, GlyphKind.BUBBLE, GlyphKind.VEIL, GlyphKind.BELL,
-    GlyphKind.COPY, GlyphKind.REPLY, GlyphKind.PEOPLE -> Color(0xFF8D9AAE)
+    GlyphKind.COPY, GlyphKind.REPLY, GlyphKind.PEOPLE,
+    GlyphKind.PLUS -> Color(0xFF8D9AAE)
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -332,7 +344,61 @@ private fun pathFor(kind: GlyphKind, s: Size): Path = when (kind) {
     GlyphKind.COPY -> copyPath(s)
     GlyphKind.REPLY -> replyPath(s)
     GlyphKind.PEOPLE -> peoplePath(s)
+    GlyphKind.PLUS -> plusPath(s)
+    GlyphKind.ALERT -> alertPath(s)
     GlyphKind.CHECK, GlyphKind.CROSS -> Path()
+}
+
+/**
+ * La croix d'ajout : deux barres arrondies qui se croisent.
+ *
+ * Les deux rectangles se recouvrent au centre ; le remplissage par défaut les
+ * fond en une seule masse, sans découpe à faire.
+ */
+private fun plusPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val e = w * 0.18f
+    val r = e * 0.5f
+    return Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.09f, top = h * 0.5f - e / 2f,
+                right = w * 0.91f, bottom = h * 0.5f + e / 2f,
+                radiusX = r, radiusY = r
+            )
+        )
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.5f - e / 2f, top = h * 0.09f,
+                right = w * 0.5f + e / 2f, bottom = h * 0.91f,
+                radiusX = r, radiusY = r
+            )
+        )
+    }
+}
+
+/**
+ * Le triangle d'attention.
+ *
+ * La barre et le point sont soustraits du triangle plutôt que posés dessus :
+ * évidés, ils restent nets quelle que soit la couleur derrière, et le dégradé
+ * de volume ne les traverse pas.
+ */
+private fun alertPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val corps = Path().apply {
+        moveTo(w * 0.50f, h * 0.05f)
+        lineTo(w * 0.99f, h * 0.92f)
+        lineTo(w * 0.01f, h * 0.92f)
+        close()
+    }
+    val creux = Path().apply {
+        addRect(Rect(w * 0.43f, h * 0.38f, w * 0.57f, h * 0.67f))
+        addRect(Rect(w * 0.42f, h * 0.73f, w * 0.58f, h * 0.88f))
+    }
+    return Path().apply { op(corps, creux, PathOperation.Difference) }
 }
 
 /** Un drapeau et sa hampe. */
@@ -551,28 +617,29 @@ private fun scalePath(s: Size): Path {
     val w = s.width
     val h = s.height
     return Path().apply {
-        // Le fléau et le mât.
-        moveTo(w * 0.06f, h * 0.24f)
-        lineTo(w * 0.94f, h * 0.24f)
-        lineTo(w * 0.94f, h * 0.34f)
-        lineTo(w * 0.56f, h * 0.34f)
-        lineTo(w * 0.56f, h * 0.82f)
-        lineTo(w * 0.80f, h * 0.82f)
-        lineTo(w * 0.80f, h * 0.94f)
-        lineTo(w * 0.20f, h * 0.94f)
-        lineTo(w * 0.20f, h * 0.82f)
-        lineTo(w * 0.44f, h * 0.82f)
-        lineTo(w * 0.44f, h * 0.34f)
-        lineTo(w * 0.06f, h * 0.34f)
+        // Le fléau, le mât et le socle, d'un seul trait. Mât aminci et socle
+        // resserré : les deux dominaient au point que la silhouette lisait
+        // « T » posé sur une dalle.
+        moveTo(w * 0.04f, h * 0.18f)
+        lineTo(w * 0.96f, h * 0.18f)
+        lineTo(w * 0.96f, h * 0.27f)
+        lineTo(w * 0.54f, h * 0.27f)
+        lineTo(w * 0.54f, h * 0.76f)
+        lineTo(w * 0.70f, h * 0.76f)
+        lineTo(w * 0.70f, h * 0.88f)
+        lineTo(w * 0.30f, h * 0.88f)
+        lineTo(w * 0.30f, h * 0.76f)
+        lineTo(w * 0.46f, h * 0.76f)
+        lineTo(w * 0.46f, h * 0.27f)
+        lineTo(w * 0.04f, h * 0.27f)
         close()
-        // Les deux plateaux.
-        moveTo(w * 0.04f, h * 0.40f)
-        lineTo(w * 0.36f, h * 0.40f)
-        lineTo(w * 0.20f, h * 0.62f)
+        // Les coupes, en demi-cercles. Un triangle pointe vers le bas se lit
+        // comme une pointe de flèche, et collé au fléau il s'y fondait ; une
+        // coupe se lit comme un plateau, et tient dès 15 dp.
+        val r = w * 0.19f
+        arcTo(Rect(w * 0.02f, h * 0.42f - r, w * 0.40f, h * 0.42f + r), 0f, 180f, true)
         close()
-        moveTo(w * 0.64f, h * 0.40f)
-        lineTo(w * 0.96f, h * 0.40f)
-        lineTo(w * 0.80f, h * 0.62f)
+        arcTo(Rect(w * 0.60f, h * 0.42f - r, w * 0.98f, h * 0.42f + r), 0f, 180f, true)
         close()
     }
 }

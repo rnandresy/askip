@@ -220,7 +220,7 @@ private fun AuthError(message: String?, onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
                 AskipGlyph(
-                    kind = GlyphKind.FLAG,
+                    kind = GlyphKind.ALERT,
                     size = 14.dp,
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )

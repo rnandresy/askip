@@ -334,7 +334,7 @@ private fun IdentitySection(
                     .padding(Space.md),
                 verticalAlignment = Alignment.Top
             ) {
-                AskipGlyph(kind = GlyphKind.FLAG, size = 13.dp)
+                AskipGlyph(kind = GlyphKind.ALERT, size = 13.dp)
                 Spacer(Modifier.width(Space.sm))
                 Text(
                     "Ton nouveau pseudo remplacera l'ancien sur tous tes posts, " +
