@@ -158,6 +158,9 @@ fun CreateGroupScreen(
                                             onClick = { selected.remove(uid) },
                                             tone = BubbleTone.DANGER,
                                             diameter = 20.dp,
+                                            // Posée sur un avatar de 40 dp :
+                                            // la zone pleine le déborderait.
+                                            minTouch = 36.dp,
                                             modifier = Modifier.align(Alignment.TopEnd)
                                         )
                                     }

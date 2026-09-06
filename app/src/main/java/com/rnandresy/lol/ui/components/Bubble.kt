@@ -249,7 +249,27 @@ fun BubbleButton(
     }
 }
 
-/** Bulle ronde ne contenant qu'une icône. */
+/**
+ * La plus petite zone qu'un doigt atteint sans viser.
+ *
+ * 48 dp, la valeur retenue par Android comme par Material. Ce n'est pas la
+ * taille du dessin : les bulles de l'app sont volontairement petites, et le
+ * restent. C'est la surface qui écoute le doigt autour.
+ */
+val MinTouchTarget = 48.dp
+
+/**
+ * Bulle ronde ne contenant qu'une icône.
+ *
+ * [diameter] est ce qu'on voit ; [minTouch] est ce qu'on touche. Les deux sont
+ * séparés à dessein : une bulle de 26 dp reste jolie, mais un doigt la rate une
+ * fois sur trois. Le dessin est donc centré dans une zone plus large, qui porte
+ * seule le geste.
+ *
+ * Élargir cette zone élargit aussi l'encombrement en mise en page. Là où la
+ * place manque — une croix posée sur un avatar, par exemple — passer un
+ * [minTouch] plus petit vaut mieux que de laisser la bulle avaler son voisin.
+ */
 @Composable
 fun BubbleIconButton(
     icon: ImageVector,
@@ -259,37 +279,51 @@ fun BubbleIconButton(
     tone: BubbleTone = BubbleTone.SOFT,
     diameter: Dp = 32.dp,
     badge: Int = 0,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    minTouch: Dp = MinTouchTarget
 ) {
     val c = colorsFor(tone, enabled)
     val shape = CircleShape
     val tap = rememberTapFeedback()
     val palette = LocalAskipPalette.current
+    val zone = if (diameter >= minTouch) diameter else minTouch
 
-    Box(modifier = modifier.alpha(if (enabled) 1f else 0.45f)) {
+    Box(
+        modifier = modifier.alpha(if (enabled) 1f else 0.45f),
+        contentAlignment = Alignment.Center
+    ) {
+        // Le geste est porté par la zone élargie, pas par la bulle : posé sur
+        // la bulle, il aurait laissé la marge gagnée inerte — plus grande à la
+        // mesure, toujours aussi difficile à atteindre.
         TapArea(
             onTap = { tap(); onClick() },
             enabled = enabled,
             scaleDown = 0.9f,
-            modifier = Modifier
-                .size(diameter)
-                .bubbleShell(shape, c.fill, c.border, palette.shadow, c.elevation)
+            modifier = Modifier.size(zone)
         ) {
-            if (c.gloss > 0f) BubbleGloss(shape, c.gloss)
-            Icon(
-                icon,
-                contentDescription,
+            Box(
                 Modifier
                     .align(Alignment.Center)
-                    .size(diameter * 0.48f),
-                tint = c.content
-            )
+                    .size(diameter)
+                    .bubbleShell(shape, c.fill, c.border, palette.shadow, c.elevation)
+            ) {
+                if (c.gloss > 0f) BubbleGloss(shape, c.gloss)
+                Icon(
+                    icon,
+                    contentDescription,
+                    Modifier
+                        .align(Alignment.Center)
+                        .size(diameter * 0.48f),
+                    tint = c.content
+                )
+            }
         }
+        // La pastille se cale sur le coin du dessin, jamais sur celui de la
+        // zone de toucher : sinon elle flotterait à l'écart de sa bulle.
         if (badge != 0) {
-            BubbleBadge(
-                count = badge,
-                modifier = Modifier.align(Alignment.TopEnd)
-            )
+            Box(Modifier.size(diameter), contentAlignment = Alignment.TopEnd) {
+                BubbleBadge(count = badge)
+            }
         }
     }
 }

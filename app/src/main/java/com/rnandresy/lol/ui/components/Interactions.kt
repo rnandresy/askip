@@ -310,7 +310,11 @@ private fun ReactionPicker(
             }
             // Le geste « appuyer ailleurs » referme aussi, mais une croix
             // explicite évite de piéger qui ne le connaît pas.
-            TapArea(onTap = onDismiss, modifier = Modifier.size(34.dp)) {
+            //
+            // Elle seule est élargie ici : les pastilles voisines portent le
+            // surlignage de la sélection sur leur fond, donc agrandir leur
+            // boîte agrandirait le dessin. La croix, elle, n'a pas de fond.
+            TapArea(onTap = onDismiss, modifier = Modifier.size(MinTouchTarget)) {
                 AskipGlyph(
                     kind = GlyphKind.CROSS,
                     size = 12.dp,

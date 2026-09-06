@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.rnandresy.lol.ui.components.MinTouchTarget
 import com.rnandresy.lol.ui.components.AskipGlyph
 import com.rnandresy.lol.ui.components.BubbleGloss
 import com.rnandresy.lol.ui.components.GlyphKind
@@ -344,7 +345,7 @@ fun ReplyBanner(
         TapArea(
             onTap = { tap(); onCancel() },
             scaleDown = 0.85f,
-            modifier = Modifier.size(26.dp)
+            modifier = Modifier.size(MinTouchTarget)
         ) {
             AskipGlyph(
                 kind = GlyphKind.CROSS,

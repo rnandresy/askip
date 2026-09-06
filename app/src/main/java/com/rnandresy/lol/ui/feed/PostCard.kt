@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.MinTouchTarget
 import com.rnandresy.lol.ui.components.AskipGlyph
 import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.model.Bet
@@ -302,7 +303,9 @@ private fun PostHeader(
             else -> Unit
         }
 
-        TapArea(onTap = onMore, scaleDown = 0.85f, modifier = Modifier.size(34.dp)) {
+        // La boîte fait 48 dp, l'icône 20 : rien ne bouge à l'œil, mais le
+        // doigt ne rate plus le menu d'une carte.
+        TapArea(onTap = onMore, scaleDown = 0.85f, modifier = Modifier.size(MinTouchTarget)) {
             Icon(
                 Icons.Rounded.MoreHoriz,
                 "Options",
