@@ -53,10 +53,22 @@ class NotificationRepository {
         }
     }
 
-    /** Envoie la même notification à tout le monde sauf [excludeUserId]. */
-    suspend fun createForAll(base: Map<String, Any>, excludeUserId: String) {
+    /**
+     * Envoie la même notification à tout le monde sauf [excludeUserId].
+     *
+     * [targetIds] vient de l'appelant, qui tient déjà la liste des profils en
+     * mémoire — l'app les écoute en direct. Aller la redemander à Firestore
+     * coûtait une lecture par membre du campus, à chaque rumeur publiée, pour
+     * des identifiants déjà connus. On ne retombe sur la requête que si le
+     * cache est encore vide, au tout premier lancement.
+     */
+    suspend fun createForAll(
+        base: Map<String, Any>,
+        excludeUserId: String,
+        targetIds: List<String> = emptyList()
+    ) {
         runCatching {
-            ProfileRepository().getAllUserIds()
+            targetIds.ifEmpty { ProfileRepository().getAllUserIds() }
                 .filter { it != excludeUserId }
                 .chunked(BATCH_SIZE)
                 .forEach { chunk ->
@@ -102,7 +114,11 @@ class NotificationRepository {
         }
         if (mentionsEveryone) {
             if (senderIsAdmin) {
-                createForAll(base + mapOf("type" to "mention_everyone"), fromUid)
+                createForAll(
+                    base + mapOf("type" to "mention_everyone"),
+                    fromUid,
+                    profiles.map { it.userId }
+                )
                 return
             }
             // Pour les autres, la mention est simplement ignorée — les
@@ -129,7 +145,8 @@ class NotificationRepository {
         fromName: String,
         postId: String,
         preview: String,
-        senderIsAdmin: Boolean
+        senderIsAdmin: Boolean,
+        targetIds: List<String> = emptyList()
     ) {
         createForAll(
             mapOf(
@@ -143,7 +160,8 @@ class NotificationRepository {
                 "isRead" to false,
                 "timestamp" to System.currentTimeMillis()
             ),
-            excludeUserId = fromUid
+            excludeUserId = fromUid,
+            targetIds = targetIds
         )
     }
 

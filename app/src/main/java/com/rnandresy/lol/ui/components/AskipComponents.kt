@@ -96,7 +96,7 @@ fun AskipAvatar(
     ) {
         if (photoUrl.isNotBlank()) {
             SubcomposeAsyncImage(
-                model              = photoUrl,
+                model              = sizedUrl(photoUrl, size),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize(),

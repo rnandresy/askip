@@ -623,12 +623,11 @@ private val AskipShapes = Shapes(
  */
 val AskipTypography = Typography(
     // ── Les titres, à la main ─────────────────────────────────────────────
-    // « Shooting Star » donne son caractère à l'app. Elle reste au-dessus de
-    // 15 sp et ne descend pas dans le corps de texte : une écriture manuscrite
-    // se lit très bien en grand et devient illisible en petit, surtout sur un
-    // écran de téléphone tenu à bout de bras. Une graisse manuscrite n'existe
-    // pas non plus — d'où le `Normal` partout ici, le faux gras d'Android sur
-    // une script donne une bouillie.
+    // « Titan One » donne son caractère à l'app. Elle reste au-dessus de
+    // 15 sp et ne descend pas dans le corps de texte : une grasse d'affiche
+    // porte un titre et fatigue sur un paragraphe. Elle n'a qu'une graisse —
+    // d'où le `Normal` partout ici, le faux gras d'Android sur une police
+    // déjà grasse ne fait qu'empâter le dessin.
     displayLarge = TextStyle(
         fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
         fontSize = 34.sp, lineHeight = 42.sp

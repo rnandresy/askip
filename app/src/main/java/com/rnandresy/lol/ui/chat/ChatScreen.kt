@@ -86,6 +86,7 @@ import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.bubbleShell
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.components.sizedUrl
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
@@ -491,7 +492,7 @@ private fun MessageContent(msg: Message, isMe: Boolean) {
         msg.isImage() -> {
             Column {
                 AsyncImage(
-                    model              = msg.mediaUrl,
+                    model              = sizedUrl(msg.mediaUrl, 240.dp),
                     contentDescription = null,
                     contentScale       = ContentScale.Crop,
                     modifier           = Modifier

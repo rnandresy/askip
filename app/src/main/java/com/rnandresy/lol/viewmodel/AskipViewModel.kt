@@ -1307,7 +1307,8 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         fromName = profile.username,
                         postId = postId,
                         preview = postContent,
-                        senderIsAdmin = fromAdmin
+                        senderIsAdmin = fromAdmin,
+                        targetIds = _profilesMap.value.keys.toList()
                     )
                     if (fromAdmin) {
                         notif.showAdminPostNotification(profile.username, postContent)

@@ -86,6 +86,7 @@ import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.bubbleShell
 import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.ui.components.glyphForSymbol
+import com.rnandresy.lol.ui.components.sizedUrl
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
@@ -464,7 +465,7 @@ private fun GroupMessageContent(msg: GroupMessage, isMe: Boolean) {
     val textColor = if (isMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
     when {
         msg.isImage() -> {
-            AsyncImage(model = msg.mediaUrl, contentDescription = null, contentScale = ContentScale.Crop,
+            AsyncImage(model = sizedUrl(msg.mediaUrl, 240.dp), contentDescription = null, contentScale = ContentScale.Crop,
                 modifier = Modifier.width(240.dp).heightIn(max = 280.dp).clip(messageBubbleShape(isMe)))
         }
         msg.isVideo() -> {

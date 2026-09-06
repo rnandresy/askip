@@ -92,8 +92,10 @@ import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.SlidingSegmented
 import com.rnandresy.lol.ui.components.StarDust
 import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.fullWidthUrl
 import com.rnandresy.lol.ui.components.glyphForAchievement
 import com.rnandresy.lol.ui.components.glyphForAvatarFrame
+import com.rnandresy.lol.ui.components.sizedUrl
 import com.rnandresy.lol.ui.components.softGlow
 import com.rnandresy.lol.ui.theme.AdminGold
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
@@ -344,7 +346,7 @@ private fun ProfileHeader(
         ) {
             if (profile.coverUrl.isNotBlank()) {
                 AsyncImage(
-                    model = profile.coverUrl,
+                    model = fullWidthUrl(profile.coverUrl),
                     contentDescription = "Couverture",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -411,7 +413,7 @@ private fun ProfileHeader(
                 ) {
                     if (profile.photoUrl.isNotBlank()) {
                         AsyncImage(
-                            model = profile.photoUrl,
+                            model = sizedUrl(profile.photoUrl, 96.dp),
                             contentDescription = "Photo de profil",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier

@@ -71,6 +71,7 @@ import com.rnandresy.lol.ui.components.TagChip
 import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.VoiceHero
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.components.fullWidthUrl
 import com.rnandresy.lol.ui.theme.AdminGold
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
@@ -320,7 +321,7 @@ private fun PostHeader(
 private fun PostMedia(post: Post) {
     if (post.imageUrl.isNotBlank()) {
         AsyncImage(
-            model = post.imageUrl,
+            model = fullWidthUrl(post.imageUrl),
             contentDescription = "Image de la rumeur",
             contentScale = ContentScale.Crop,
             modifier = Modifier

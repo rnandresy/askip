@@ -70,9 +70,11 @@ import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.SheetAction
 import com.rnandresy.lol.ui.components.SheetHeader
 import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.fullWidthUrl
 import com.rnandresy.lol.ui.components.glyphForSymbol
 import com.rnandresy.lol.ui.components.readableOn
 import com.rnandresy.lol.ui.components.rememberTapFeedback
+import com.rnandresy.lol.ui.components.sizedUrl
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
@@ -733,7 +735,7 @@ private fun PhotoSection(
         ) {
             if (!profile?.coverUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = profile?.coverUrl,
+                    model = fullWidthUrl(profile?.coverUrl),
                     contentDescription = "Aperçu de la couverture",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -782,7 +784,7 @@ private fun PhotoSection(
             ) {
                 if (!profile?.photoUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = profile?.photoUrl,
+                        model = sizedUrl(profile?.photoUrl, 96.dp),
                         contentDescription = "Aperçu du portrait",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize().clip(CircleShape)

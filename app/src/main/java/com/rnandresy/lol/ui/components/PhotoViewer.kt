@@ -113,7 +113,7 @@ fun PhotoViewer(
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = url,
+                    model = zoomableUrl(url),
                     contentDescription = "Photo en grand",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
