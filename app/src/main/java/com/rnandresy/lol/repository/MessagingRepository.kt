@@ -225,7 +225,49 @@ class MessagingRepository {
     // ── Interne ───────────────────────────────────────────────────────────────
 
     /** Aperçu affiché dans la liste des conversations. */
+    // ── Suppression ───────────────────────────────────────────────────────
+    // Les règles l'autorisaient déjà pour son propre message ; il manquait
+    // seulement le chemin pour le faire depuis l'app.
+
+    suspend fun deleteMessage(convId: String, messageId: String) {
+        conversations.document(convId).collection(COL_MESSAGES).document(messageId)
+            .delete().await()
+    }
+
+    suspend fun deleteGroupMessage(groupId: String, messageId: String) {
+        groups.document(groupId).collection(COL_MESSAGES).document(messageId)
+            .delete().await()
+    }
+
+    // ── Réactions ─────────────────────────────────────────────────────────
+    // Une réaction par personne, rangée sous sa propre clé : la règle
+    // Firestore peut ainsi vérifier que chacun ne touche que la sienne.
+    // `emoji` nul retire la réaction.
+
+    suspend fun setMessageReaction(
+        convId: String,
+        messageId: String,
+        uid: String,
+        emoji: String?
+    ) {
+        conversations.document(convId).collection(COL_MESSAGES).document(messageId)
+            .update("reactions.$uid", emoji ?: FieldValue.delete())
+            .await()
+    }
+
+    suspend fun setGroupMessageReaction(
+        groupId: String,
+        messageId: String,
+        uid: String,
+        emoji: String?
+    ) {
+        groups.document(groupId).collection(COL_MESSAGES).document(messageId)
+            .update("reactions.$uid", emoji ?: FieldValue.delete())
+            .await()
+    }
+
     private fun previewOf(data: Map<String, Any>): String {
+
         val text = (data["content"] as? String).orEmpty()
         if (text.isNotBlank()) return text.take(80)
         return when (data["mediaType"] as? String) {

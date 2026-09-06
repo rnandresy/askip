@@ -47,6 +47,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rnandresy.lol.ui.auth.LoginScreen
+import com.rnandresy.lol.ui.components.AskipBackdrop
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.auth.RegisterScreen
 import com.rnandresy.lol.ui.chat.ChatListScreen
 import com.rnandresy.lol.ui.chat.ChatScreen
@@ -67,6 +69,8 @@ import com.rnandresy.lol.ui.profile.ProfileScreen
 import com.rnandresy.lol.ui.quests.QuestsScreen
 import com.rnandresy.lol.ui.search.SearchScreen
 import com.rnandresy.lol.ui.settings.SettingsScreen
+import com.rnandresy.lol.ui.components.AskipBackdrop
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.theme.AskipTheme
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
@@ -169,7 +173,8 @@ fun AskipApp(vm: AskipViewModel) {
             ) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 0.dp
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.barEdge(top = true)
                 ) {
                     Tab.entries.forEach { tab ->
                         val selected = route == tab.route
@@ -198,6 +203,10 @@ fun AskipApp(vm: AskipViewModel) {
             }
         }
     ) { pad ->
+        // Le décor est posé une seule fois, derrière toute la navigation :
+        // chaque écran en hérite sans avoir à le redemander.
+        AskipBackdrop()
+
         NavHost(
             navController = nav,
             startDestination = startDest,

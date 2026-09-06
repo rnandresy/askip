@@ -75,10 +75,14 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Message
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleGloss
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleTone
+import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.bubbleShell
 import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
@@ -110,6 +114,13 @@ fun ChatScreen(
     var text            by remember { mutableStateOf("") }
     var showMediaPicker by remember { mutableStateOf(false) }
     val listState        = rememberLazyListState()
+    val palette          = LocalAskipPalette.current
+
+    // Le message sur lequel la feuille d'actions est ouverte, et celui auquel
+    // on est en train de répondre. Deux choses distinctes : on peut fermer la
+    // feuille sans annuler la réponse en cours.
+    var actionOn by remember { mutableStateOf<Message?>(null) }
+    var replyTo by remember { mutableStateOf<Message?>(null) }
 
     LaunchedEffect(convId) {
         vm.listenMessages(convId)
@@ -135,6 +146,7 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -261,11 +273,22 @@ fun ChatScreen(
                         }
                     } else {
                         // ── Mode normal ───────────────────────────────────────
-                        Row(
-                            modifier          = Modifier
+                        Column(
+                            modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(10.dp)
-                                .navigationBarsPadding(),
+                                .navigationBarsPadding()
+                        ) {
+                        replyTo?.let { target ->
+                            ReplyBanner(
+                                username = target.senderUsername,
+                                content = target.quote(),
+                                onCancel = { replyTo = null },
+                                modifier = Modifier.padding(bottom = Space.sm)
+                            )
+                        }
+                        Row(
+                            modifier          = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Bouton pièce jointe
@@ -303,8 +326,9 @@ fun ChatScreen(
                                     icon = Icons.AutoMirrored.Rounded.Send,
                                     contentDescription = "Envoyer",
                                     onClick = {
-                                        vm.sendMessage(convId, text.trim())
+                                        vm.sendMessage(convId, text.trim(), replyTo)
                                         text = ""
+                                        replyTo = null
                                     },
                                     tone = BubbleTone.PRIMARY,
                                     diameter = 46.dp,
@@ -320,6 +344,7 @@ fun ChatScreen(
                                 )
                             }
                         }
+                        }
                     }
                 }
             }
@@ -334,6 +359,8 @@ fun ChatScreen(
             items(messages, key = { it.id }) { msg ->
                 val isMe        = msg.senderId == uid
                 val senderPhoto = profilesMap[msg.senderId]?.photoUrl ?: ""
+                val shape       = messageBubbleShape(isMe)
+                val ink         = messageInk(isMe)
 
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
@@ -353,24 +380,46 @@ fun ChatScreen(
                     Column(
                         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
                     ) {
-                        Box(
+                        // Appui long : réagir, répondre, copier, supprimer.
+                        TapArea(
+                            onTap = { },
+                            onLongPress = { actionOn = msg },
+                            scaleDown = 0.98f,
                             modifier = Modifier
-                                .clip(
-                                    RoundedCornerShape(
-                                        topStart    = 16.dp,
-                                        topEnd      = 16.dp,
-                                        bottomStart = if (isMe) 16.dp else 4.dp,
-                                        bottomEnd   = if (isMe) 4.dp  else 16.dp
-                                    )
-                                )
-                                .background(
-                                    if (isMe) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
                                 .widthIn(max = 280.dp)
+                                .bubbleShell(
+                                    shape,
+                                    if (isMe) MaterialTheme.colorScheme.primary else palette.bubble,
+                                    if (isMe) MaterialTheme.colorScheme.primary
+                                    else palette.bubbleBorder,
+                                    palette.shadow,
+                                    4.dp
+                                )
                         ) {
-                            MessageContent(msg = msg, isMe = isMe)
+                            BubbleGloss(shape, if (isMe) 0.8f else 0.4f)
+                            Column {
+                                if (msg.isReply()) {
+                                    ReplyQuote(
+                                        username = msg.replyToUsername,
+                                        content = msg.replyToContent,
+                                        onSurface = ink,
+                                        modifier = Modifier.padding(
+                                            start = Space.sm,
+                                            end = Space.sm,
+                                            top = Space.sm
+                                        )
+                                    )
+                                }
+                                MessageContent(msg = msg, isMe = isMe)
+                            }
                         }
+
+                        ReactionStrip(
+                            counts = msg.reactionCounts(),
+                            mine = msg.myReaction(uid),
+                            onToggle = { vm.toggleMessageReaction(convId, msg, it) },
+                            modifier = Modifier.padding(top = 3.dp)
+                        )
 
                         Spacer(Modifier.height(2.dp))
                         Text(
@@ -385,6 +434,20 @@ fun ChatScreen(
                 }
             }
         }
+    }
+
+    // ── Actions sur un message ────────────────────────────────────────────────
+    actionOn?.let { target ->
+        MessageActionSheet(
+            myReaction = target.myReaction(uid),
+            canDelete = target.senderId == uid,
+            copyable = target.content.isNotBlank(),
+            onReact = { vm.toggleMessageReaction(convId, target, it) },
+            onReply = { replyTo = target },
+            onCopy = { copyToClipboard(context, target.content) },
+            onDelete = { vm.deleteMessage(convId, target.id) },
+            onDismiss = { actionOn = null }
+        )
     }
 
     // ── Dialog sélection média ────────────────────────────────────────────────
@@ -433,12 +496,7 @@ private fun MessageContent(msg: Message, isMe: Boolean) {
                         .width(240.dp)
                         .heightIn(max = 280.dp)
                         .clip(
-                            RoundedCornerShape(
-                                topStart    = 16.dp,
-                                topEnd      = 16.dp,
-                                bottomStart = if (isMe) 16.dp else 4.dp,
-                                bottomEnd   = if (isMe) 4.dp  else 16.dp
-                            )
+                            messageBubbleShape(isMe)
                         )
                 )
                 if (msg.content.isNotBlank()) {
@@ -525,12 +583,7 @@ private fun VideoMessagePlayer(url: String, isMe: Boolean) {
             .width(240.dp)
             .aspectRatio(16f / 9f)
             .clip(
-                RoundedCornerShape(
-                    topStart    = 16.dp,
-                    topEnd      = 16.dp,
-                    bottomStart = if (isMe) 16.dp else 4.dp,
-                    bottomEnd   = if (isMe) 4.dp  else 16.dp
-                )
+                messageBubbleShape(isMe)
             )
     )
 }

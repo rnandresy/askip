@@ -24,9 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.AdminBadgeLabel
 import com.rnandresy.lol.ui.components.AskipAvatar
@@ -66,6 +68,7 @@ fun MembersScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Membres", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     BubbleIconButton(
@@ -81,7 +84,7 @@ fun MembersScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         if (sorted.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {

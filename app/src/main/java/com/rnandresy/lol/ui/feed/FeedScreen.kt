@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Story
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleChip
@@ -148,6 +149,7 @@ fun FeedScreen(
     androidx.compose.material3.Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = {
                     Text(
                         "Askip",
@@ -190,7 +192,7 @@ fun FeedScreen(
                 onCancelVoice = vm::cancelVoiceRecording
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,

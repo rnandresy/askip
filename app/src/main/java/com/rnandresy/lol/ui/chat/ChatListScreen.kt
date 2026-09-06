@@ -36,11 +36,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Conversation
 import com.rnandresy.lol.model.Group
 import com.rnandresy.lol.model.UserProfile
@@ -96,6 +98,7 @@ fun ChatListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Messages", fontWeight = FontWeight.Bold) },
                 actions = {
                     // Le bouton suit l'onglet : nouveau groupe côté groupes,
@@ -118,7 +121,7 @@ fun ChatListScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             SlidingSegmented(

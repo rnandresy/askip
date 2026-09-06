@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.AppNotification
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleChip
@@ -71,6 +72,7 @@ fun NotificationsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = {
                     Column {
                         Text("Notifications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -99,7 +101,7 @@ fun NotificationsScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         if (notifications.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {

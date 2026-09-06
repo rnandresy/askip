@@ -29,9 +29,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleSize
@@ -69,6 +71,7 @@ fun QuestsScreen(vm: AskipViewModel, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Missions du jour", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     BubbleIconButton(
@@ -85,7 +88,7 @@ fun QuestsScreen(vm: AskipViewModel, onBack: () -> Unit) {
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         LazyColumn(
             modifier = Modifier.padding(pad),

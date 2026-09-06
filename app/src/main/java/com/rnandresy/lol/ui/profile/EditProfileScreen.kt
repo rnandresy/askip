@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleChip
 import com.rnandresy.lol.ui.components.BubbleIconButton
@@ -134,6 +135,7 @@ fun EditProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Mon profil", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     Box(Modifier.padding(start = Space.md)) {
@@ -182,7 +184,7 @@ fun EditProfileScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         Column(
             modifier = Modifier

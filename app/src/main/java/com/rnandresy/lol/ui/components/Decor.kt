@@ -7,11 +7,15 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -21,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.LocalReduceMotion
+import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
@@ -232,3 +237,45 @@ fun softGlow(color: Color, strength: Float = 0.28f): Brush = Brush.radialGradien
     1f to Color.Transparent
 )
 
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  Barres
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Le liseré d'une barre : en bas pour celle du haut, en haut pour celle du bas.
+ *
+ * Sans lui, la barre et le contenu qui défile dessous se confondent — surtout
+ * sur les thèmes clairs, où les deux fonds sont presque de la même teinte.
+ */
+@Composable
+fun Modifier.barEdge(top: Boolean = false): Modifier {
+    val line = LocalAskipPalette.current.bubbleBorder
+    return this.drawWithContent {
+        drawContent()
+        val y = if (top) 0f else size.height
+        drawLine(
+            color = line,
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = 1.dp.toPx()
+        )
+    }
+}
+
+/**
+ * Le fond de l'app : la couleur du thème, sa poussière d'étoiles, ses pétales.
+ *
+ * Posé une seule fois derrière toute la navigation, il évite d'avoir à
+ * saupoudrer chaque écran — et garantit que le décor est le même partout.
+ * Les pétales ne tombent que sur les thèmes clairs : sur fond noir ils
+ * mangent le texte au lieu de l'habiller.
+ */
+@Composable
+fun AskipBackdrop(modifier: Modifier = Modifier) {
+    val palette = LocalAskipPalette.current
+    Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        StarDust(count = 26, seed = 3)
+        if (palette.isLight) SakuraFall(count = 10, seed = 17, alpha = 0.30f)
+    }
+}

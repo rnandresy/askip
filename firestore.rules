@@ -54,6 +54,24 @@ service cloud.firestore {
     }
 
     /**
+     * Réagir à un message : on ne touche que sa propre clé.
+     *
+     * `reactions` associe un UID à un emoji. Comparer les deux cartes clé par
+     * clé permet d'autoriser tout le monde à réagir sans permettre à personne
+     * d'effacer la réaction d'un autre.
+     *
+     * Le second cas couvre la toute première réaction d'un message : le champ
+     * n'existe pas encore sur le document.
+     */
+    function touchesOwnReactionOnly() {
+      return (!('reactions' in resource.data)
+              && request.resource.data.reactions.keys().hasOnly([uid()]))
+        || ('reactions' in resource.data
+            && request.resource.data.reactions
+                 .diff(resource.data.reactions).affectedKeys().hasOnly([uid()]));
+    }
+
+    /**
      * L'utilisateur ne s'ajoute ou ne se retire que lui-même d'un tableau.
      *
      * Le deuxième cas couvre les rumeurs publiées avant l'ajout du
@@ -275,8 +293,13 @@ service cloud.firestore {
           && uid() in get(/databases/$(database)/documents/conversations/$(convId))
                         .data.participants;
         // Un pseudo qui change doit se répercuter sur les anciens messages.
+        // Et tout le monde réagit — mais chacun ne pose que sa propre clé :
+        // la carte `reactions` est indexée par UID, donc la règle peut le
+        // vérifier au lieu de faire confiance au client.
         allow update: if canWrite()
-          && (resource.data.senderId == uid() || onlyChanges(['senderUsername']));
+          && (resource.data.senderId == uid()
+              || onlyChanges(['senderUsername'])
+              || (onlyChanges(['reactions']) && touchesOwnReactionOnly()));
         allow delete: if signedIn() && (resource.data.senderId == uid() || isAdmin());
       }
     }
@@ -297,8 +320,12 @@ service cloud.firestore {
         allow create: if canWrite()
           && request.resource.data.senderId == uid()
           && uid() in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        // Même règle que pour les messages privés : chacun ne pose que sa
+        // propre réaction, et un pseudo renommé se répercute partout.
         allow update: if canWrite()
-          && (resource.data.senderId == uid() || onlyChanges(['senderUsername']));
+          && (resource.data.senderId == uid()
+              || onlyChanges(['senderUsername'])
+              || (onlyChanges(['reactions']) && touchesOwnReactionOnly()));
         allow delete: if signedIn() && (resource.data.senderId == uid() || isAdmin());
       }
     }

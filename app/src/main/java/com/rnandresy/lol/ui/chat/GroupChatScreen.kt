@@ -73,11 +73,15 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Group
 import com.rnandresy.lol.model.GroupMessage
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleGloss
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleTone
+import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.bubbleShell
 import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
@@ -110,6 +114,10 @@ fun GroupChatScreen(
     var showMediaPicker by remember { mutableStateOf(false) }
     var showInfo        by remember { mutableStateOf(false) }
     val listState        = rememberLazyListState()
+    val palette          = LocalAskipPalette.current
+
+    var actionOn by remember { mutableStateOf<GroupMessage?>(null) }
+    var replyTo by remember { mutableStateOf<GroupMessage?>(null) }
 
     LaunchedEffect(groupId) { vm.listenGroupMessages(groupId) }
     LaunchedEffect(messages.size) {
@@ -129,6 +137,7 @@ fun GroupChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -233,8 +242,22 @@ fun GroupChatScreen(
                             )
                         }
                     } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(10.dp)
+                                .navigationBarsPadding()
+                        ) {
+                        replyTo?.let { target ->
+                            ReplyBanner(
+                                username = target.senderUsername,
+                                content = target.quote(),
+                                onCancel = { replyTo = null },
+                                modifier = Modifier.padding(bottom = Space.sm)
+                            )
+                        }
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(10.dp).navigationBarsPadding(),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             BubbleIconButton(
@@ -270,8 +293,9 @@ fun GroupChatScreen(
                                     icon = Icons.AutoMirrored.Rounded.Send,
                                     contentDescription = "Envoyer",
                                     onClick = {
-                                        vm.sendGroupMessage(groupId, text.trim())
+                                        vm.sendGroupMessage(groupId, text.trim(), replyTo)
                                         text = ""
+                                        replyTo = null
                                     },
                                     tone = BubbleTone.PRIMARY,
                                     diameter = 46.dp,
@@ -286,6 +310,7 @@ fun GroupChatScreen(
                                     enabled = !loading
                                 )
                             }
+                        }
                         }
                     }
                 }
@@ -316,18 +341,49 @@ fun GroupChatScreen(
                                 fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp, bottom = 2.dp))
                         }
-                        Box(
+                        val shape = messageBubbleShape(isMe)
+                        val ink = messageInk(isMe)
+
+                        TapArea(
+                            onTap = { },
+                            onLongPress = { actionOn = msg },
+                            scaleDown = 0.98f,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(
-                                    topStart = 16.dp, topEnd = 16.dp,
-                                    bottomStart = if (isMe) 16.dp else 4.dp,
-                                    bottomEnd = if (isMe) 4.dp else 16.dp
-                                ))
-                                .background(if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                                 .widthIn(max = 280.dp)
+                                .bubbleShell(
+                                    shape,
+                                    if (isMe) MaterialTheme.colorScheme.primary else palette.bubble,
+                                    if (isMe) MaterialTheme.colorScheme.primary
+                                    else palette.bubbleBorder,
+                                    palette.shadow,
+                                    4.dp
+                                )
                         ) {
-                            GroupMessageContent(msg = msg, isMe = isMe)
+                            BubbleGloss(shape, if (isMe) 0.8f else 0.4f)
+                            Column {
+                                if (msg.isReply()) {
+                                    ReplyQuote(
+                                        username = msg.replyToUsername,
+                                        content = msg.replyToContent,
+                                        onSurface = ink,
+                                        modifier = Modifier.padding(
+                                            start = Space.sm,
+                                            end = Space.sm,
+                                            top = Space.sm
+                                        )
+                                    )
+                                }
+                                GroupMessageContent(msg = msg, isMe = isMe)
+                            }
                         }
+
+                        ReactionStrip(
+                            counts = msg.reactionCounts(),
+                            mine = msg.myReaction(uid),
+                            onToggle = { vm.toggleGroupMessageReaction(groupId, msg, it) },
+                            modifier = Modifier.padding(top = 3.dp)
+                        )
+
                         Spacer(Modifier.height(2.dp))
                         Text(formatTs(msg.timestamp), style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
@@ -336,6 +392,20 @@ fun GroupChatScreen(
                 }
             }
         }
+    }
+
+    // ── Actions sur un message ────────────────────────────────────────────────
+    actionOn?.let { target ->
+        MessageActionSheet(
+            myReaction = target.myReaction(uid),
+            canDelete = target.senderId == uid || userIsAdmin,
+            copyable = target.content.isNotBlank(),
+            onReact = { vm.toggleGroupMessageReaction(groupId, target, it) },
+            onReply = { replyTo = target },
+            onCopy = { copyToClipboard(context, target.content) },
+            onDelete = { vm.deleteGroupMessage(groupId, target.id) },
+            onDismiss = { actionOn = null }
+        )
     }
 
     // ── Dialog info groupe ────────────────────────────────────────────────────
@@ -392,9 +462,7 @@ private fun GroupMessageContent(msg: GroupMessage, isMe: Boolean) {
     when {
         msg.isImage() -> {
             AsyncImage(model = msg.mediaUrl, contentDescription = null, contentScale = ContentScale.Crop,
-                modifier = Modifier.width(240.dp).heightIn(max = 280.dp).clip(RoundedCornerShape(
-                    topStart = 16.dp, topEnd = 16.dp,
-                    bottomStart = if (isMe) 16.dp else 4.dp, bottomEnd = if (isMe) 4.dp else 16.dp)))
+                modifier = Modifier.width(240.dp).heightIn(max = 280.dp).clip(messageBubbleShape(isMe)))
         }
         msg.isVideo() -> {
             val context = LocalContext.current
@@ -409,9 +477,7 @@ private fun GroupMessageContent(msg: GroupMessage, isMe: Boolean) {
                     this.player = player; useController = true
                     layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 }
-            }, modifier = Modifier.width(240.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(
-                topStart = 16.dp, topEnd = 16.dp,
-                bottomStart = if (isMe) 16.dp else 4.dp, bottomEnd = if (isMe) 4.dp else 16.dp)))
+            }, modifier = Modifier.width(240.dp).aspectRatio(16f / 9f).clip(messageBubbleShape(isMe)))
         }
         msg.isAudio() -> AudioMessagePlayer(url = msg.mediaUrl, duration = msg.mediaDuration, isMe = isMe)
         msg.isFile() -> {

@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Comment
 import com.rnandresy.lol.ui.components.AddChainLinkField
 import com.rnandresy.lol.ui.components.AskipAvatar
@@ -118,6 +119,7 @@ fun CommentsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Commentaires", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     Box(Modifier.padding(start = Space.md)) {

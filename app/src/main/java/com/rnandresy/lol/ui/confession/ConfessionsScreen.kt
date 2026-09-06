@@ -35,8 +35,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleSize
@@ -62,6 +64,7 @@ fun ConfessionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = {
                     Column {
                         Text("Confessions", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -86,7 +89,7 @@ fun ConfessionsScreen(
                 diameter = 58.dp
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         // Material3 1.3 remplace PullToRefreshContainer par PullToRefreshBox :
         // c'est lui qui gère le geste, l'indicateur et l'état de rafraîchissement.

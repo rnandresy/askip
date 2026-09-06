@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.bubbleShell
@@ -49,6 +50,7 @@ fun CreateGroupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Nouveau groupe", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     BubbleIconButton(

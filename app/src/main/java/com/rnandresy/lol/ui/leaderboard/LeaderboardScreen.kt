@@ -39,10 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.model.Post
 import com.rnandresy.lol.model.UserProfile
@@ -106,6 +108,7 @@ fun LeaderboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Classement", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     BubbleIconButton(
@@ -122,7 +125,7 @@ fun LeaderboardScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         Column(Modifier.padding(pad)) {
             SegmentedTabs(

@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleSize
@@ -70,6 +71,7 @@ fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title          = { Text("Nouvelle story", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     BubbleIconButton(
@@ -95,7 +97,7 @@ fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         Column(
             modifier            = Modifier.fillMaxSize().padding(pad).padding(16.dp),

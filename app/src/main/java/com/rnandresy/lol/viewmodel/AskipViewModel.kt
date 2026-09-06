@@ -2018,8 +2018,8 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun sendMessage(convId: String, content: String) {
-        sendMessageWithMedia(convId, content = content)
+    fun sendMessage(convId: String, content: String, replyTo: Message? = null) {
+        sendMessageWithMedia(convId, content = content, replyTo = replyTo)
     }
 
     fun sendMessageWithMedia(
@@ -2027,7 +2027,8 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         content: String = "",
         imageUri: Uri? = null,
         videoUri: Uri? = null,
-        fileUri: Uri? = null
+        fileUri: Uri? = null,
+        replyTo: Message? = null
     ) {
         val profile = _myProfile.value ?: return
         val conv = _rawConversations.value.find { it.id == convId } ?: return
@@ -2089,6 +2090,11 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         "mediaType" to mediaType,
                         "mediaName" to mediaName,
                         "mediaDuration" to 0,
+                        // La citation est recopiée, pas relue : le message
+                        // d'origine peut disparaître sans emporter la réponse.
+                        "replyToId" to (replyTo?.id ?: ""),
+                        "replyToUsername" to (replyTo?.senderUsername ?: ""),
+                        "replyToContent" to (replyTo?.quote()?.take(90) ?: ""),
                         "timestamp" to System.currentTimeMillis()
                     ),
                     receiverId
@@ -2267,8 +2273,40 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun sendGroupMessage(groupId: String, content: String) {
-        sendGroupMessageWithMedia(groupId, content)
+    fun deleteMessage(convId: String, messageId: String) = viewModelScope.launch {
+        runCatching { msgRepo.deleteMessage(convId, messageId) }
+            .onFailure { error.value = it.message }
+    }
+
+    fun deleteGroupMessage(groupId: String, messageId: String) = viewModelScope.launch {
+        runCatching { msgRepo.deleteGroupMessage(groupId, messageId) }
+            .onFailure { error.value = it.message }
+    }
+
+    /**
+     * Pose ou retire la réaction sur un message privé.
+     *
+     * Reposer le même emoji l'enlève — c'est une bascule, comme le cœur sur
+     * une rumeur, et ça évite un geste « retirer » séparé.
+     */
+    fun toggleMessageReaction(convId: String, message: Message, emoji: String) =
+        viewModelScope.launch {
+            val next = if (message.myReaction(currentUserId) == emoji) null else emoji
+            runCatching {
+                msgRepo.setMessageReaction(convId, message.id, currentUserId, next)
+            }.onFailure { error.value = it.message }
+        }
+
+    fun toggleGroupMessageReaction(groupId: String, message: GroupMessage, emoji: String) =
+        viewModelScope.launch {
+            val next = if (message.myReaction(currentUserId) == emoji) null else emoji
+            runCatching {
+                msgRepo.setGroupMessageReaction(groupId, message.id, currentUserId, next)
+            }.onFailure { error.value = it.message }
+        }
+
+    fun sendGroupMessage(groupId: String, content: String, replyTo: GroupMessage? = null) {
+        sendGroupMessageWithMedia(groupId, content, replyTo = replyTo)
     }
 
     fun sendGroupMessageWithMedia(
@@ -2276,7 +2314,8 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         content: String = "",
         imageUri: Uri? = null,
         videoUri: Uri? = null,
-        fileUri: Uri? = null
+        fileUri: Uri? = null,
+        replyTo: GroupMessage? = null
     ) {
         val profile = _myProfile.value ?: return
         viewModelScope.launch {
@@ -2327,6 +2366,9 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         "mediaType" to mediaType,
                         "mediaName" to mediaName,
                         "mediaDuration" to 0,
+                        "replyToId" to (replyTo?.id ?: ""),
+                        "replyToUsername" to (replyTo?.senderUsername ?: ""),
+                        "replyToContent" to (replyTo?.quote()?.take(90) ?: ""),
                         "timestamp" to System.currentTimeMillis()
                     )
                 )

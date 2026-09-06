@@ -75,6 +75,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Badge
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.BubbleButton
@@ -166,6 +167,7 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = {
                     Text(
                         if (isMe) "Mon profil" else (profile?.username ?: "Profil"),
@@ -218,7 +220,7 @@ fun ProfileScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         if (profile == null) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {
@@ -412,10 +414,14 @@ private fun ProfileHeader(
         }
 
         // ── Avatar, à cheval sur la couverture ───────────────────────────────
+        // Positionné par une marge, pas par `offset` : `offset` ne déplace que
+        // le dessin, pas les limites de mise en page. L'avatar débordait donc
+        // du bloc, et le bouton « changer la photo », posé tout en bas, était
+        // purement et simplement rogné.
         Box(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = Space.lg, y = 44.dp)
+                .align(Alignment.TopStart)
+                .padding(start = Space.lg, top = 106.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Box(
@@ -499,8 +505,8 @@ private fun ProfileHeader(
             }
         }
 
-        // Réserve la hauteur que l'avatar déborde.
-        Spacer(Modifier.height(214.dp))
+        // Couverture (170) + la part d'avatar qui déborde, bouton compris.
+        Spacer(Modifier.height(246.dp))
     }
 }
 

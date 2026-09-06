@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleChip
 import com.rnandresy.lol.ui.components.BubbleIconButton
@@ -105,6 +106,7 @@ fun AchievementsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = {
                     Text(
                         if (isMe) "Mes trophées" else "Trophées",
@@ -126,7 +128,7 @@ fun AchievementsScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         LazyColumn(
             modifier = Modifier.padding(pad),

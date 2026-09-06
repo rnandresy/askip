@@ -65,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleIconButton
@@ -114,6 +115,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.barEdge(),
                 title = { Text("Réglages", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     Box(Modifier.padding(start = Space.md)) {
@@ -130,7 +132,7 @@ fun SettingsScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { pad ->
         Column(
             modifier = Modifier
