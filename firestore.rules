@@ -39,7 +39,8 @@ service cloud.firestore {
     // compte qu'une fois — y compris dans un lot de 400 écritures.
     function notBanned() {
       return !exists(/databases/$(database)/documents/profiles/$(uid()))
-        || get(/databases/$(database)/documents/profiles/$(uid())).data.isBanned != true;
+        || get(/databases/$(database)/documents/profiles/$(uid()))
+             .data.get('isBanned', false) != true;
     }
 
     function canWrite() {
@@ -170,7 +171,7 @@ service cloud.firestore {
         || (canWrite()
           && onlyChanges(['badgeIds'])
           && request.resource.data.badgeIds.toSet()
-               .difference(resource.data.badgeIds.toSet()).size() == 0)
+               .difference(resource.data.get('badgeIds', []).toSet()).size() == 0)
 
         // L'admin peut tout, y compris accorder un badge ou bannir.
         || isAdmin();
@@ -436,8 +437,8 @@ service cloud.firestore {
       // ni le changement de pseudo ni la suppression de compte ne peuvent
       // les retrouver pour les corriger ou les effacer.
       allow read: if signedIn()
-        && (resource.data.targetUserId == uid()
-            || resource.data.fromUserId == uid());
+        && (resource.data.get('targetUserId', '') == uid()
+            || resource.data.get('fromUserId', '') == uid());
       // Mais on peut en créer pour les autres (mention, message, nouveau post).
       allow create: if canWrite() && request.resource.data.fromUserId == uid();
       // Le destinataire marque comme lu ; l'expéditeur ne corrige que le

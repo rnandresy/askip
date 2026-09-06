@@ -1,0 +1,10 @@
+{
+  "name": "askip-regles-firestore",
+  "private": true,
+  "type": "module",
+  "description": "Banc d'essai des regles Firestore, contre l'emulateur local.",
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.6.0"
+  }
+}
