@@ -215,9 +215,13 @@ fun ReactionAction(
                 horizontalArrangement = Arrangement.spacedBy(Space.xs),
                 modifier = Modifier.padding(Space.xs)
             ) {
-                Text(
-                    myReaction ?: "♡",
-                    fontSize = 17.sp,
+                AskipGlyph(
+                    kind = glyphForReaction(myReaction ?: "love"),
+                    size = 16.dp,
+                    // Sans réaction posée, la figure s'efface au gris du texte
+                    // secondaire : elle invite sans prétendre être un état.
+                    tint = if (myReaction == null)
+                        MaterialTheme.colorScheme.onSurfaceVariant else null,
                     modifier = Modifier
                         .scale(scale.value)
                         .semantics {
@@ -274,25 +278,25 @@ private fun ReactionPicker(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            REACTIONS.forEach { emoji ->
+            REACTIONS.forEach { key ->
                 TapArea(
-                    onTap = { tap(); onPick(emoji) },
+                    onTap = { tap(); onPick(key) },
                     scaleDown = 0.85f,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(34.dp)
                         .clip(CircleShape)
                         .background(
-                            if (emoji == current) MaterialTheme.colorScheme.surfaceVariant
+                            if (key == current) MaterialTheme.colorScheme.surfaceVariant
                             else Color.Transparent
                         )
                 ) {
-                    Text(
-                        emoji,
-                        fontSize = 21.sp,
+                    AskipGlyph(
+                        kind = glyphForReaction(key),
+                        size = 19.dp,
                         modifier = Modifier
                             .align(Alignment.Center)
                             .semantics {
-                                contentDescription = REACTION_LABELS[emoji] ?: emoji
+                                contentDescription = REACTION_LABELS[key] ?: key
                             }
                     )
                 }

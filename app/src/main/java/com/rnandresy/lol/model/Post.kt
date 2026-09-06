@@ -101,11 +101,11 @@ data class Post(
     }
 
     fun reactionCount(emoji: String) = when (emoji) {
-        "♡" -> likedBy.size
-        "✦" -> fireBy.size
-        "◎" -> lolBy.size
-        "◍" -> shockBy.size
-        "◑" -> eyesBy.size
+        "love" -> likedBy.size
+        "fire" -> fireBy.size
+        "lol" -> lolBy.size
+        "shock" -> shockBy.size
+        "eyes" -> eyesBy.size
         else -> 0
     }
 
@@ -272,11 +272,11 @@ data class Post(
 
     companion object {
         fun reactionFieldFor(emoji: String) = when (emoji) {
-            "♡" -> "likedBy"
-            "✦" -> "fireBy"
-            "◎" -> "lolBy"
-            "◍" -> "shockBy"
-            "◑" -> "eyesBy"
+            "love" -> "likedBy"
+            "fire" -> "fireBy"
+            "lol" -> "lolBy"
+            "shock" -> "shockBy"
+            "eyes" -> "eyesBy"
             else -> "likedBy"
         }
 

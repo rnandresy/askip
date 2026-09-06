@@ -29,7 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.rnandresy.lol.ui.components.AskipGlyph
 import com.rnandresy.lol.ui.components.BubbleGloss
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.SheetAction
 import com.rnandresy.lol.ui.components.SheetHeader
 import com.rnandresy.lol.ui.components.TapArea
@@ -41,12 +45,36 @@ import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
 
 /**
- * Les emojis proposés sur un message.
+ * Une réaction : ce qu'on écrit en base, et ce qu'on dessine.
+ *
+ * La clé est un mot, pas un signe. Un signe stocké tel quel dépend de son
+ * encodage, ne se lit pas dans la console Firebase, et interdit de changer le
+ * dessin sans réécrire toutes les réactions déjà posées.
+ */
+data class MessageReaction(
+    val key: String,
+    val glyph: GlyphKind,
+    val label: String
+)
+
+/**
+ * Les six réactions proposées.
  *
  * Six, pas plus : au-delà, la rangée ne tient plus sur un écran étroit et le
  * choix devient une corvée au lieu d'un réflexe.
  */
-val MESSAGE_REACTIONS = listOf("♡", "◎", "◎", "◡", "✦", "✓")
+val MESSAGE_REACTIONS = listOf(
+    MessageReaction("love", GlyphKind.HEART, "j'aime"),
+    MessageReaction("fire", GlyphKind.FLAME, "ça chauffe"),
+    MessageReaction("wow", GlyphKind.SPARKLE, "waouh"),
+    MessageReaction("star", GlyphKind.STAR, "brillant"),
+    MessageReaction("night", GlyphKind.MOON, "ça me touche"),
+    MessageReaction("ok", GlyphKind.CHECK, "d'accord")
+)
+
+/** Retrouve une réaction depuis ce qui est stocké. */
+fun reactionFor(key: String): MessageReaction? =
+    MESSAGE_REACTIONS.firstOrNull { it.key == key }
 
 /** Copie [text] dans le presse-papiers. */
 fun copyToClipboard(context: Context, text: String) {
@@ -110,7 +138,7 @@ fun MessageActionSheet(
     }
 }
 
-/** La rangée d'emojis. Celui qu'on a déjà posé est rempli. */
+/** La rangée de réactions. Celle qu'on a déjà posée porte un liseré d'accent. */
 @Composable
 fun ReactionRow(
     selected: String?,
@@ -119,29 +147,35 @@ fun ReactionRow(
 ) {
     val palette = LocalAskipPalette.current
     val tap = rememberTapFeedback()
+    val cercle = androidx.compose.foundation.shape.CircleShape
 
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        MESSAGE_REACTIONS.forEach { emoji ->
-            val picked = selected == emoji
+        MESSAGE_REACTIONS.forEach { reaction ->
+            val picked = selected == reaction.key
             TapArea(
-                onTap = { tap(); onPick(emoji) },
+                onTap = { tap(); onPick(reaction.key) },
                 scaleDown = 0.85f,
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(34.dp)
                     .bubbleShell(
-                        androidx.compose.foundation.shape.CircleShape,
+                        cercle,
                         if (picked) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
                         else palette.bubble,
                         if (picked) MaterialTheme.colorScheme.primary else palette.bubbleBorder,
                         palette.shadow,
                         if (picked) 5.dp else 2.dp
                     )
+                    .semantics { contentDescription = reaction.label }
             ) {
-                BubbleGloss(androidx.compose.foundation.shape.CircleShape, if (picked) 0.6f else 0.3f)
-                Text(emoji, fontSize = 17.sp, modifier = Modifier.align(Alignment.Center))
+                BubbleGloss(cercle, if (picked) 0.6f else 0.3f)
+                AskipGlyph(
+                    kind = reaction.glyph,
+                    size = 16.dp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
         }
     }
@@ -169,28 +203,34 @@ fun ReactionStrip(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(Space.xs)
     ) {
-        counts.forEach { (emoji, count) ->
-            val isMine = mine == emoji
+        counts.forEach { (key, count) ->
+            // Une réaction dont on ne connaît plus la clé — jeu de réactions
+            // changé depuis — est ignorée plutôt que dessinée de travers.
+            val reaction = reactionFor(key) ?: return@forEach
+            val isMine = mine == key
+
             TapArea(
-                onTap = { tap(); onToggle(emoji) },
+                onTap = { tap(); onToggle(key) },
                 scaleDown = 0.88f,
-                modifier = Modifier.bubbleShell(
-                    shape,
-                    if (isMine) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                    else palette.bubble,
-                    if (isMine) MaterialTheme.colorScheme.primary else palette.bubbleBorder,
-                    palette.shadow,
-                    if (isMine) 4.dp else 2.dp
-                )
+                modifier = Modifier
+                    .bubbleShell(
+                        shape,
+                        if (isMine) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                        else palette.bubble,
+                        if (isMine) MaterialTheme.colorScheme.primary else palette.bubbleBorder,
+                        palette.shadow,
+                        if (isMine) 4.dp else 2.dp
+                    )
+                    .semantics { contentDescription = "${reaction.label}, $count" }
             ) {
                 BubbleGloss(shape, if (isMine) 0.6f else 0.3f)
                 Row(
-                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    Text(emoji, fontSize = 10.sp)
-                    // Un seul auteur, c'est déjà dit par l'emoji : le « 1 »
+                    AskipGlyph(kind = reaction.glyph, size = 11.dp)
+                    // Un seul auteur, c'est déjà dit par la figure : le « 1 »
                     // n'ajoute rien et alourdit la ligne.
                     if (count > 1) {
                         Text(

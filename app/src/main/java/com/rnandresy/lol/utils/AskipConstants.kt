@@ -74,17 +74,19 @@ const val MIN_MS_BETWEEN_MESSAGES = 500L
 const val MAX_POSTS_PER_HOUR      = 15
 
 // ── Réactions ─────────────────────────────────────────────────────────────────
-// Cinq marques distinctes : elles servent de clé pour retrouver le champ
-// correspondant, donc deux réactions ne peuvent pas partager le même signe.
-val REACTIONS = listOf("♡", "✦", "◎", "◍", "◑")
+// Des mots, pas des signes. La clé sert à retrouver le champ correspondant en
+// base : un signe la rendrait dépendante de son encodage, illisible dans la
+// console Firebase, et interdirait de changer le dessin sans réécrire toutes
+// les réactions déjà posées. Le dessin, lui, se choisit côté interface.
+val REACTIONS = listOf("love", "fire", "lol", "shock", "eyes")
 
 /** Libellés lus par les lecteurs d'écran — même ordre que [REACTIONS]. */
 val REACTION_LABELS = mapOf(
-    "♡" to "J'aime",
-    "✦" to "Ça chauffe",
-    "◎" to "Drôle",
-    "◍" to "Choquant",
-    "◑" to "Intrigant"
+    "love" to "J'aime",
+    "fire" to "Ça chauffe",
+    "lol" to "Drôle",
+    "shock" to "Choquant",
+    "eyes" to "Intrigant"
 )
 
 // ── Le Scoop : une pépite par jour, par personne ───────────────────────────────

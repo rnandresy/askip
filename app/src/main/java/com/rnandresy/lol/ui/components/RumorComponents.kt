@@ -373,9 +373,12 @@ fun ScoopButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
-            Text(
-                SCOOP_EMOJI,
-                fontSize = 14.sp,
+            AskipGlyph(
+                kind = GlyphKind.GEM,
+                size = 13.dp,
+                // Un Scoop qu'on n'a pas encore donné reste gris : la gemme ne
+                // s'allume qu'une fois offerte.
+                tint = if (given) null else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.scale(scale.value)
             )
             if (count > 0) {
@@ -459,7 +462,11 @@ fun ReactionButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xxs)
         ) {
-            Text(emoji, fontSize = 14.sp, modifier = Modifier.scale(scale.value))
+            AskipGlyph(
+                kind = glyphForReaction(emoji),
+                size = 13.dp,
+                modifier = Modifier.scale(scale.value)
+            )
             if (count > 0) {
                 Text(
                     "$count",
