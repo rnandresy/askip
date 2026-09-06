@@ -18,11 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +43,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.BubbleButton
+import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.BubbleSize
+import com.rnandresy.lol.ui.components.BubbleTone
+import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.bubbleShell
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.utils.STORY_COLORS
 import com.rnandresy.lol.utils.STORY_EMOJIS
 import com.rnandresy.lol.viewmodel.AskipViewModel
@@ -56,6 +62,7 @@ fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit
     var selColor by remember { mutableStateOf(STORY_COLORS.first()) }
     var selEmoji by remember { mutableStateOf(STORY_EMOJIS.first()) }
 
+    val palette = LocalAskipPalette.current
     val bgColor = runCatching {
         Color(android.graphics.Color.parseColor(selColor))
     }.getOrElse { MaterialTheme.colorScheme.primary }
@@ -64,13 +71,26 @@ fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit
         topBar = {
             TopAppBar(
                 title          = { Text("Nouvelle story", fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } },
-                actions        = {
-                    FilledIconButton(
-                        onClick  = { vm.createStory(content.trim(), selEmoji, selColor); onDone() },
-                        enabled  = content.isNotBlank(),
-                        shape    = RoundedCornerShape(10.dp)
-                    ) { Icon(Icons.Default.Send, null) }
+                navigationIcon = {
+                    BubbleIconButton(
+                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Retour",
+                        onClick = onBack,
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
+                },
+                actions = {
+                    BubbleButton(
+                        text = "Publier",
+                        onClick = {
+                            vm.createStory(content.trim(), selEmoji, selColor)
+                            onDone()
+                        },
+                        enabled = content.isNotBlank(),
+                        tone = BubbleTone.PRIMARY,
+                        size = BubbleSize.SMALL,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
@@ -140,11 +160,19 @@ fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit
             Text("Emoji", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(STORY_EMOJIS) { emoji ->
-                    Surface(
-                        onClick = { selEmoji = emoji },
-                        color   = if (selEmoji == emoji) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-                        shape   = RoundedCornerShape(10.dp),
-                        border  = if (selEmoji == emoji) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null
+                    val picked = selEmoji == emoji
+                    val shape = RoundedCornerShape(Radius.sm)
+                    TapArea(
+                        onTap = { selEmoji = emoji },
+                        scaleDown = 0.9f,
+                        modifier = Modifier.bubbleShell(
+                            shape,
+                            if (picked) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                            else palette.bubble,
+                            if (picked) MaterialTheme.colorScheme.primary else palette.bubbleBorder,
+                            palette.shadow,
+                            if (picked) 5.dp else 2.dp
+                        )
                     ) {
                         Text(emoji, fontSize = 24.sp, modifier = Modifier.padding(8.dp))
                     }

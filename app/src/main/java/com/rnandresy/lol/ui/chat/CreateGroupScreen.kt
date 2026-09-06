@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.bubbleShell
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.components.*
 import com.rnandresy.lol.utils.STORY_EMOJIS
 import com.rnandresy.lol.utils.isAdmin
@@ -43,21 +49,34 @@ fun CreateGroupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title          = { Text("Nouveau groupe 👥") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } },
+                title = { Text("Nouveau groupe", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    BubbleIconButton(
+                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Retour",
+                        onClick = onBack,
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
+                },
                 actions = {
-                    FilledIconButton(
-                        onClick  = {
-                            vm.createGroup(groupName.trim(), description.trim(), emoji, selected.toList()) { id ->
-                                onDone(id)
-                            }
+                    BubbleButton(
+                        text = "Créer",
+                        onClick = {
+                            vm.createGroup(
+                                groupName.trim(), description.trim(), emoji, selected.toList()
+                            ) { id -> onDone(id) }
                         },
-                        enabled = canCreate && !loading
-                    ) {
-                        if (loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Default.Check, null)
-                    }
-                }
+                        enabled = canCreate && !loading,
+                        loading = loading,
+                        tone = BubbleTone.PRIMARY,
+                        size = BubbleSize.SMALL,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         }
     ) { pad ->
@@ -71,11 +90,24 @@ fun CreateGroupScreen(
                 Spacer(Modifier.height(6.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(STORY_EMOJIS.take(16)) { e ->
-                        Surface(
-                            onClick = { emoji = e },
-                            color   = if (emoji == e) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                            shape   = RoundedCornerShape(10.dp)
-                        ) { Text(e, fontSize = 22.sp, modifier = Modifier.padding(8.dp)) }
+                        val picked = emoji == e
+                        val palette = LocalAskipPalette.current
+                        val shape = RoundedCornerShape(Radius.sm)
+                        TapArea(
+                            onTap = { emoji = e },
+                            scaleDown = 0.9f,
+                            modifier = Modifier.bubbleShell(
+                                shape,
+                                if (picked) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                else palette.bubble,
+                                if (picked) MaterialTheme.colorScheme.primary
+                                else palette.bubbleBorder,
+                                palette.shadow,
+                                if (picked) 5.dp else 2.dp
+                            )
+                        ) {
+                            Text(e, fontSize = 22.sp, modifier = Modifier.padding(8.dp))
+                        }
                     }
                 }
             }
@@ -118,15 +150,14 @@ fun CreateGroupScreen(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box {
                                         AskipAvatar(username = p.username, photoUrl = p.photoUrl, size = 40.dp)
-                                        IconButton(
-                                            onClick  = { selected.remove(uid) },
-                                            modifier = Modifier.size(16.dp).align(Alignment.TopEnd)
-                                        ) {
-                                            Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.error) {
-                                                Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onError,
-                                                    modifier = Modifier.padding(2.dp).size(10.dp))
-                                            }
-                                        }
+                                        BubbleIconButton(
+                                            icon = Icons.Default.Close,
+                                            contentDescription = "Retirer ${p.username}",
+                                            onClick = { selected.remove(uid) },
+                                            tone = BubbleTone.DANGER,
+                                            diameter = 20.dp,
+                                            modifier = Modifier.align(Alignment.TopEnd)
+                                        )
                                     }
                                     Text(p.username.take(8), style = MaterialTheme.typography.labelSmall, fontSize = 9.sp)
                                 }

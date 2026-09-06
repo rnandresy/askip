@@ -7,3 +7,6 @@
 /captures
 .externalNativeBuild
 .cxx
+# Dépendances de la Cloud Function : installées par npm, jamais versionnées.
+functions/node_modules/
+functions/*.log

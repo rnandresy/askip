@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Visibility
@@ -320,18 +320,15 @@ fun AskipAudioPlayer(
                 fontSize = 10.sp
             )
         }
-        IconButton(
-            onClick  = {
+        BubbleIconButton(
+            icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+            contentDescription = if (isPlaying) "Pause" else "Lire",
+            onClick = {
                 if (isPlaying) { player.pause(); isPlaying = false }
                 else { if (progress >= 0.99f) { player.seekTo(0); progress = 0f }; player.play(); isPlaying = true }
             },
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                null, tint = tint, modifier = Modifier.size(20.dp)
-            )
-        }
+            diameter = 32.dp
+        )
     }
 }
 
@@ -353,7 +350,7 @@ fun AskipFileItem(name: String, url: String, isMe: Boolean, modifier: Modifier =
                 .background(textColor.copy(0.1f), RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.InsertDriveFile, null, tint = textColor, modifier = Modifier.size(20.dp))
+            Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = textColor, modifier = Modifier.size(20.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -428,31 +425,17 @@ fun AskipButton(
     isLoading: Boolean  = false,
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null
 ) {
-    Button(
-        onClick  = onClick,
-        modifier = modifier.height(50.dp),
-        enabled  = enabled && !isLoading,
-        shape    = RoundedCornerShape(12.dp),
-        colors   = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.onBackground,
-            contentColor   = MaterialTheme.colorScheme.background
-        ),
-        elevation = ButtonDefaults.buttonElevation(0.dp)
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier  = Modifier.size(18.dp),
-                color     = MaterialTheme.colorScheme.background,
-                strokeWidth = 2.dp
-            )
-        } else {
-            if (icon != null) {
-                Icon(icon, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(text, fontWeight = FontWeight.SemiBold)
-        }
-    }
+    // Délègue à la bulle : un seul relief pour tous les boutons de l'app.
+    BubbleButton(
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        icon = icon,
+        tone = BubbleTone.PRIMARY,
+        size = BubbleSize.LARGE,
+        enabled = enabled,
+        loading = isLoading
+    )
 }
 
 // ── Champ de texte Askip ──────────────────────────────────────────────────────
@@ -482,12 +465,15 @@ fun AskipTextField(
             leadingIcon     = leadingIcon,
             trailingIcon    = if (isPassword && onTogglePassword != null) {
                 {
-                    IconButton(onClick = onTogglePassword) {
-                        Icon(
-                            if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            null
-                        )
-                    }
+                    BubbleIconButton(
+                        icon = if (showPassword) Icons.Default.VisibilityOff
+                        else Icons.Default.Visibility,
+                        contentDescription = if (showPassword) "Masquer le mot de passe"
+                        else "Afficher le mot de passe",
+                        onClick = onTogglePassword,
+                        diameter = 32.dp,
+                        modifier = Modifier.padding(end = 6.dp)
+                    )
                 }
             } else null,
             visualTransformation = if (isPassword && !showPassword)

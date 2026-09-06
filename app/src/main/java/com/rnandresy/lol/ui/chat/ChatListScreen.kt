@@ -1,9 +1,10 @@
 package com.rnandresy.lol.ui.chat
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,25 +18,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.GroupAdd
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.GroupAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,16 +36,45 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.model.Conversation
 import com.rnandresy.lol.model.Group
+import com.rnandresy.lol.model.UserProfile
+import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleBadge
+import com.rnandresy.lol.ui.components.BubbleCard
+import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.BubbleTone
+import com.rnandresy.lol.ui.components.EmptyState
+import com.rnandresy.lol.ui.components.SheetHeader
+import com.rnandresy.lol.ui.components.SlidingSegmented
+import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.formatTs
-import com.rnandresy.lol.ui.components.*
+import com.rnandresy.lol.ui.components.rememberTapFeedback
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
+import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
+/** Les deux listes : à deux, ou à plusieurs. */
+private enum class ChatTab(val label: String) {
+    DIRECT("Privés"),
+    GROUPS("Groupes")
+}
+
+/**
+ * La liste des conversations.
+ *
+ * Les deux onglets Material laissaient une barre soulignée en travers de
+ * l'écran ; ils deviennent le segmenté glissant du reste de l'app. Le choix
+ * d'un correspondant passe d'une boîte de dialogue à une feuille, plus haute
+ * et plus facile à parcourir au pouce.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatListScreen(
@@ -64,211 +85,350 @@ fun ChatListScreen(
     onCreateGroup: () -> Unit
 ) {
     val conversations by vm.conversations.collectAsState()
-    val groups        by vm.groups.collectAsState()
-    val allProfiles   by vm.allProfiles.collectAsState()
-    val profilesMap   by vm.profilesMap.collectAsState()
-    val uid            = vm.currentUserId
-    var selectedTab   by remember { mutableStateOf(0) }
-    var showPicker    by remember { mutableStateOf(false) }
+    val groups by vm.groups.collectAsState()
+    val allProfiles by vm.allProfiles.collectAsState()
+    val profilesMap by vm.profilesMap.collectAsState()
+    val uid = vm.currentUserId
+
+    var tab by remember { mutableStateOf(ChatTab.DIRECT) }
+    var showPicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title   = { Text("Messages 💬", fontWeight = FontWeight.ExtraBold) },
+                title = { Text("Messages", fontWeight = FontWeight.Bold) },
                 actions = {
-                    if (selectedTab == 1) {
-                        IconButton(onClick = onCreateGroup) { Icon(Icons.Default.GroupAdd, null) }
-                    } else {
-                        IconButton(onClick = { showPicker = true }) { Icon(Icons.Default.Edit, null) }
-                    }
+                    // Le bouton suit l'onglet : nouveau groupe côté groupes,
+                    // nouvelle conversation côté messages.
+                    BubbleIconButton(
+                        icon = if (tab == ChatTab.GROUPS) Icons.Rounded.GroupAdd
+                        else Icons.Rounded.Edit,
+                        contentDescription = if (tab == ChatTab.GROUPS) "Créer un groupe"
+                        else "Nouvelle conversation",
+                        onClick = {
+                            if (tab == ChatTab.GROUPS) onCreateGroup() else showPicker = true
+                        },
+                        tone = BubbleTone.PRIMARY,
+                        modifier = Modifier.padding(end = Space.lg)
+                    )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { pad ->
-        Column(modifier = Modifier.fillMaxSize().padding(pad)) {
-            // ── Tabs ──────────────────────────────────────────────────────────
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                    Row(modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Chat, null, modifier = Modifier.size(16.dp))
-                        Text("Privés", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                    Row(modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Group, null, modifier = Modifier.size(16.dp))
-                        Text("Groupes (${groups.size})", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-            }
-
-            when (selectedTab) {
-                // ── DMs ───────────────────────────────────────────────────────
-                0 -> {
-                    if (conversations.isEmpty()) {
-                        EmptyChatHint("💌", "Aucun message", "Appuie sur ✏️ pour commencer")
-                    } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(conversations, key = { it.id }) { conv ->
-                                val otherId    = conv.participants.firstOrNull { it != uid } ?: ""
-                                val otherName  = conv.participantNames[otherId] ?: "Utilisateur"
-                                val otherPhoto = profilesMap[otherId]?.photoUrl ?: ""
-                                val unread     = vm.getUnread(conv)
-                                val hasUnread  = unread > 0
-
-                                Row(
-                                    modifier          = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { vm.markRead(conv.id); onOpenChat(conv.id) }
-                                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    AskipAvatar(username = otherName, photoUrl = otherPhoto,
-                                        size = 52.dp, isAdminUser = isAdmin(otherId),
-                                        onClick = { onOpenProfile(otherId) })
-                                    Spacer(Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Row(modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically) {
-                                            Text(otherName, style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = if (hasUnread) FontWeight.ExtraBold else FontWeight.Normal)
-                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                if (conv.lastTimestamp > 0)
-                                                    Text(formatTs(conv.lastTimestamp), style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                if (hasUnread) Badge { Text("$unread") }
-                                            }
-                                        }
-                                        Spacer(Modifier.height(2.dp))
-                                        Text(conv.lastMessage.ifBlank { "Démarrer la conversation 👋" },
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (hasUnread) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = if (hasUnread) FontWeight.SemiBold else FontWeight.Normal,
-                                            maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                }
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-                                    modifier = Modifier.padding(start = 80.dp))
-                            }
-                        }
-                    }
-                }
-
-                // ── Groupes ───────────────────────────────────────────────────
-                1 -> {
-                    if (groups.isEmpty()) {
-                        EmptyChatHint("👥", "Aucun groupe", "Appuie sur + pour créer un groupe")
-                    } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(groups, key = { it.id }) { group ->
-                                GroupRow(group = group, currentUid = uid, onClick = { onOpenGroup(group.id) })
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── Dialog nouveau DM ─────────────────────────────────────────────────
-        if (showPicker) {
-            AlertDialog(
-                onDismissRequest = { showPicker = false },
-                title            = { Text("Nouvelle conversation 💬") },
-                text             = {
-                    if (allProfiles.isEmpty()) {
-                        Text("Aucun membre disponible", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
-                            items(allProfiles, key = { it.userId }) { profile ->
-                                Row(
-                                    modifier          = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            vm.startConversation(profile.userId, profile.username) { convId ->
-                                                showPicker = false; onOpenChat(convId)
-                                            }
-                                        }
-                                        .padding(vertical = 8.dp, horizontal = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    AskipAvatar(username = profile.username, photoUrl = profile.photoUrl,
-                                        size = 40.dp, isAdminUser = isAdmin(profile.userId))
-                                    Spacer(Modifier.width(12.dp))
-                                    Column {
-                                        Text(profile.username, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                                        if (profile.classeENI.isNotBlank())
-                                            Text(profile.classeENI, style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-                            }
-                        }
+        Column(Modifier.fillMaxSize().padding(pad)) {
+            SlidingSegmented(
+                items = ChatTab.entries.toList(),
+                selected = tab,
+                labelOf = {
+                    // Le compte ne s'affiche que s'il y a quelque chose à
+                    // compter : « Groupes (0) » n'apprend rien.
+                    when (it) {
+                        ChatTab.DIRECT -> it.label
+                        ChatTab.GROUPS ->
+                            if (groups.isEmpty()) it.label else "${it.label} (${groups.size})"
                     }
                 },
-                confirmButton = { TextButton(onClick = { showPicker = false }) { Text("Fermer") } }
+                onSelect = { tab = it },
+                modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm)
             )
+
+            when (tab) {
+                ChatTab.DIRECT -> {
+                    if (conversations.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), Alignment.Center) {
+                            EmptyState(
+                                "💌", "Aucun message",
+                                "Appuie sur le crayon pour commencer"
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                horizontal = Space.lg,
+                                vertical = Space.xs
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(Space.sm)
+                        ) {
+                            items(conversations, key = { it.id }) { conv ->
+                                val otherId = conv.participants.firstOrNull { it != uid } ?: ""
+                                ConversationRow(
+                                    conv = conv,
+                                    otherId = otherId,
+                                    otherName = conv.participantNames[otherId] ?: "Utilisateur",
+                                    otherPhoto = profilesMap[otherId]?.photoUrl ?: "",
+                                    unread = vm.getUnread(conv),
+                                    onOpen = { vm.markRead(conv.id); onOpenChat(conv.id) },
+                                    onOpenProfile = { onOpenProfile(otherId) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                ChatTab.GROUPS -> {
+                    if (groups.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), Alignment.Center) {
+                            EmptyState(
+                                "👥", "Aucun groupe",
+                                "Appuie sur + pour en créer un"
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                horizontal = Space.lg,
+                                vertical = Space.xs
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(Space.sm)
+                        ) {
+                            items(groups, key = { it.id }) { group ->
+                                GroupRow(group = group, onClick = { onOpenGroup(group.id) })
+                            }
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    if (showPicker) {
+        NewChatSheet(
+            profiles = allProfiles,
+            onPick = { profile ->
+                vm.startConversation(profile.userId, profile.username) { convId ->
+                    showPicker = false
+                    onOpenChat(convId)
+                }
+            },
+            onDismiss = { showPicker = false }
+        )
     }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+//  Les lignes
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Une conversation à deux. */
 @Composable
-private fun GroupRow(group: Group, currentUid: String, onClick: () -> Unit) {
-    Row(
-        modifier          = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun ConversationRow(
+    conv: Conversation,
+    otherId: String,
+    otherName: String,
+    otherPhoto: String,
+    unread: Int,
+    onOpen: () -> Unit,
+    onOpenProfile: () -> Unit
+) {
+    val hasUnread = unread > 0
+    val tap = rememberTapFeedback()
+
+    BubbleCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = if (hasUnread) 5.dp else 2.dp,
+        gloss = if (hasUnread) 0.5f else 0.28f,
+        onClick = { tap(); onOpen() }
     ) {
-        Surface(
-            color    = MaterialTheme.colorScheme.secondaryContainer,
-            shape    = RoundedCornerShape(14.dp),
-            modifier = Modifier.size(52.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.md, vertical = Space.md),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Text(group.emoji, fontSize = 24.sp)
-            }
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Row(modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
-                Text(group.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                if (group.lastTimestamp > 0)
-                    Text(formatTs(group.lastTimestamp), style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(2.dp))
-            Text(
-                if (group.lastMessage.isNotBlank())
-                    "${group.lastSenderUsername.ifBlank { "..." }}: ${group.lastMessage}"
-                else "${group.members.size} membre(s)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1, overflow = TextOverflow.Ellipsis
+            AskipAvatar(
+                username = otherName,
+                photoUrl = otherPhoto,
+                size = 48.dp,
+                isAdminUser = isAdmin(otherId),
+                onClick = onOpenProfile
             )
+            Spacer(Modifier.width(Space.md))
+
+            Column(Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        otherName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = if (hasUnread) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (conv.lastTimestamp > 0) {
+                        Text(
+                            formatTs(conv.lastTimestamp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = Space.sm)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        conv.lastMessage.ifBlank { "Démarrer la conversation 👋" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (hasUnread) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (hasUnread) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (hasUnread) {
+                        Spacer(Modifier.width(Space.sm))
+                        BubbleBadge(count = unread)
+                    }
+                }
+            }
         }
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-        modifier = Modifier.padding(start = 80.dp))
 }
 
+/** Un groupe. */
 @Composable
-private fun EmptyChatHint(emoji: String, title: String, sub: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(emoji, fontSize = 48.sp)
-            Spacer(Modifier.height(8.dp))
-            Text(title, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(4.dp))
-            Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun GroupRow(group: Group, onClick: () -> Unit) {
+    val palette = LocalAskipPalette.current
+    val tap = rememberTapFeedback()
+
+    BubbleCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 2.dp,
+        gloss = 0.28f,
+        onClick = { tap(); onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.md, vertical = Space.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // L'emoji du groupe tient lieu d'avatar : même taille, même
+            // place que dans la liste des conversations.
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(Radius.sm))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(group.emoji, fontSize = 23.sp)
+            }
+            Spacer(Modifier.width(Space.md))
+
+            Column(Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        group.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (group.lastTimestamp > 0) {
+                        Text(
+                            formatTs(group.lastTimestamp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = Space.sm)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    if (group.lastMessage.isNotBlank())
+                        "${group.lastSenderUsername.ifBlank { "..." }} : ${group.lastMessage}"
+                    else "${group.members.size} membre(s)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (group.lastMessage.isNotBlank())
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    else palette.scoop,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/** La feuille de choix du correspondant. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewChatSheet(
+    profiles: List<UserProfile>,
+    onPick: (UserProfile) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val tap = rememberTapFeedback()
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = state) {
+        Column(Modifier.padding(bottom = Space.xxl)) {
+            SheetHeader("Nouvelle conversation", "Choisis à qui tu écris.")
+
+            if (profiles.isEmpty()) {
+                Text(
+                    "Aucun membre disponible.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(Space.xl)
+                )
+            } else {
+                LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                    items(profiles, key = { it.userId }) { profile ->
+                        TapArea(
+                            onTap = { tap(); onPick(profile) },
+                            scaleDown = 0.99f,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = Space.xl, vertical = Space.sm),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AskipAvatar(
+                                    username = profile.username,
+                                    photoUrl = profile.photoUrl,
+                                    size = 40.dp,
+                                    isAdminUser = isAdmin(profile.userId)
+                                )
+                                Spacer(Modifier.width(Space.md))
+                                Column {
+                                    Text(
+                                        profile.username,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    if (profile.classeENI.isNotBlank()) {
+                                        Text(
+                                            profile.classeENI,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

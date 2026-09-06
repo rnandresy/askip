@@ -1,11 +1,11 @@
 package com.rnandresy.lol.ui.feed
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +16,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -30,7 +29,13 @@ import androidx.compose.ui.unit.dp
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.AdminBadgeLabel
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleCard
+import com.rnandresy.lol.ui.components.BubbleChip
+import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.rememberTapFeedback
 import com.rnandresy.lol.ui.theme.AdminGold
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.isAdmin
 
 @Composable
@@ -46,6 +51,8 @@ fun MentionTextField(
     shape: Shape           = RoundedCornerShape(12.dp),
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
+    val palette    = LocalAskipPalette.current
+    val tap        = rememberTapFeedback()
     val text       = value.text
     val cursor     = value.selection.start.coerceIn(0, text.length)
     val atIndex    = text.substring(0, cursor).lastIndexOf('@')
@@ -75,58 +82,60 @@ fun MentionTextField(
             maxLines        = maxLines,
             keyboardOptions = keyboardOptions,
             colors          = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor   = MaterialTheme.colorScheme.onSurface,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                unfocusedContainerColor = palette.bubble,
+                focusedContainerColor   = palette.bubble,
+                focusedBorderColor      = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor    = palette.bubbleBorder
             )
         )
 
         if (typing && suggestions.isNotEmpty()) {
-            Surface(
-                modifier  = Modifier.fillMaxWidth(),
-                shape     = RoundedCornerShape(12.dp),
-                color     = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
-                border    = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline)
-            ) {
+            Spacer(Modifier.height(Space.xs))
+            BubbleCard(modifier = Modifier.fillMaxWidth(), elevation = 8.dp) {
                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                     items(suggestions) { profile ->
                         if (profile == null) {
-                            // @everyone
+                            // @everyone — réservé aux admins.
+                            TapArea(
+                                onTap = {
+                                    tap()
+                                    onValueChange(insertMention(value, atIndex, "everyone"))
+                                },
+                                scaleDown = 0.99f,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                             Row(
                                 modifier          = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
-                                        onValueChange(insertMention(value, atIndex, "everyone"))
-                                    }
                                     .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Surface(
-                                    color  = AdminGold.copy(alpha = 0.1f),
-                                    shape  = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        "@everyone",
-                                        modifier   = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        style      = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color      = AdminGold
-                                    )
-                                }
+                                BubbleChip(
+                                    label = "@everyone",
+                                    accent = AdminGold
+                                )
                                 Text(
                                     "Mentionner tout le monde",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                            }
                         } else {
+                            TapArea(
+                                onTap = {
+                                    tap()
+                                    onValueChange(
+                                        insertMention(value, atIndex, profile.username)
+                                    )
+                                },
+                                scaleDown = 0.99f,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                             Row(
                                 modifier          = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
-                                        onValueChange(insertMention(value, atIndex, profile.username))
-                                    }
                                     .padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -158,8 +167,9 @@ fun MentionTextField(
                                     }
                                 }
                             }
+                            }
                         }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                        HorizontalDivider(color = palette.bubbleBorder)
                     }
                 }
             }

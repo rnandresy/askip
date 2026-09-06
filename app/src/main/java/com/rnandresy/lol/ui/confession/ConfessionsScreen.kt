@@ -25,8 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,9 +35,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rnandresy.lol.ui.components.BubbleButton
+import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.BubbleSize
+import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.EmptyState
 import com.rnandresy.lol.ui.feed.PostCard
 import com.rnandresy.lol.viewmodel.AskipViewModel
@@ -51,14 +53,11 @@ fun ConfessionsScreen(
 ) {
     val confessions  by vm.confessions.collectAsState()
     val isRefreshing by vm.isRefreshing.collectAsState()
+    val canScoop     by vm.canScoopToday.collectAsState()
     val uid           = vm.currentUserId
 
     var showCreate by remember { mutableStateOf(false) }
     var confText   by remember { mutableStateOf("") }
-
-    val pullState = rememberPullToRefreshState()
-    LaunchedEffect(pullState.isRefreshing) { if (pullState.isRefreshing) vm.refreshFeed() }
-    LaunchedEffect(isRefreshing) { if (!isRefreshing) pullState.endRefresh() }
 
     Scaffold(
         topBar = {
@@ -77,22 +76,26 @@ fun ConfessionsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick        = { showCreate = true; confText = "" },
-                containerColor = MaterialTheme.colorScheme.onBackground,
-                contentColor   = MaterialTheme.colorScheme.background,
-                shape          = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
-            ) {
-                Icon(Icons.Default.Add, null)
-            }
+            // Une grosse bulle plutôt qu'un bouton flottant Material : c'est le
+            // même relief que partout ailleurs dans l'app.
+            BubbleIconButton(
+                icon = Icons.Default.Add,
+                contentDescription = "Écrire une confession",
+                onClick = { showCreate = true; confText = "" },
+                tone = BubbleTone.PRIMARY,
+                diameter = 58.dp
+            )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { pad ->
-        Box(
+        // Material3 1.3 remplace PullToRefreshContainer par PullToRefreshBox :
+        // c'est lui qui gère le geste, l'indicateur et l'état de rafraîchissement.
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { vm.refreshFeed() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(pad)
-                .nestedScroll(pullState.nestedScrollConnection)
         ) {
             if (confessions.isEmpty() && !isRefreshing) {
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -112,7 +115,10 @@ fun ConfessionsScreen(
                             onVotePoll    = { },
                             onComment     = { onOpenComments(post.id) },
                             onPin         = { vm.togglePin(post) },
-                            onDelete      = { vm.deletePost(post.id) }
+                            onDelete      = { vm.deletePost(post.id) },
+                            onVoteVerdict = { vm.voteVerdict(post, it) },
+                            onScoop       = { vm.giveScoop(post) },
+                            canScoop      = canScoop
                         )
                         HorizontalDivider(
                             color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
@@ -121,7 +127,6 @@ fun ConfessionsScreen(
                     }
                 }
             }
-            PullToRefreshContainer(state = pullState, modifier = Modifier.align(Alignment.TopCenter))
         }
     }
 
@@ -154,16 +159,19 @@ fun ConfessionsScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick  = {
+                BubbleButton(
+                    text = "Publier",
+                    emoji = "🎭",
+                    onClick = {
                         if (confText.isNotBlank()) {
                             vm.createPost(confText.trim(), "confession")
                             showCreate = false
                         }
                     },
                     enabled = confText.isNotBlank(),
-                    shape   = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
-                ) { Text("Publier 🎭") }
+                    tone = BubbleTone.PRIMARY,
+                    size = BubbleSize.SMALL
+                )
             },
             dismissButton = {
                 TextButton(onClick = { showCreate = false }) { Text("Annuler") }

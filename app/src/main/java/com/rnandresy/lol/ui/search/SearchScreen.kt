@@ -1,6 +1,6 @@
 package com.rnandresy.lol.ui.search
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,21 +13,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,7 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rnandresy.lol.model.Group
@@ -49,7 +48,14 @@ import com.rnandresy.lol.model.Post
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.AdminBadgeLabel
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleCard
+import com.rnandresy.lol.ui.components.BubbleChip
+import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.components.rememberTapFeedback
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
+import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
@@ -70,48 +76,65 @@ fun SearchScreen(
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // ── Barre de recherche ────────────────────────────────────────────────
-        Surface(shadowElevation = 4.dp) {
-            Column {
-                OutlinedTextField(
-                    value         = query,
-                    onValueChange = { vm.searchQuery.value = it },
-                    placeholder   = { Text("posts, membres, groupes…") },
-                    leadingIcon   = { Icon(Icons.Default.Search, null) },
-                    trailingIcon  = {
-                        if (query.isNotBlank()) {
-                            IconButton(onClick = { vm.searchQuery.value = "" }) {
-                                Icon(Icons.Default.Close, null)
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape      = RoundedCornerShape(16.dp),
-                    modifier   = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                        .focusRequester(focusRequester)
-                )
+    val palette = LocalAskipPalette.current
 
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // ── Barre de recherche ───────────────────────────────────────────────
+        OutlinedTextField(
+            value = query,
+            onValueChange = { vm.searchQuery.value = it },
+            placeholder = { Text("posts, membres, groupes…") },
+            leadingIcon = { Icon(Icons.Default.Search, null) },
+            trailingIcon = {
                 if (query.isNotBlank()) {
-                    ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 12.dp) {
-                        tabs.forEachIndexed { i, tab ->
-                            Tab(selected = selectedTab == i, onClick = { selectedTab = i }) {
-                                val count = when (i) {
-                                    1 -> results.posts.size
-                                    2 -> results.users.size
-                                    3 -> results.groups.size
-                                    else -> results.posts.size + results.users.size + results.groups.size
-                                }
-                                Text(
-                                    "$tab${if (count > 0) " ($count)" else ""}",
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
-                                    style    = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                        }
+                    BubbleIconButton(
+                        icon = Icons.Default.Close,
+                        contentDescription = "Effacer la recherche",
+                        onClick = { vm.searchQuery.value = "" },
+                        diameter = 30.dp,
+                        modifier = Modifier.padding(end = 6.dp)
+                    )
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(Radius.pill),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = palette.bubble,
+                focusedContainerColor = palette.bubble,
+                unfocusedBorderColor = palette.bubbleBorder,
+                focusedBorderColor = MaterialTheme.colorScheme.primary
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.lg, vertical = Space.md)
+                .focusRequester(focusRequester)
+        )
+
+        // Les filtres ne servent à rien tant qu'on n'a rien cherché : ils
+        // n'apparaissent qu'une fois la requête tapée.
+        if (query.isNotBlank()) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = Space.lg),
+                horizontalArrangement = Arrangement.spacedBy(Space.sm)
+            ) {
+                items(tabs.size) { i ->
+                    val count = when (i) {
+                        1 -> results.posts.size
+                        2 -> results.users.size
+                        3 -> results.groups.size
+                        else -> results.posts.size + results.users.size + results.groups.size
                     }
+                    BubbleChip(
+                        label = tabs[i] + if (count > 0) " ($count)" else "",
+                        filled = selectedTab == i,
+                        accent = if (selectedTab == i) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = { selectedTab = i }
+                    )
                 }
             }
         }
@@ -140,8 +163,11 @@ fun SearchScreen(
                 }
             } else {
                 LazyColumn(
-                    contentPadding      = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    contentPadding = PaddingValues(
+                        horizontal = Space.lg,
+                        vertical = Space.sm
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(Space.sm)
                 ) {
                     val showPosts  = selectedTab == 0 || selectedTab == 1
                     val showUsers  = selectedTab == 0 || selectedTab == 2
@@ -182,109 +208,156 @@ fun SearchScreen(
 private fun SearchSectionHeader(title: String) {
     Text(
         title,
-        style      = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.Bold,
-        color      = MaterialTheme.colorScheme.primary,
-        modifier   = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = Space.sm, bottom = Space.xxs)
     )
 }
 
 @Composable
 private fun SearchPostRow(post: Post, onClick: () -> Unit) {
-    Row(
-        modifier          = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    val tap = rememberTapFeedback()
+
+    BubbleCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 2.dp,
+        gloss = 0.28f,
+        onClick = { tap(); onClick() }
     ) {
-        Surface(
-            color  = MaterialTheme.colorScheme.surfaceVariant,
-            shape  = RoundedCornerShape(8.dp),
-            modifier = Modifier.size(40.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.md, vertical = Space.md),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            ResultTile(
+                emoji = when (post.postType) {
+                    "poll" -> "📊"
+                    "confession" -> "🎭"
+                    else -> "📢"
+                },
+                size = 40.dp
+            )
+            Column(Modifier.weight(1f)) {
                 Text(
-                    when (post.postType) { "poll" -> "📊"; "confession" -> "🎭"; else -> "📢" },
-                    fontSize = 18.sp
+                    if (post.isAnonymous) "Quelqu'un 🎭" else post.username,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    post.content,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    formatTs(post.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                if (post.isAnonymous) "Quelqu'un 🎭" else post.username,
-                style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                post.content, style = MaterialTheme.typography.bodySmall,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(formatTs(post.timestamp), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f), modifier = Modifier.padding(start = 68.dp))
+}
+
+/** La pastille carrée qui ouvre un résultat : rumeur ou groupe. */
+@Composable
+private fun ResultTile(emoji: String, size: Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(Radius.xs))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(emoji, fontSize = if (size > 42.dp) 21.sp else 18.sp)
+    }
 }
 
 @Composable
 private fun SearchUserRow(user: UserProfile, onClick: () -> Unit) {
     val userIsAdmin = isAdmin(user.userId) || user.isAdmin
-    Row(
-        modifier          = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    val tap = rememberTapFeedback()
+
+    BubbleCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 2.dp,
+        gloss = 0.28f,
+        onClick = { tap(); onClick() }
     ) {
-        AskipAvatar(username = user.username, photoUrl = user.photoUrl, size = 44.dp, isAdminUser = userIsAdmin)
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(user.username, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                if (userIsAdmin) AdminBadgeLabel()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.md, vertical = Space.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.md)
+        ) {
+            AskipAvatar(
+                username = user.username,
+                photoUrl = user.photoUrl,
+                size = 44.dp,
+                isAdminUser = userIsAdmin
+            )
+            Column(Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs)
+                ) {
+                    Text(
+                        user.username,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (userIsAdmin) AdminBadgeLabel()
+                }
+                if (user.classeENI.isNotBlank()) {
+                    Text(
+                        "🎓 ${user.classeENI}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            if (user.classeENI.isNotBlank()) {
-                Text("🎓 ${user.classeENI}", style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text("›", fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f), modifier = Modifier.padding(start = 72.dp))
 }
 
 @Composable
 private fun SearchGroupRow(group: Group, onClick: () -> Unit) {
-    Row(
-        modifier          = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    val tap = rememberTapFeedback()
+
+    BubbleCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 2.dp,
+        gloss = 0.28f,
+        onClick = { tap(); onClick() }
     ) {
-        Surface(
-            color    = MaterialTheme.colorScheme.secondaryContainer,
-            shape    = RoundedCornerShape(12.dp),
-            modifier = Modifier.size(44.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.md, vertical = Space.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Text(group.emoji, fontSize = 22.sp)
+            ResultTile(emoji = group.emoji, size = 44.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(group.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "${group.members.size} membre(s)${if (group.description.isNotBlank()) " · ${group.description}" else ""}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
             }
+            Text("›", fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(group.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Text(
-                "${group.members.size} membre(s)${if (group.description.isNotBlank()) " · ${group.description}" else ""}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1, overflow = TextOverflow.Ellipsis
-            )
-        }
-        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f), modifier = Modifier.padding(start = 72.dp))
 }

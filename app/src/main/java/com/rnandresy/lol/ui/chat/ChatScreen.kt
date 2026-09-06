@@ -31,28 +31,27 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -78,7 +77,12 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.rnandresy.lol.model.Message
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
+import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 import kotlinx.coroutines.delay
@@ -158,8 +162,18 @@ fun ChatScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) }
-                }
+                    Box(Modifier.padding(start = Space.md)) {
+                        BubbleIconButton(
+                            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Retour",
+                            onClick = onBack
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         },
         bottomBar = {
@@ -172,7 +186,10 @@ fun ChatScreen(
                     )
                 }
 
-                Surface(shadowElevation = 6.dp) {
+                Surface(
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     if (isRecording) {
                         // ── Mode enregistrement vocal ─────────────────────────
                         Row(
@@ -184,12 +201,12 @@ fun ChatScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             // Bouton annuler
-                            IconButton(onClick = { vm.cancelVoiceRecording() }) {
-                                Icon(
-                                    Icons.Default.Delete, null,
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
+                            BubbleIconButton(
+                                icon = Icons.Rounded.Delete,
+                                contentDescription = "Annuler l'enregistrement",
+                                onClick = { vm.cancelVoiceRecording() },
+                                tone = BubbleTone.DANGER
+                            )
 
                             // Indicateur + timer
                             Surface(
@@ -233,12 +250,14 @@ fun ChatScreen(
                             }
 
                             // Bouton envoyer le vocal
-                            FilledIconButton(
+                            BubbleIconButton(
+                                icon = Icons.AutoMirrored.Rounded.Send,
+                                contentDescription = "Envoyer le vocal",
                                 onClick = { vm.stopAndSendVoice(convId) },
+                                tone = BubbleTone.PRIMARY,
+                                diameter = 46.dp,
                                 enabled = !loading
-                            ) {
-                                Icon(Icons.Default.Send, null)
-                            }
+                            )
                         }
                     } else {
                         // ── Mode normal ───────────────────────────────────────
@@ -250,45 +269,55 @@ fun ChatScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Bouton pièce jointe
-                            IconButton(onClick = { showMediaPicker = true }) {
-                                Icon(
-                                    Icons.Default.AttachFile, null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-
-                            OutlinedTextField(
-                                value         = text,
-                                onValueChange = { text = it },
-                                placeholder   = { Text("Message…") },
-                                modifier      = Modifier.weight(1f),
-                                shape         = RoundedCornerShape(24.dp),
-                                maxLines      = 4
+                            BubbleIconButton(
+                                icon = Icons.Rounded.AttachFile,
+                                contentDescription = "Joindre un fichier",
+                                onClick = { showMediaPicker = true },
+                                enabled = !loading
                             )
 
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(Space.sm))
 
+                            OutlinedTextField(
+                                value = text,
+                                onValueChange = { text = it },
+                                placeholder = { Text("Message…") },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(Radius.pill),
+                                maxLines = 4,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedContainerColor = LocalAskipPalette.current.bubble,
+                                    focusedContainerColor = LocalAskipPalette.current.bubble,
+                                    unfocusedBorderColor = LocalAskipPalette.current.bubbleBorder,
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+
+                            Spacer(Modifier.width(Space.sm))
+
+                            // Une seule cible, au même endroit : elle bascule
+                            // d'envoi à micro selon qu'il y a quelque chose à
+                            // envoyer, comme dans les messageries.
                             if (text.isNotBlank()) {
-                                FilledIconButton(
-                                    onClick  = {
+                                BubbleIconButton(
+                                    icon = Icons.AutoMirrored.Rounded.Send,
+                                    contentDescription = "Envoyer",
+                                    onClick = {
                                         vm.sendMessage(convId, text.trim())
                                         text = ""
                                     },
-                                    enabled  = !loading
-                                ) { Icon(Icons.Default.Send, null) }
+                                    tone = BubbleTone.PRIMARY,
+                                    diameter = 46.dp,
+                                    enabled = !loading
+                                )
                             } else {
-                                FilledIconButton(
-                                    onClick  = { vm.startVoiceRecording(context) },
-                                    enabled  = !loading,
-                                    colors   = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                    )
-                                ) {
-                                    Icon(
-                                        Icons.Default.Mic, null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                                BubbleIconButton(
+                                    icon = Icons.Rounded.Mic,
+                                    contentDescription = "Enregistrer un vocal",
+                                    onClick = { vm.startVoiceRecording(context) },
+                                    diameter = 46.dp,
+                                    enabled = !loading
+                                )
                             }
                         }
                     }
@@ -569,8 +598,10 @@ fun AudioMessagePlayer(url: String, duration: Int, isMe: Boolean) {
             )
         }
 
-        IconButton(
-            onClick  = {
+        BubbleIconButton(
+            icon = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+            contentDescription = if (isPlaying) "Pause" else "Lire",
+            onClick = {
                 if (isPlaying) {
                     player.pause()
                     isPlaying = false
@@ -580,15 +611,8 @@ fun AudioMessagePlayer(url: String, duration: Int, isMe: Boolean) {
                     isPlaying = true
                 }
             },
-            modifier = Modifier.size(34.dp)
-        ) {
-            Icon(
-                if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                null,
-                tint     = tint,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+            diameter = 34.dp
+        )
     }
 }
 
@@ -609,7 +633,7 @@ private fun FileMessageItem(name: String, url: String, isMe: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(
-            Icons.Default.InsertDriveFile, null,
+            Icons.AutoMirrored.Filled.InsertDriveFile, null,
             tint     = textColor,
             modifier = Modifier.size(28.dp)
         )

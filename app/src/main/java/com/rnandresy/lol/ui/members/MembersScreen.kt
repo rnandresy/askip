@@ -1,9 +1,9 @@
 package com.rnandresy.lol.ui.members
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,8 +30,14 @@ import androidx.compose.ui.unit.dp
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.AdminBadgeLabel
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleCard
+import com.rnandresy.lol.ui.components.BubbleChip
+import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.ENIBadgeLabel
 import com.rnandresy.lol.ui.components.EmptyState
+import com.rnandresy.lol.ui.components.rememberTapFeedback
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
@@ -63,9 +66,19 @@ fun MembersScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title          = { Text("Membres", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } },
-                colors         = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                title = { Text("Membres", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    BubbleIconButton(
+                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Retour",
+                        onClick = onBack,
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -75,86 +88,116 @@ fun MembersScreen(
                 EmptyState("👥", "Aucun membre")
             }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(pad)) {
-                item {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(pad),
+                contentPadding = PaddingValues(horizontal = Space.lg, vertical = Space.xs),
+                verticalArrangement = Arrangement.spacedBy(Space.sm)
+            ) {
+                item(key = "count") {
                     Text(
                         "${sorted.size} membre(s)",
-                        style    = MaterialTheme.typography.labelMedium,
-                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = Space.xxs)
                     )
                 }
                 items(sorted, key = { it.userId }) { profile ->
-                    val userIsAdmin = isAdmin(profile.userId) || profile.isAdmin
-                    val isMe        = profile.userId == vm.currentUserId
-
-                    Row(
-                        modifier          = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenProfile(profile.userId) }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AskipAvatar(
-                            username    = profile.username,
-                            photoUrl    = profile.photoUrl,
-                            size        = 46.dp,
-                            isAdminUser = userIsAdmin,
-                            onClick     = { onOpenProfile(profile.userId) }
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                Text(
-                                    if (isMe) "${profile.username} (Moi)" else profile.username,
-                                    style      = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines   = 1,
-                                    overflow   = TextOverflow.Ellipsis
-                                )
-                                if (userIsAdmin) AdminBadgeLabel()
-                                if (profile.hasBadgeENI) ENIBadgeLabel()
-                            }
-                            Row(
-                                verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                if (profile.classeENI.isNotBlank()) {
-                                    Text(
-                                        profile.classeENI,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1
-                                    )
-                                }
-                                if (profile.moodEmoji.isNotBlank()) {
-                                    Text(
-                                        "${profile.moodEmoji} ${profile.moodText}".trim(),
-                                        style    = MaterialTheme.typography.bodySmall,
-                                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                        if (profile.streak > 1) {
-                            Text(
-                                "🔥 ${profile.streak}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    HorizontalDivider(
-                        color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
-                        modifier  = Modifier.padding(start = 74.dp),
-                        thickness = 0.5.dp
+                    MemberRow(
+                        profile = profile,
+                        isMe = profile.userId == vm.currentUserId,
+                        onOpen = { onOpenProfile(profile.userId) }
                     )
                 }
+            }
+        }
+    }
+}
+/**
+ * Une ligne de membre.
+ *
+ * Chaque membre est une carte-bulle plutôt qu'une ligne séparée d'un trait :
+ * la liste se parcourt par blocs, et l'appui a le même ressort que partout.
+ */
+@Composable
+private fun MemberRow(
+    profile: UserProfile,
+    isMe: Boolean,
+    onOpen: () -> Unit
+) {
+    val palette = LocalAskipPalette.current
+    val userIsAdmin = isAdmin(profile.userId) || profile.isAdmin
+    val tap = rememberTapFeedback()
+
+    BubbleCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 2.dp,
+        gloss = 0.28f,
+        onClick = { tap(); onOpen() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.md, vertical = Space.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.md)
+        ) {
+            AskipAvatar(
+                username = profile.username,
+                photoUrl = profile.photoUrl,
+                size = 46.dp,
+                isAdminUser = userIsAdmin,
+                onClick = onOpen
+            )
+
+            Column(Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs)
+                ) {
+                    Text(
+                        if (isMe) "${profile.username} (Moi)" else profile.username,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (userIsAdmin) AdminBadgeLabel()
+                    if (profile.hasBadgeENI) ENIBadgeLabel()
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.sm)
+                ) {
+                    if (profile.classeENI.isNotBlank()) {
+                        Text(
+                            profile.classeENI,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                    if (profile.moodEmoji.isNotBlank()) {
+                        Text(
+                            "${profile.moodEmoji} ${profile.moodText}".trim(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            // La série ne s'affiche qu'à partir de deux jours : « 🔥 1 » n'est
+            // pas une série, c'est juste être venu aujourd'hui.
+            if (profile.streak > 1) {
+                BubbleChip(
+                    label = "${profile.streak}",
+                    emoji = "🔥",
+                    accent = palette.streak
+                )
             }
         }
     }

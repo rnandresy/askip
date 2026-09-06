@@ -1,1 +1,68 @@
-mettez votre propre "googles-services.json" ici
+{
+  "project_info": {
+    "project_number": "63668005534",
+    "project_id": "kaiza-ac130",
+    "storage_bucket": "kaiza-ac130.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:63668005534:android:ea41ede9c413a758c2698f",
+        "android_client_info": {
+          "package_name": "com.orinasa.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "63668005534-gfr00qs6o1u3q866hganv8ftfdrh1s31.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFQZ3zZ4dIT8nedNoMecsprViI8xdx7RY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "63668005534-gfr00qs6o1u3q866hganv8ftfdrh1s31.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:63668005534:android:d3b5753c9c536ee7c2698f",
+        "android_client_info": {
+          "package_name": "com.rnandresy.lol"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "63668005534-gfr00qs6o1u3q866hganv8ftfdrh1s31.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFQZ3zZ4dIT8nedNoMecsprViI8xdx7RY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "63668005534-gfr00qs6o1u3q866hganv8ftfdrh1s31.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

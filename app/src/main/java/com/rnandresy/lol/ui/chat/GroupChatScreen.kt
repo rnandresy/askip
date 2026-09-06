@@ -31,27 +31,26 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -77,7 +76,12 @@ import coil.compose.AsyncImage
 import com.rnandresy.lol.model.Group
 import com.rnandresy.lol.model.GroupMessage
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
+import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 import kotlinx.coroutines.delay
@@ -148,18 +152,38 @@ fun GroupChatScreen(
                         }
                     }
                 },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } },
+                navigationIcon = {
+                    Box(Modifier.padding(start = Space.md)) {
+                        BubbleIconButton(
+                            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Retour",
+                            onClick = onBack
+                        )
+                    }
+                },
                 actions = {
-                    if (isCreator || userIsAdmin) {
-                        IconButton(onClick = { vm.deleteGroup(groupId); onBack() }) {
-                            Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
-                        }
-                    } else {
-                        IconButton(onClick = { vm.leaveGroup(groupId); onBack() }) {
-                            Icon(Icons.Default.ExitToApp, null, tint = MaterialTheme.colorScheme.error)
+                    Box(Modifier.padding(end = Space.lg)) {
+                        if (isCreator || userIsAdmin) {
+                            BubbleIconButton(
+                                icon = Icons.Rounded.Delete,
+                                contentDescription = "Supprimer le groupe",
+                                onClick = { vm.deleteGroup(groupId); onBack() },
+                                tone = BubbleTone.DANGER
+                            )
+                        } else {
+                            BubbleIconButton(
+                                icon = Icons.AutoMirrored.Rounded.ExitToApp,
+                                contentDescription = "Quitter le groupe",
+                                onClick = { vm.leaveGroup(groupId); onBack() },
+                                tone = BubbleTone.DANGER
+                            )
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         },
         bottomBar = {
@@ -167,16 +191,22 @@ fun GroupChatScreen(
                 AnimatedVisibility(visible = loading && uploadProgress in 1..99) {
                     LinearProgressIndicator(progress = { uploadProgress / 100f }, modifier = Modifier.fillMaxWidth())
                 }
-                Surface(shadowElevation = 6.dp) {
+                Surface(
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     if (isRecording) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(10.dp).navigationBarsPadding(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            IconButton(onClick = { vm.cancelVoiceRecording() }) {
-                                Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
-                            }
+                            BubbleIconButton(
+                                icon = Icons.Rounded.Delete,
+                                contentDescription = "Annuler l'enregistrement",
+                                onClick = { vm.cancelVoiceRecording() },
+                                tone = BubbleTone.DANGER
+                            )
                             Surface(color = MaterialTheme.colorScheme.errorContainer,
                                 shape = RoundedCornerShape(50), modifier = Modifier.weight(1f)) {
                                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -193,30 +223,68 @@ fun GroupChatScreen(
                                         color = MaterialTheme.colorScheme.onErrorContainer)
                                 }
                             }
-                            FilledIconButton(onClick = { vm.stopAndSendGroupVoice(groupId) }, enabled = !loading) {
-                                Icon(Icons.Default.Send, null)
-                            }
+                            BubbleIconButton(
+                                icon = Icons.AutoMirrored.Rounded.Send,
+                                contentDescription = "Envoyer le vocal",
+                                onClick = { vm.stopAndSendGroupVoice(groupId) },
+                                tone = BubbleTone.PRIMARY,
+                                diameter = 46.dp,
+                                enabled = !loading
+                            )
                         }
                     } else {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(10.dp).navigationBarsPadding(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = { showMediaPicker = true }) {
-                                Icon(Icons.Default.AttachFile, null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                            OutlinedTextField(value = text, onValueChange = { text = it },
+                            BubbleIconButton(
+                                icon = Icons.Rounded.AttachFile,
+                                contentDescription = "Joindre un fichier",
+                                onClick = { showMediaPicker = true },
+                                enabled = !loading
+                            )
+
+                            Spacer(Modifier.width(Space.sm))
+
+                            OutlinedTextField(
+                                value = text,
+                                onValueChange = { text = it },
                                 placeholder = { Text("Message au groupe…") },
-                                modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), maxLines = 4)
-                            Spacer(Modifier.width(6.dp))
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(Radius.pill),
+                                maxLines = 4,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedContainerColor = LocalAskipPalette.current.bubble,
+                                    focusedContainerColor = LocalAskipPalette.current.bubble,
+                                    unfocusedBorderColor = LocalAskipPalette.current.bubbleBorder,
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+
+                            Spacer(Modifier.width(Space.sm))
+
+                            // Même bascule que dans la conversation à deux :
+                            // envoi si l'on a écrit, micro sinon.
                             if (text.isNotBlank()) {
-                                FilledIconButton(onClick = { vm.sendGroupMessage(groupId, text.trim()); text = "" },
-                                    enabled = !loading) { Icon(Icons.Default.Send, null) }
+                                BubbleIconButton(
+                                    icon = Icons.AutoMirrored.Rounded.Send,
+                                    contentDescription = "Envoyer",
+                                    onClick = {
+                                        vm.sendGroupMessage(groupId, text.trim())
+                                        text = ""
+                                    },
+                                    tone = BubbleTone.PRIMARY,
+                                    diameter = 46.dp,
+                                    enabled = !loading
+                                )
                             } else {
-                                FilledIconButton(
-                                    onClick = { vm.startVoiceRecording(context) }, enabled = !loading,
-                                    colors  = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                                ) { Icon(Icons.Default.Mic, null, tint = MaterialTheme.colorScheme.primary) }
+                                BubbleIconButton(
+                                    icon = Icons.Rounded.Mic,
+                                    contentDescription = "Enregistrer un vocal",
+                                    onClick = { vm.startVoiceRecording(context) },
+                                    diameter = 46.dp,
+                                    enabled = !loading
+                                )
                             }
                         }
                     }
@@ -350,7 +418,7 @@ private fun GroupMessageContent(msg: GroupMessage, isMe: Boolean) {
             val context = LocalContext.current
             Row(modifier = Modifier.widthIn(max = 240.dp).padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.InsertDriveFile, null, tint = textColor, modifier = Modifier.size(24.dp))
+                Icon(Icons.AutoMirrored.Filled.InsertDriveFile, null, tint = textColor, modifier = Modifier.size(24.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(msg.mediaName.take(28), style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium, color = textColor, maxLines = 2)

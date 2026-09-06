@@ -2,10 +2,10 @@ package com.rnandresy.lol.ui.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,25 +21,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,14 +47,46 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.BubbleCard
+import com.rnandresy.lol.ui.components.BubbleChip
+import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.BubbleSize
+import com.rnandresy.lol.ui.components.BubbleTone
+import com.rnandresy.lol.ui.components.BubbleButton
+import com.rnandresy.lol.ui.components.SheetAction
+import com.rnandresy.lol.ui.components.SheetHeader
+import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.readableOn
+import com.rnandresy.lol.ui.components.rememberTapFeedback
+import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
+import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.AVATAR_FRAMES
 import com.rnandresy.lol.utils.ENI_CLASSES
 import com.rnandresy.lol.utils.STORY_COLORS
 import com.rnandresy.lol.utils.STORY_EMOJIS
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
+/** Les statuts proposés. Rien d'obligatoire : « — Aucun — » reste possible. */
+private val REL_STATUSES = listOf(
+    "Célibataire", "En couple", "Fiancé(e)", "Voay", "Mitady..",
+    "Marié(e)", "C'est compliqué", "Préfère ne pas dire"
+)
+
+/** Quelle liste déroulante est ouverte, le cas échéant. */
+private enum class EditSheet { STATUS, CLASS }
+
+/**
+ * L'édition du profil.
+ *
+ * Le formulaire était une longue liste de champs tous au même niveau. Il est
+ * maintenant rangé en quatre cartes — identité, humeur, apparence, détails —
+ * et les deux listes déroulantes sont devenues des feuilles, plus faciles à
+ * viser au pouce que des menus qui se déplient sous le doigt.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
@@ -68,262 +94,556 @@ fun EditProfileScreen(
     onSaved: () -> Unit,
     onBack: () -> Unit
 ) {
-    val profile   by vm.myProfile.collectAsState()
+    val profile by vm.myProfile.collectAsState()
     val isSyncing by vm.isSyncing.collectAsState()
 
-    var username   by remember(profile) { mutableStateOf(profile?.username ?: "") }
-    var age        by remember(profile) { mutableStateOf(profile?.age?.let { if (it > 0) it.toString() else "" } ?: "") }
-    var bio        by remember(profile) { mutableStateOf(profile?.bio ?: "") }
-    var relStatus  by remember(profile) { mutableStateOf(profile?.relationshipStatus ?: "") }
-    var classeENI  by remember(profile) { mutableStateOf(profile?.classeENI ?: "") }
+    var username by remember(profile) { mutableStateOf(profile?.username ?: "") }
+    var age by remember(profile) {
+        mutableStateOf(profile?.age?.let { if (it > 0) it.toString() else "" } ?: "")
+    }
+    var bio by remember(profile) { mutableStateOf(profile?.bio ?: "") }
+    var relStatus by remember(profile) { mutableStateOf(profile?.relationshipStatus ?: "") }
+    var classeENI by remember(profile) { mutableStateOf(profile?.classeENI ?: "") }
     var themeColor by remember(profile) { mutableStateOf(profile?.themeColor ?: "#7C4DFF") }
-    var frame      by remember(profile) { mutableStateOf(profile?.avatarFrame ?: "none") }
-    var moodEmoji  by remember(profile) { mutableStateOf(profile?.moodEmoji ?: "") }
-    var moodText   by remember(profile) { mutableStateOf(profile?.moodText ?: "") }
+    var frame by remember(profile) { mutableStateOf(profile?.avatarFrame ?: "none") }
+    var moodEmoji by remember(profile) { mutableStateOf(profile?.moodEmoji ?: "") }
+    var moodText by remember(profile) { mutableStateOf(profile?.moodText ?: "") }
 
-    var eniExpanded    by remember { mutableStateOf(false) }
-    var statutExpanded by remember { mutableStateOf(false) }
-
-    val relStatuts = listOf(
-        "Célibataire", "En couple", "Fiancé(e)", "Voay", "Mitady..",
-        "Marié(e)", "C'est compliqué", "Préfère ne pas dire"
-    )
+    var sheet by remember { mutableStateOf<EditSheet?>(null) }
 
     val oldUsername = profile?.username ?: ""
     val usernameChanged = username.trim() != oldUsername && username.isNotBlank()
 
+    val save = {
+        val data = mutableMapOf<String, Any?>(
+            "username" to username.trim(),
+            "bio" to bio.trim(),
+            "relationshipStatus" to relStatus,
+            "classeENI" to classeENI,
+            "hasBadgeENI" to classeENI.isNotBlank(),
+            "themeColor" to themeColor,
+            "avatarFrame" to frame,
+            "moodEmoji" to moodEmoji,
+            "moodText" to moodText.trim()
+        )
+        age.toIntOrNull()?.let { data["age"] = it }
+        vm.updateProfile(data, onSaved)
+        Unit
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title          = { Text("Modifier le profil ✏️") },
+                title = { Text("Mon profil", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack, enabled = !isSyncing) {
-                        Icon(Icons.Default.ArrowBack, null)
+                    Box(Modifier.padding(start = Space.md)) {
+                        BubbleIconButton(
+                            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Retour",
+                            onClick = onBack,
+                            enabled = !isSyncing
+                        )
                     }
                 },
                 actions = {
-                    if (isSyncing) {
-                        Row(
-                            modifier          = Modifier.padding(end = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Text(
-                                "Sync…",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
+                    Box(Modifier.padding(end = Space.lg)) {
+                        // Pendant la synchro du pseudo on ne peut ni repartir ni
+                        // renvoyer : deux enregistrements se marcheraient dessus.
+                        if (isSyncing) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(Space.sm)
+                            ) {
+                                CircularProgressIndicator(
+                                    Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    "Synchro…",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else {
+                            BubbleButton(
+                                text = "Enregistrer",
+                                onClick = save,
+                                tone = BubbleTone.PRIMARY,
+                                size = BubbleSize.SMALL,
+                                enabled = username.isNotBlank()
                             )
                         }
-                    } else {
-                        FilledIconButton(
-                            onClick = {
-                                val data = mutableMapOf<String, Any?>(
-                                    "username"           to username.trim(),
-                                    "bio"                to bio.trim(),
-                                    "relationshipStatus" to relStatus,
-                                    "classeENI"          to classeENI,
-                                    "hasBadgeENI"        to classeENI.isNotBlank(),
-                                    "themeColor"         to themeColor,
-                                    "avatarFrame"        to frame,
-                                    "moodEmoji"          to moodEmoji,
-                                    "moodText"           to moodText.trim()
-                                )
-                                age.toIntOrNull()?.let { data["age"] = it }
-                                vm.updateProfile(data, onSaved)
-                            },
-                            enabled = username.isNotBlank()
-                        ) { Icon(Icons.Default.Save, null) }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { pad ->
         Column(
-            modifier            = Modifier
+            modifier = Modifier
                 .padding(pad)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.lg),
+            verticalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            // ── Info synchro pseudo ───────────────────────────────────────────
-            if (usernameChanged) {
-                Surface(
-                    color  = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                    shape  = RoundedCornerShape(10.dp)
+            IdentitySection(
+                username = username,
+                onUsername = { username = it },
+                usernameChanged = usernameChanged,
+                age = age,
+                onAge = { age = it },
+                bio = bio,
+                onBio = { bio = it }
+            )
+
+            MoodSection(
+                moodEmoji = moodEmoji,
+                onMoodEmoji = { moodEmoji = it },
+                moodText = moodText,
+                onMoodText = { moodText = it }
+            )
+
+            LookSection(
+                themeColor = themeColor,
+                onThemeColor = { themeColor = it },
+                frame = frame,
+                onFrame = { frame = it }
+            )
+
+            DetailsSection(
+                relStatus = relStatus,
+                classeENI = classeENI,
+                onOpenStatus = { sheet = EditSheet.STATUS },
+                onOpenClass = { sheet = EditSheet.CLASS }
+            )
+
+            Spacer(Modifier.height(Space.huge))
+        }
+    }
+
+    when (sheet) {
+        EditSheet.STATUS -> ChoiceSheet(
+            title = "Statut amoureux",
+            subtitle = "Visible sur ton profil.",
+            emoji = "💑",
+            options = REL_STATUSES,
+            selected = relStatus,
+            onPick = { relStatus = it; sheet = null },
+            onDismiss = { sheet = null }
+        )
+
+        EditSheet.CLASS -> ChoiceSheet(
+            title = "Classe ENI",
+            subtitle = "Choisir une classe débloque le badge 🎓.",
+            emoji = "🎓",
+            options = ENI_CLASSES,
+            selected = classeENI,
+            onPick = { classeENI = it; sheet = null },
+            onDismiss = { sheet = null }
+        )
+
+        null -> Unit
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  Sections
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Pseudo, âge, bio — ce que les autres lisent en premier. */
+@Composable
+private fun IdentitySection(
+    username: String,
+    onUsername: (String) -> Unit,
+    usernameChanged: Boolean,
+    age: String,
+    onAge: (String) -> Unit,
+    bio: String,
+    onBio: (String) -> Unit
+) {
+    EditCard("Identité", "👤") {
+        EditField(
+            value = username,
+            onValueChange = onUsername,
+            label = "Pseudo",
+            imeAction = ImeAction.Next,
+            error = if (username.isBlank()) "Requis" else null
+        )
+
+        // Le changement de pseudo repasse sur tout l'historique : mieux vaut
+        // le dire avant l'enregistrement que de laisser croire à un bug.
+        if (usernameChanged) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.sm))
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f))
+                    .padding(Space.md),
+                verticalAlignment = Alignment.Top
+            ) {
+                Text("🔄", fontSize = 14.sp)
+                Spacer(Modifier.width(Space.sm))
+                Text(
+                    "Ton nouveau pseudo remplacera l'ancien sur tous tes posts, " +
+                        "commentaires et messages.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+
+        EditField(
+            value = age,
+            onValueChange = { onAge(it.take(3).filter(Char::isDigit)) },
+            label = "Âge",
+            imeAction = ImeAction.Next,
+            keyboardType = KeyboardType.Number
+        )
+
+        EditField(
+            value = bio,
+            onValueChange = { if (it.length <= 150) onBio(it) },
+            label = "Bio (${bio.length}/150)",
+            singleLine = false,
+            minHeight = 92.dp
+        )
+    }
+}
+
+/** L'humeur du jour : un emoji, et une phrase courte si l'envie prend. */
+@Composable
+private fun MoodSection(
+    moodEmoji: String,
+    onMoodEmoji: (String) -> Unit,
+    moodText: String,
+    onMoodText: (String) -> Unit
+) {
+    val palette = LocalAskipPalette.current
+    val tap = rememberTapFeedback()
+
+    EditCard("Humeur du jour", "😊") {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
+            contentPadding = PaddingValues(vertical = Space.xxs)
+        ) {
+            items(STORY_EMOJIS.take(12)) { emoji ->
+                val picked = moodEmoji == emoji
+                TapArea(
+                    onTap = { tap(); onMoodEmoji(if (picked) "" else emoji) },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(if (picked) palette.scoop.copy(alpha = 0.22f) else palette.bubble)
+                        .border(
+                            width = if (picked) 2.dp else 1.dp,
+                            color = if (picked) palette.scoop else palette.bubbleBorder,
+                            shape = CircleShape
+                        )
                 ) {
-                    Row(
-                        modifier          = Modifier.fillMaxWidth().padding(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Sync, null,
-                            tint     = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Le nouveau pseudo sera synchronisé sur tous tes anciens posts, commentaires et messages.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-            }
-
-            // ── Humeur ───────────────────────────────────────────────────────
-            SectionLabel("Humeur du jour 😊")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(STORY_EMOJIS.take(12)) { emoji ->
-                    Surface(
-                        onClick = { moodEmoji = if (moodEmoji == emoji) "" else emoji },
-                        color   = if (moodEmoji == emoji) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant,
-                        shape   = RoundedCornerShape(10.dp)
-                    ) {
-                        Text(emoji, fontSize = 22.sp, modifier = Modifier.padding(6.dp))
-                    }
-                }
-            }
-            if (moodEmoji.isNotBlank()) {
-                OutlinedTextField(
-                    value           = moodText,
-                    onValueChange   = { if (it.length <= 50) moodText = it },
-                    label           = { Text("Texte humeur (optionnel)") },
-                    singleLine      = true,
-                    modifier        = Modifier.fillMaxWidth(),
-                    shape           = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                )
-            }
-
-            // ── Couleur thème ─────────────────────────────────────────────────
-            SectionLabel("Couleur du profil 🎨")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(STORY_COLORS) { hex ->
-                    val c = runCatching {
-                        Color(android.graphics.Color.parseColor(hex))
-                    }.getOrElse { Color.Gray }
-                    Box(
-                        modifier = Modifier.size(34.dp).clip(CircleShape).background(c)
-                            .then(if (themeColor == hex) Modifier.border(3.dp, Color.White, CircleShape) else Modifier)
-                            .clickable { themeColor = hex }
+                    Text(
+                        emoji,
+                        fontSize = 21.sp,
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
+        }
 
-            // ── Cadre avatar ──────────────────────────────────────────────────
-            SectionLabel("Cadre avatar 🖼️")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(AVATAR_FRAMES.entries.toList()) { (key, label) ->
-                    FilterChip(
-                        selected = frame == key,
-                        onClick  = { frame = key },
-                        label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                    )
-                }
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-            SectionLabel("Informations 👤")
-
-            // Pseudo
-            OutlinedTextField(
-                value           = username,
-                onValueChange   = { username = it },
-                label           = { Text("Pseudo *") },
-                singleLine      = true,
-                modifier        = Modifier.fillMaxWidth(),
-                shape           = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                supportingText  = {
-                    if (username.isBlank())
-                        Text("Requis", color = MaterialTheme.colorScheme.error)
-                }
+        // Le texte n'a de sens qu'accompagné : sans emoji, rien ne s'affiche.
+        if (moodEmoji.isNotBlank()) {
+            EditField(
+                value = moodText,
+                onValueChange = { if (it.length <= 50) onMoodText(it) },
+                label = "Une phrase (optionnel)"
             )
-
-            // Âge
-            OutlinedTextField(
-                value           = age,
-                onValueChange   = { if (it.length <= 3) age = it.filter { c -> c.isDigit() } },
-                label           = { Text("Âge") },
-                singleLine      = true,
-                modifier        = Modifier.fillMaxWidth(),
-                shape           = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
-            )
-
-            // Bio
-            OutlinedTextField(
-                value         = bio,
-                onValueChange = { if (it.length <= 150) bio = it },
-                label         = { Text("Bio (${bio.length}/150)") },
-                modifier      = Modifier.fillMaxWidth().height(90.dp),
-                shape         = RoundedCornerShape(12.dp),
-                maxLines      = 4
-            )
-
-            // Statut amoureux
-            ExposedDropdownMenuBox(expanded = statutExpanded, onExpandedChange = { statutExpanded = !statutExpanded }) {
-                OutlinedTextField(
-                    value         = relStatus, onValueChange = {}, readOnly = true,
-                    label         = { Text("Statut amoureux 💑") },
-                    trailingIcon  = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statutExpanded) },
-                    modifier      = Modifier.menuAnchor().fillMaxWidth(), shape = RoundedCornerShape(12.dp)
-                )
-                ExposedDropdownMenu(expanded = statutExpanded, onDismissRequest = { statutExpanded = false }) {
-                    DropdownMenuItem(text = { Text("— Aucun —") }, onClick = { relStatus = ""; statutExpanded = false })
-                    relStatuts.forEach { s ->
-                        DropdownMenuItem(
-                            text = { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(s)
-                                if (s == relStatus) Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            }},
-                            onClick = { relStatus = s; statutExpanded = false }
-                        )
-                    }
-                }
-            }
-
-            // Classe ENI
-            ExposedDropdownMenuBox(expanded = eniExpanded, onExpandedChange = { eniExpanded = !eniExpanded }) {
-                OutlinedTextField(
-                    value          = classeENI, onValueChange = {}, readOnly = true,
-                    label          = { Text("Classe ENI 🎓") },
-                    trailingIcon   = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = eniExpanded) },
-                    modifier       = Modifier.menuAnchor().fillMaxWidth(), shape = RoundedCornerShape(12.dp),
-                    supportingText = {
-                        if (classeENI.isNotBlank())
-                            Text("✅ Badge ENI attribué !", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                        else
-                            Text("Sélectionne ta classe pour le badge ENI 🎓", style = MaterialTheme.typography.labelSmall)
-                    }
-                )
-                ExposedDropdownMenu(expanded = eniExpanded, onDismissRequest = { eniExpanded = false }) {
-                    DropdownMenuItem(text = { Text("— Aucune —") }, onClick = { classeENI = ""; eniExpanded = false })
-                    ENI_CLASSES.forEach { cl ->
-                        DropdownMenuItem(
-                            text = { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(cl)
-                                if (cl == classeENI) Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            }},
-                            onClick = { classeENI = cl; eniExpanded = false }
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
         }
     }
 }
 
+/** Couleur du profil et cadre d'avatar : tout ce qui est décoratif. */
+@Composable
+private fun LookSection(
+    themeColor: String,
+    onThemeColor: (String) -> Unit,
+    frame: String,
+    onFrame: (String) -> Unit
+) {
+    val palette = LocalAskipPalette.current
+    val tap = rememberTapFeedback()
+
+    EditCard("Apparence", "🎨") {
+        SubLabel("Couleur du profil")
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
+            contentPadding = PaddingValues(vertical = Space.xxs)
+        ) {
+            items(STORY_COLORS) { hex ->
+                val c = runCatching {
+                    Color(android.graphics.Color.parseColor(hex))
+                }.getOrElse { Color.Gray }
+                val picked = themeColor == hex
+
+                TapArea(
+                    onTap = { tap(); onThemeColor(hex) },
+                    modifier = Modifier
+                        .size(if (picked) 40.dp else 34.dp)
+                        .clip(CircleShape)
+                        .background(c)
+                        .border(
+                            width = if (picked) 3.dp else 1.dp,
+                            // Une pastille claire sur fond clair a besoin d'un
+                            // trait, sinon elle disparaît dans le thème beige.
+                            color = if (picked) palette.bubble else palette.bubbleBorder,
+                            shape = CircleShape
+                        )
+                ) {
+                    if (picked) {
+                        Text(
+                            "✓",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = readableOn(c),
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
+            }
+        }
+
+        SubLabel("Cadre de l'avatar")
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
+            contentPadding = PaddingValues(vertical = Space.xxs)
+        ) {
+            items(AVATAR_FRAMES.entries.toList()) { (key, label) ->
+                BubbleChip(
+                    label = label,
+                    filled = frame == key,
+                    accent = if (frame == key) palette.scoop
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = { onFrame(key) }
+                )
+            }
+        }
+    }
+}
+
+/** Statut amoureux et classe ENI : deux choix, deux feuilles. */
+@Composable
+private fun DetailsSection(
+    relStatus: String,
+    classeENI: String,
+    onOpenStatus: () -> Unit,
+    onOpenClass: () -> Unit
+) {
+    EditCard("Détails", "📋") {
+        PickerRow(
+            emoji = "💑",
+            label = "Statut amoureux",
+            value = relStatus.ifBlank { "Non précisé" },
+            onClick = onOpenStatus
+        )
+        PickerRow(
+            emoji = "🎓",
+            label = "Classe ENI",
+            value = classeENI.ifBlank { "Non précisée" },
+            hint = if (classeENI.isNotBlank()) "Badge ENI attribué"
+            else "Choisis ta classe pour débloquer le badge",
+            onClick = onOpenClass
+        )
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  Briques
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Une carte de formulaire, titrée. */
+@Composable
+private fun EditCard(
+    title: String,
+    emoji: String,
+    content: @Composable () -> Unit
+) {
+    BubbleCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(Space.lg),
+            verticalArrangement = Arrangement.spacedBy(Space.md)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.sm)
+            ) {
+                Text(emoji, fontSize = 15.sp)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            content()
+        }
+    }
+}
+
+/** Un intertitre dans une carte, pour séparer deux réglages voisins. */
+@Composable
+private fun SubLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+/** Le champ texte de l'app : mêmes coins, mêmes couleurs partout. */
+@Composable
+private fun EditField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    singleLine: Boolean = true,
+    minHeight: Dp = 0.dp,
+    imeAction: ImeAction = ImeAction.Default,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    error: String? = null
+) {
+    val palette = LocalAskipPalette.current
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = singleLine,
+        maxLines = if (singleLine) 1 else 4,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (minHeight > 0.dp) Modifier.height(minHeight) else Modifier),
+        shape = RoundedCornerShape(Radius.sm),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+        supportingText = error?.let {
+            { Text(it, color = MaterialTheme.colorScheme.error) }
+        },
+        isError = error != null,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedContainerColor = palette.bubble,
+            focusedContainerColor = palette.bubble,
+            unfocusedBorderColor = palette.bubbleBorder,
+            focusedBorderColor = MaterialTheme.colorScheme.primary
+        )
+    )
+}
+
+/** Une ligne « libellé → valeur » qui ouvre une feuille de choix. */
+@Composable
+private fun PickerRow(
+    emoji: String,
+    label: String,
+    value: String,
+    hint: String? = null,
+    onClick: () -> Unit
+) {
+    val palette = LocalAskipPalette.current
+    val tap = rememberTapFeedback()
+
+    TapArea(
+        onTap = { tap(); onClick() },
+        scaleDown = 0.99f,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.sm))
+            .background(palette.bubble)
+            .border(1.dp, palette.bubbleBorder, RoundedCornerShape(Radius.sm))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.md, vertical = Space.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(emoji, fontSize = 16.sp)
+            Spacer(Modifier.width(Space.md))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                if (hint != null) {
+                    Text(
+                        hint,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text(
+                "›",
+                fontSize = 19.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/** La feuille de choix commune aux deux listes. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChoiceSheet(
+    title: String,
+    subtitle: String,
+    emoji: String,
+    options: List<String>,
+    selected: String,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = state) {
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState())
+                .padding(bottom = Space.xxl)
+        ) {
+            SheetHeader(title, subtitle)
+
+            SheetAction(
+                emoji = "🚫",
+                label = "Ne rien indiquer",
+                onClick = { onPick("") }
+            )
+            options.forEach { option ->
+                SheetAction(
+                    emoji = if (option == selected) "✅" else emoji,
+                    label = option,
+                    onClick = { onPick(option) }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Un intertitre de section, repris par d'autres écrans du profil.
+ *
+ * Conservé tel quel : il sert encore ailleurs.
+ */
 @Composable
 fun SectionLabel(text: String) {
     Text(
         text,
-        style      = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
-        color      = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.primary
     )
 }

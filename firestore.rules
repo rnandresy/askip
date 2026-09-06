@@ -1,0 +1,348 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Règles de sécurité Askip
+//
+//  À déployer :   firebase deploy --only firestore:rules
+//
+//  Principe : le client peut écrire ce qui le concerne, et uniquement les
+//  champs partagés qui ont un sens (réagir, voter, commenter). Tout le reste
+//  — statut admin, bannissement, épinglage — est verrouillé.
+//
+//  ⚠️ Remplacer l'UID ci-dessous par celui de l'administrateur
+//     (console Firebase → Authentication → Users). Il doit correspondre à
+//     ADMIN_UIDS dans utils/AdminConfig.kt.
+// ═══════════════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function isAdmin() {
+      return signedIn() && uid() in [
+        'ckCTisQMWKWbnoElnUjO2x4vKxy2'
+      ];
+    }
+
+    // Le compte n'est pas banni : un banni peut encore lire, pas écrire.
+    function notBanned() {
+      return !exists(/databases/$(database)/documents/profiles/$(uid()))
+        || get(/databases/$(database)/documents/profiles/$(uid())).data.isBanned != true;
+    }
+
+    function canWrite() {
+      return signedIn() && notBanned();
+    }
+
+    /** Les champs modifiés par cette écriture. */
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    /** L'écriture ne touche QUE des champs de la liste autorisée. */
+    function onlyChanges(allowed) {
+      return changed().hasOnly(allowed);
+    }
+
+    /**
+     * L'utilisateur ne s'ajoute ou ne se retire que lui-même d'un tableau.
+     *
+     * Le deuxième cas couvre les rumeurs publiées avant l'ajout du
+     * Rumeur-mètre : le champ n'existe pas encore sur le document, et sans
+     * cette branche voter dessus serait refusé.
+     */
+    function togglesSelfOnly(field) {
+      return !(field in changed())
+        || (field in resource.data
+            && request.resource.data[field].toSet()
+                 .difference(resource.data[field].toSet()).hasOnly([uid()])
+            && resource.data[field].toSet()
+                 .difference(request.resource.data[field].toSet()).hasOnly([uid()]))
+        || (!(field in resource.data)
+            && request.resource.data[field].hasOnly([uid()]));
+    }
+
+    // ── Profils ────────────────────────────────────────────────────────────
+
+    match /profiles/{userId} {
+      allow read: if signedIn();
+
+      // On crée uniquement son propre profil, sans se déclarer admin.
+      allow create: if signedIn()
+        && userId == uid()
+        && request.resource.data.isAdmin != true
+        && request.resource.data.isBanned != true;
+
+      allow update: if
+        // Son propre profil : tout sauf les champs de statut.
+        (canWrite() && userId == uid()
+          && !changed().hasAny(['isAdmin', 'isBanned', 'hasBadgeENI']))
+
+        // La réputation est modifiée par les autres (vote crédible / Scoop).
+        // ⚠️ Compromis assumé : sans Cloud Function, seul le client peut
+        //    incrémenter le clout de l'auteur. On restreint donc au minimum —
+        //    ces trois champs et rien d'autre. Passer par une Cloud Function
+        //    dès que le projet est sur le plan Blaze.
+        || (canWrite()
+          && onlyChanges(['clout', 'confirmedRumors', 'debunkedRumors']))
+
+        // L'admin peut tout, y compris accorder un badge ou bannir.
+        || isAdmin();
+
+      allow delete: if signedIn() && (userId == uid() || isAdmin());
+
+      match /achievements/{achievementId} {
+        allow read: if signedIn();
+        allow write: if signedIn() && userId == uid();
+      }
+    }
+
+    // ── Rumeurs ────────────────────────────────────────────────────────────
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+
+      allow create: if canWrite()
+        && request.resource.data.userId == uid()
+        && request.resource.data.content is string
+        && request.resource.data.content.size() <= 1000
+        && request.resource.data.isPinned == false
+        && request.resource.data.commentCount == 0
+        && request.resource.data.keysBy.size() == 0
+        && request.resource.data.repliedBy.size() == 0
+        // Un post neuf ne peut pas arriver avec des votes déjà dedans.
+        && request.resource.data.likedBy.size() == 0
+        && request.resource.data.credibleBy.size() == 0
+        && request.resource.data.fakeBy.size() == 0
+        && request.resource.data.scoopBy.size() == 0;
+
+      allow update: if
+        // L'auteur corrige son texte — et rien d'autre.
+        (canWrite() && resource.data.userId == uid()
+          && onlyChanges(['content', 'tags', 'isEdited']))
+
+        // N'importe qui réagit, tranche, offre son Scoop, donne sa clé ou vote
+        // au sondage — mais uniquement en s'ajoutant ou se retirant lui-même.
+        || (canWrite()
+          && onlyChanges([
+               'likedBy', 'fireBy', 'lolBy', 'shockBy', 'eyesBy',
+               'credibleBy', 'fakeBy', 'scoopBy', 'keysBy', 'repliedBy',
+               'pollVoters', 'pollVotes1', 'pollVotes2',
+               'commentCount',
+               'chainCount', 'chainAuthors', 'chainLastContent', 'chainLastAuthor'
+             ])
+          && togglesSelfOnly('likedBy')
+          && togglesSelfOnly('fireBy')
+          && togglesSelfOnly('lolBy')
+          && togglesSelfOnly('shockBy')
+          && togglesSelfOnly('eyesBy')
+          && togglesSelfOnly('credibleBy')
+          && togglesSelfOnly('fakeBy')
+          && togglesSelfOnly('scoopBy')
+          && togglesSelfOnly('keysBy')
+          && togglesSelfOnly('repliedBy')
+          && togglesSelfOnly('chainAuthors')
+          && togglesSelfOnly('pollVoters'))
+
+        // Seul l'admin épingle.
+        || isAdmin();
+
+      allow delete: if signedIn() && (resource.data.userId == uid() || isAdmin());
+
+      // ── La capsule scellée ───────────────────────────────────────────────
+      // Le cœur du mécanisme. Le serveur refuse de servir le contenu tant que
+      // l'heure n'est pas venue : cacher le texte à l'affichage n'aurait rien
+      // protégé, il suffisait de lire la base.
+      match /sealed/{doc} {
+        allow read: if signedIn() && (
+          // L'auteur peut relire sa propre capsule.
+          resource.data.authorId == uid()
+          // L'heure est passée — comparaison faite par le serveur.
+          || request.time.toMillis() >= resource.data.unsealAt
+          // Ou le campus a réuni assez de clés.
+          || (resource.data.keysNeeded > 0
+              && get(/databases/$(database)/documents/posts/$(postId)).data.keysBy.size()
+                 >= resource.data.keysNeeded)
+        );
+        allow create: if canWrite() && request.resource.data.authorId == uid();
+        // Une capsule ne se réécrit pas : sinon on pourrait changer le contenu
+        // après avoir vu qui a donné sa clé.
+        allow update: if false;
+        allow delete: if signedIn() && (resource.data.authorId == uid() || isAdmin());
+      }
+
+      // ── Le Téléphone arabe ───────────────────────────────────────────────
+      match /links/{linkId} {
+        allow read: if signedIn();
+        allow create: if canWrite()
+          && request.resource.data.userId == uid()
+          && request.resource.data.content is string
+          && request.resource.data.content.size() <= 140
+          // Un seul maillon par personne, sept au total.
+          && !(uid() in get(/databases/$(database)/documents/posts/$(postId)).data.chainAuthors)
+          && get(/databases/$(database)/documents/posts/$(postId)).data.chainCount < 7;
+        // Un maillon posé ne se réécrit pas : la chaîne serait falsifiable.
+        allow update: if false;
+        allow delete: if signedIn() && (resource.data.userId == uid() || isAdmin());
+      }
+
+      // ── Le Pari ──────────────────────────────────────────────────────────
+      match /bets/{betUid} {
+        allow read: if signedIn();
+        // L'id du document est l'UID : impossible de parier pour quelqu'un
+        // d'autre, ni deux fois sur la même rumeur.
+        allow create: if canWrite()
+          && betUid == uid()
+          && request.resource.data.userId == uid()
+          && request.resource.data.settled == false
+          && request.resource.data.stake is int
+          && request.resource.data.stake >= 1
+          && request.resource.data.stake <= 3;
+        // On ne règle que son propre pari, et une seule fois.
+        allow update: if canWrite()
+          && betUid == uid()
+          && resource.data.settled == false
+          && onlyChanges(['settled', 'won', 'payout']);
+        allow delete: if isAdmin();
+      }
+
+      // ── Le droit de réponse ──────────────────────────────────────────────
+      match /replies/{replyUid} {
+        allow read: if signedIn();
+        allow write: if canWrite()
+          && replyUid == uid()
+          && (request.resource.data == null
+              || request.resource.data.userId == uid());
+      }
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if canWrite()
+          && request.resource.data.userId == uid()
+          && request.resource.data.content is string
+          && request.resource.data.content.size() <= 500;
+        allow update: if canWrite()
+          && (resource.data.userId == uid() || onlyChanges(['likedBy']));
+        allow delete: if signedIn() && (resource.data.userId == uid() || isAdmin());
+      }
+    }
+
+    // ── Stories ────────────────────────────────────────────────────────────
+
+    match /stories/{storyId} {
+      allow read: if signedIn();
+      allow create: if canWrite()
+        && request.resource.data.userId == uid()
+        && request.resource.data.content.size() <= 200;
+      allow update: if canWrite() && onlyChanges(['viewedBy']);
+      allow delete: if signedIn() && (resource.data.userId == uid() || isAdmin());
+    }
+
+    // ── Messages privés ────────────────────────────────────────────────────
+
+    match /conversations/{convId} {
+      // Seuls les participants voient la conversation.
+      allow read: if signedIn() && uid() in resource.data.participants;
+      allow create: if canWrite() && uid() in request.resource.data.participants;
+      allow update: if canWrite()
+        && uid() in resource.data.participants;
+      allow delete: if signedIn() && uid() in resource.data.participants;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && uid() in get(/databases/$(database)/documents/conversations/$(convId))
+                        .data.participants;
+        allow create: if canWrite()
+          && request.resource.data.senderId == uid()
+          && uid() in get(/databases/$(database)/documents/conversations/$(convId))
+                        .data.participants;
+        // Un pseudo qui change doit se répercuter sur les anciens messages.
+        allow update: if canWrite()
+          && (resource.data.senderId == uid() || onlyChanges(['senderUsername']));
+        allow delete: if signedIn() && (resource.data.senderId == uid() || isAdmin());
+      }
+    }
+
+    // ── Groupes ────────────────────────────────────────────────────────────
+
+    match /groups/{groupId} {
+      allow read: if signedIn();
+      allow create: if canWrite() && uid() in request.resource.data.members;
+      allow update: if canWrite()
+        && (uid() in resource.data.members || isAdmin());
+      allow delete: if signedIn()
+        && (resource.data.createdBy == uid() || isAdmin());
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && uid() in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        allow create: if canWrite()
+          && request.resource.data.senderId == uid()
+          && uid() in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        allow update: if canWrite()
+          && (resource.data.senderId == uid() || onlyChanges(['senderUsername']));
+        allow delete: if signedIn() && (resource.data.senderId == uid() || isAdmin());
+      }
+    }
+
+    // ── Notifications ──────────────────────────────────────────────────────
+
+    match /notifications/{notifId} {
+      // On ne lit que les siennes.
+      allow read: if signedIn() && resource.data.targetUserId == uid();
+      // Mais on peut en créer pour les autres (mention, message, nouveau post).
+      allow create: if canWrite() && request.resource.data.fromUserId == uid();
+      // Seul le destinataire marque comme lu.
+      allow update: if signedIn()
+        && resource.data.targetUserId == uid()
+        && onlyChanges(['isRead']);
+      allow delete: if signedIn()
+        && (resource.data.targetUserId == uid()
+            || resource.data.fromUserId == uid()
+            || isAdmin());
+    }
+
+    // ── Badges ─────────────────────────────────────────────────────────────
+
+    match /badges/{badgeId} {
+      allow read: if signedIn();
+      allow create: if canWrite()
+        && request.resource.data.createdBy == uid()
+        && request.resource.data.name != 'admin';
+      allow update, delete: if signedIn()
+        && (resource.data.createdBy == uid() || isAdmin());
+    }
+
+    // ── Signalements ───────────────────────────────────────────────────────
+
+    match /reports/{reportId} {
+      // Personne ne lit les signalements des autres, sauf l'admin.
+      allow read: if isAdmin();
+      allow create: if canWrite() && request.resource.data.reporterId == uid();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Requêtes de groupe de collections ──────────────────────────────────
+    // Une requête `collectionGroup` n'est autorisée que par une règle à
+    // caractère générique récursif : les règles imbriquées ci-dessus ne la
+    // couvrent pas. Le filtre sur `userId` est celui que la requête applique,
+    // donc Firestore peut prouver qu'on ne lit que ses propres paris.
+    match /{path=**}/bets/{betId} {
+      allow read: if signedIn() && resource.data.userId == uid();
+    }
+
+    // Tout ce qui n'est pas explicitement autorisé est refusé.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
