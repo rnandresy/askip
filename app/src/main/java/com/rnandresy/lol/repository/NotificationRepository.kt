@@ -1,5 +1,6 @@
 package com.rnandresy.lol.repository
 
+import com.google.firebase.firestore.DocumentSnapshot
 import com.rnandresy.lol.model.AppNotification
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.utils.COL_NOTIFICATIONS
@@ -146,22 +147,44 @@ class NotificationRepository {
         )
     }
 
+    // ── Marquage ──────────────────────────────────────────────────────────
+    // Ces trois-là laissent remonter leurs erreurs. Le ViewModel applique le
+    // changement à l'écran avant d'écrire, et il a besoin de savoir que
+    // l'écriture a échoué pour revenir en arrière : un `runCatching` posé ici
+    // rendait ce retour en arrière inatteignable, et l'écran affichait un
+    // succès que le serveur n'avait jamais accordé.
+
     suspend fun markRead(notifId: String) {
-        runCatching { notifications.document(notifId).update("isRead", true).await() }
+        notifications.document(notifId).update("isRead", true).await()
     }
 
+    /** Marque comme lues toutes les notifications non lues de [uid]. */
     suspend fun markAllRead(uid: String) {
-        runCatching {
-            notifications.whereEqualTo("targetUserId", uid).get().await()
-                .documents
-                // Filtre côté client : Firestore facturerait un index composite
-                // pour un `whereNotEqualTo` ici, et la liste est déjà courte.
-                .filter { it.getBoolean("isRead") != true }
-                .commitInChunks { batch, doc -> batch.update(doc.reference, "isRead", true) }
+        val unread = notifications.whereEqualTo("targetUserId", uid).get().await()
+            .documents
+            // Filtre côté client : Firestore facturerait un index composite
+            // pour un `whereNotEqualTo` ici, et la liste est déjà courte.
+            .filter { it.getBoolean("isRead") != true }
+
+        if (unread.isEmpty()) return
+
+        val marquer: suspend (List<DocumentSnapshot>) -> Unit = { docs ->
+            docs.commitInChunks { batch, doc -> batch.update(doc.reference, "isRead", true) }
+        }
+
+        // `update` fait échouer tout le lot si un seul document a disparu entre
+        // la lecture et l'écriture — or supprimer une notification est le geste
+        // voisin de « Tout lire ». On relit la liste et on retente une fois
+        // avant d'abandonner ; si ça échoue encore, l'erreur remonte.
+        runCatching { marquer(unread) }.getOrElse {
+            val encoreLa = unread.filter { doc ->
+                runCatching { doc.reference.get().await().exists() }.getOrDefault(false)
+            }
+            if (encoreLa.isNotEmpty()) marquer(encoreLa)
         }
     }
 
     suspend fun delete(notifId: String) {
-        runCatching { notifications.document(notifId).delete().await() }
+        notifications.document(notifId).delete().await()
     }
 }

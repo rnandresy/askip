@@ -980,24 +980,47 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Ce que la dernière action sur les notifications a donné.
+     *
+     * `null` tant qu'il n'y a rien à dire. Un échec silencieux était pire que
+     * pas d'action du tout : l'écran affichait « tout lu », puis l'écouteur
+     * ramenait l'état réel sans un mot d'explication.
+     */
+    private val _notifError = MutableStateFlow<String?>(null)
+    val notifError: StateFlow<String?> = _notifError
+
+    fun clearNotifError() { _notifError.value = null }
+
     fun markNotificationRead(notifId: String) = viewModelScope.launch {
         val prev = _notifications.value
         _notifications.value = prev.map {
             if (it.id == notifId) it.copy(isRead = true) else it
         }
-        runCatching { notifRepo.markRead(notifId) }.onFailure { _notifications.value = prev }
+        runCatching { notifRepo.markRead(notifId) }.onFailure {
+            _notifications.value = prev
+            _notifError.value = "Impossible de marquer comme lu."
+        }
     }
 
     fun markAllNotificationsRead() = viewModelScope.launch {
         val prev = _notifications.value
+        if (prev.none { !it.isRead }) return@launch
+
         _notifications.value = prev.map { it.copy(isRead = true) }
-        runCatching { notifRepo.markAllRead(currentUserId) }
-            .onFailure { _notifications.value = prev }
+        runCatching { notifRepo.markAllRead(currentUserId) }.onFailure {
+            _notifications.value = prev
+            _notifError.value = "Rien n'a été marqué comme lu — réessaie."
+        }
     }
 
     fun deleteNotification(notifId: String) = viewModelScope.launch {
-        _notifications.value = _notifications.value.filter { it.id != notifId }
-        notifRepo.delete(notifId)
+        val prev = _notifications.value
+        _notifications.value = prev.filter { it.id != notifId }
+        runCatching { notifRepo.delete(notifId) }.onFailure {
+            _notifications.value = prev
+            _notifError.value = "Impossible de supprimer cette notification."
+        }
     }
 
     private suspend fun handleMentions(

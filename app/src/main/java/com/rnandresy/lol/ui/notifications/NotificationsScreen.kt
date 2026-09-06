@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -51,6 +52,7 @@ import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.ui.theme.AdminGold
 import com.rnandresy.lol.ui.theme.AdminGoldBg
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
+import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
@@ -63,7 +65,8 @@ fun NotificationsScreen(
     onOpenProfile: (String) -> Unit
 ) {
     val notifications by vm.notifications.collectAsState()
-    val unread         = notifications.count { !it.isRead }
+    val error by vm.notifError.collectAsState()
+    val unread = notifications.count { !it.isRead }
 
     Scaffold(
         topBar = {
@@ -111,6 +114,14 @@ fun NotificationsScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
+                // Le serveur a refusé : on le dit, plutôt que de laisser
+                // l'écran se contredire tout seul.
+                error?.let { message ->
+                    item(key = "error") {
+                        NotifErrorBanner(message) { vm.clearNotifError() }
+                    }
+                }
+
                 items(notifications, key = { it.id }) { notif ->
                     NotifRow(
                         notif = notif,
@@ -278,4 +289,31 @@ private fun notifTitle(notif: AppNotification): String = when (notif.type) {
     "mention"          -> "${notif.fromUsername} te mentionne"
     "message"          -> "Message de ${notif.fromUsername}"
     else               -> "Notification"
+}
+/** Le bandeau d'échec, refermable, en tête de liste. */
+@Composable
+private fun NotifErrorBanner(message: String, onClose: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.sm))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = Space.md, vertical = Space.sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("⚠️", fontSize = 14.sp)
+        Spacer(Modifier.width(Space.sm))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.weight(1f)
+        )
+        BubbleIconButton(
+            icon = Icons.Default.Close,
+            contentDescription = "Fermer",
+            onClick = onClose,
+            diameter = 26.dp
+        )
+    }
 }
