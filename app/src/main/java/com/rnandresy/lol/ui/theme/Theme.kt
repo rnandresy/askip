@@ -23,19 +23,19 @@ import androidx.compose.ui.unit.sp
 //  Thèmes
 // ═════════════════════════════════════════════════════════════════════════════
 
-enum class AppTheme(val displayName: String, val emoji: String, val isLight: Boolean = false) {
-    // Neuf signes distincts : la pastille de thème ne montre déjà que trois
-    // couleurs, le signe est ce qui reste pour les différencier au premier
-    // coup d'œil dans la liste.
-    SAKURA("Sakura", "❀", isLight = true),
-    BLACK_WHITE("Noir & Blanc", "◐"),
-    NEON("Néon", "✧"),
-    NOSTALGIC("Nostalgique", "☾"),
-    CRIMSON("Sang d'encre", "✦"),
-    TABLOID("Tabloïd", "▤", isLight = true),
-    MATRIX("Matrice", "▢"),
-    DAYLIGHT("Grand jour", "☀", isLight = true),
-    SYSTEM("Automatique", "◑")
+enum class AppTheme(val displayName: String, val isLight: Boolean = false) {
+    // La pastille de thème ne montre que trois couleurs : la figure dessinée
+    // à côté du nom est ce qui reste pour les différencier au premier coup
+    // d'œil dans la liste. Elle se choisit dans `glyphForTheme`.
+    SAKURA("Sakura", isLight = true),
+    BLACK_WHITE("Noir & Blanc"),
+    NEON("Néon"),
+    NOSTALGIC("Nostalgique"),
+    CRIMSON("Sang d'encre"),
+    TABLOID("Tabloïd", isLight = true),
+    MATRIX("Matrice"),
+    DAYLIGHT("Grand jour", isLight = true),
+    SYSTEM("Automatique")
 }
 
 // ── Sakura — le thème par défaut ─────────────────────────────────────────────

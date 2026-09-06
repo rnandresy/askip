@@ -27,28 +27,27 @@ enum class QuestKind {
 data class QuestDef(
     val id: String,
     val kind: QuestKind,
-    val emoji: String,
     val title: String,
     val target: Int,
     val xp: Long = XP_QUEST
 )
 
 val ALL_QUESTS = listOf(
-    QuestDef("react_5", QuestKind.REACT, "✦", "Réagis à 5 rumeurs", 5),
-    QuestDef("react_12", QuestKind.REACT, "✦", "Réagis à 12 rumeurs", 12, XP_QUEST * 2),
-    QuestDef("comment_3", QuestKind.COMMENT, "⌯", "Laisse 3 commentaires", 3),
-    QuestDef("comment_1", QuestKind.COMMENT, "⌯", "Commente une rumeur", 1),
-    QuestDef("post_1", QuestKind.POST, "⋆", "Balance une rumeur", 1),
-    QuestDef("verdict_5", QuestKind.VERDICT, "⚖", "Tranche sur 5 rumeurs", 5),
-    QuestDef("verdict_10", QuestKind.VERDICT, "⌕", "Mène l'enquête sur 10 rumeurs", 10, XP_QUEST * 2),
-    QuestDef("scoop_1", QuestKind.SCOOP, "⟡", "Offre ton Scoop du jour", 1, XP_QUEST + 20),
-    QuestDef("story_1", QuestKind.STORY, "▤", "Publie une story", 1),
-    QuestDef("confess_1", QuestKind.CONFESS, "◌", "Publie une confession", 1),
-    QuestDef("tag_2", QuestKind.OPEN_TAG, "◇", "Explore 2 salons", 2),
-    QuestDef("bet_1", QuestKind.BET, "⟡", "Mise un jeton sur un verdict", 1),
-    QuestDef("bet_3", QuestKind.BET, "◈", "Place 3 paris", 3, XP_QUEST * 2),
-    QuestDef("chain_1", QuestKind.CHAIN, "⋯", "Ajoute un maillon à une chaîne", 1),
-    QuestDef("key_2", QuestKind.KEY, "⚿", "Donne 2 clés à des capsules", 2)
+    QuestDef("react_5", QuestKind.REACT, "Réagis à 5 rumeurs", 5),
+    QuestDef("react_12", QuestKind.REACT, "Réagis à 12 rumeurs", 12, XP_QUEST * 2),
+    QuestDef("comment_3", QuestKind.COMMENT, "Laisse 3 commentaires", 3),
+    QuestDef("comment_1", QuestKind.COMMENT, "Commente une rumeur", 1),
+    QuestDef("post_1", QuestKind.POST, "Balance une rumeur", 1),
+    QuestDef("verdict_5", QuestKind.VERDICT, "Tranche sur 5 rumeurs", 5),
+    QuestDef("verdict_10", QuestKind.VERDICT, "Mène l'enquête sur 10 rumeurs", 10, XP_QUEST * 2),
+    QuestDef("scoop_1", QuestKind.SCOOP, "Offre ton Scoop du jour", 1, XP_QUEST + 20),
+    QuestDef("story_1", QuestKind.STORY, "Publie une story", 1),
+    QuestDef("confess_1", QuestKind.CONFESS, "Publie une confession", 1),
+    QuestDef("tag_2", QuestKind.OPEN_TAG, "Explore 2 salons", 2),
+    QuestDef("bet_1", QuestKind.BET, "Mise un jeton sur un verdict", 1),
+    QuestDef("bet_3", QuestKind.BET, "Place 3 paris", 3, XP_QUEST * 2),
+    QuestDef("chain_1", QuestKind.CHAIN, "Ajoute un maillon à une chaîne", 1),
+    QuestDef("key_2", QuestKind.KEY, "Donne 2 clés à des capsules", 2)
 )
 
 /**

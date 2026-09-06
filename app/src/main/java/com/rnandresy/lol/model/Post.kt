@@ -9,11 +9,11 @@ import com.rnandresy.lol.utils.VERDICT_MIN_VOTES
 import kotlin.math.pow
 
 /** Où en est une rumeur : le campus a tranché, ou pas encore. */
-enum class Verdict(val label: String, val emoji: String, val colorHex: String) {
-    INVESTIGATING("En enquête", "⌕", "#8E8E93"),
-    CONTESTED("Contestée", "⚔", "#F59E0B"),
-    CONFIRMED("Confirmée", "✓", "#10B981"),
-    DEBUNKED("Démentie", "✕", "#EF4444")
+enum class Verdict(val label: String, val colorHex: String) {
+    INVESTIGATING("En enquête", "#8E8E93"),
+    CONTESTED("Contestée", "#F59E0B"),
+    CONFIRMED("Confirmée", "#10B981"),
+    DEBUNKED("Démentie", "#EF4444")
 }
 
 data class Post(
@@ -92,11 +92,11 @@ data class Post(
     // ── Réactions ─────────────────────────────────────────────────────────────
 
     fun getUserReaction(uid: String): String? = when {
-        uid in likedBy -> "♡"
-        uid in fireBy -> "✦"
-        uid in lolBy -> "◎"
-        uid in shockBy -> "◎"
-        uid in eyesBy -> "◎"
+        uid in likedBy -> "love"
+        uid in fireBy -> "fire"
+        uid in lolBy -> "lol"
+        uid in shockBy -> "shock"
+        uid in eyesBy -> "eyes"
         else -> null
     }
 
@@ -117,12 +117,12 @@ data class Post(
      * Applique une réaction en local, sans attendre le réseau.
      * Une seule réaction par personne : la nouvelle remplace l'ancienne.
      */
-    fun withReaction(uid: String, emoji: String?): Post = copy(
-        likedBy = likedBy.toggled(uid, emoji == "♡"),
-        fireBy = fireBy.toggled(uid, emoji == "✦"),
-        lolBy = lolBy.toggled(uid, emoji == "◎"),
-        shockBy = shockBy.toggled(uid, emoji == "◎"),
-        eyesBy = eyesBy.toggled(uid, emoji == "◎")
+    fun withReaction(uid: String, key: String?): Post = copy(
+        likedBy = likedBy.toggled(uid, key == "love"),
+        fireBy = fireBy.toggled(uid, key == "fire"),
+        lolBy = lolBy.toggled(uid, key == "lol"),
+        shockBy = shockBy.toggled(uid, key == "shock"),
+        eyesBy = eyesBy.toggled(uid, key == "eyes")
     )
 
     // ── Rumeur-mètre ──────────────────────────────────────────────────────────

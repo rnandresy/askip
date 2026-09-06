@@ -1,5 +1,6 @@
 package com.rnandresy.lol.ui.feed
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,10 +32,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rnandresy.lol.ui.components.AskipGlyph
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.EmptyState
 import com.rnandresy.lol.ui.components.PostSkeleton
+import com.rnandresy.lol.ui.components.glyphForTag
 import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.tagDef
 import com.rnandresy.lol.viewmodel.AskipViewModel
@@ -74,11 +77,12 @@ fun TagFeedScreen(
             TopAppBar(
                 modifier = Modifier.barEdge(),
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "${def?.emoji ?: "#"}  ${def?.label ?: tag}",
-                            fontWeight = FontWeight.Bold
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Space.xs)
+                    ) {
+                        AskipGlyph(kind = glyphForTag(tag), size = 15.dp)
+                        Text(def?.label ?: tag, fontWeight = FontWeight.Bold)
                     }
                 },
                 navigationIcon = {
@@ -104,7 +108,7 @@ fun TagFeedScreen(
 
                 posts.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
                     EmptyState(
-                        def?.emoji ?: "◇",
+                        glyphForTag(tag),
                         "Rien dans ce salon",
                         "Sois le premier à lancer une rumeur avec #$tag"
                     )

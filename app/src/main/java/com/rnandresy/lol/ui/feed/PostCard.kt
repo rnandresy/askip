@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.model.Bet
 import com.rnandresy.lol.model.Post
 import com.rnandresy.lol.model.Verdict
@@ -73,7 +75,6 @@ import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.REPORT_REASONS
-import com.rnandresy.lol.utils.SCOOP_EMOJI
 import com.rnandresy.lol.utils.VERDICT_MIN_VOTES
 import com.rnandresy.lol.utils.isAdmin
 import kotlinx.coroutines.launch
@@ -261,7 +262,7 @@ private fun PostHeader(
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
                 Text(
-                    if (post.isAnonymous) post.username.ifBlank { "Quelqu'un ◌" }
+                    if (post.isAnonymous) post.username.ifBlank { "Quelqu'un" }
                     else post.username,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -293,11 +294,11 @@ private fun PostHeader(
             post.isTruth() && verdict == Verdict.DEBUNKED -> OathStamp(perjury = true)
             post.isTruth() && verdict == Verdict.CONFIRMED -> OathStamp(perjury = false)
             verdict == Verdict.CONFIRMED ->
-                BubbleChip("Confirmée", emoji = "✓", accent = palette.confirmed)
+                BubbleChip("Confirmée", glyph = GlyphKind.CHECK, accent = palette.confirmed)
             verdict == Verdict.DEBUNKED ->
-                BubbleChip("Démentie", emoji = "✕", accent = palette.debunked)
+                BubbleChip("Démentie", glyph = GlyphKind.CROSS, accent = palette.debunked)
             hotRank in 1..3 ->
-                BubbleChip("#$hotRank", emoji = "✦", accent = palette.heatHigh)
+                BubbleChip("#$hotRank", glyph = GlyphKind.FLAME, accent = palette.heatHigh)
             else -> Unit
         }
 
@@ -398,11 +399,17 @@ private fun PostActions(
         }
 
         if (post.scoopBy.isNotEmpty()) {
-            Text(
-                "$SCOOP_EMOJI ${post.scoopBy.size}",
-                style = MaterialTheme.typography.labelMedium,
-                color = palette.scoop
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                AskipGlyph(kind = GlyphKind.GEM, size = 12.dp, tint = palette.scoop)
+                Text(
+                    "${post.scoopBy.size}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = palette.scoop
+                )
+            }
         }
 
         Spacer(Modifier.weight(1f))
@@ -413,7 +420,7 @@ private fun PostActions(
         if (post.postType != "poll" && (!post.isSealed() || post.isUnsealed())) {
             BubbleChip(
                 label = if (settled) "${(ratio * 100).toInt()} %" else "Enquête",
-                emoji = if (settled) "⚖" else "⌕",
+                glyph = if (settled) GlyphKind.SCALE else GlyphKind.SEARCH,
                 accent = when {
                     !settled -> palette.unknown
                     ratio >= 0.6f -> palette.confirmed
@@ -531,14 +538,14 @@ private fun MoreSheet(
 
             if (userIsAdmin) {
                 SheetAction(
-                    emoji = "⚑",
+                    glyph = GlyphKind.FLAG,
                     label = if (post.isPinned) "Désépingler" else "Épingler en tête",
                     onClick = { onPin(); close() }
                 )
             }
             if (!isMyPost) {
                 SheetAction(
-                    emoji = "⚑",
+                    glyph = GlyphKind.FLAG,
                     label = "Signaler",
                     subtitle = "L'administration recevra ton signalement.",
                     onClick = { onReport() }
@@ -546,7 +553,7 @@ private fun MoreSheet(
             }
             if (isMyPost || userIsAdmin) {
                 SheetAction(
-                    emoji = "✕",
+                    glyph = GlyphKind.CROSS,
                     label = "Supprimer",
                     tint = MaterialTheme.colorScheme.error,
                     onClick = { onDelete(); close() }
@@ -564,7 +571,7 @@ private fun ReportSheet(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         Column(Modifier.padding(bottom = Space.xxl)) {
             SheetHeader("Signaler", "Qu'est-ce qui ne va pas ?")
             REPORT_REASONS.forEach { reason ->
-                SheetAction(emoji = "•", label = reason, onClick = onConfirm)
+                SheetAction(glyph = GlyphKind.STAR, label = reason, onClick = onConfirm)
             }
         }
     }

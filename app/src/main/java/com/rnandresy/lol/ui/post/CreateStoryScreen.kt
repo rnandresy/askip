@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleIconButton
@@ -50,10 +51,11 @@ import com.rnandresy.lol.ui.components.BubbleSize
 import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.bubbleShell
+import com.rnandresy.lol.ui.components.glyphForSymbol
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.utils.STORY_COLORS
-import com.rnandresy.lol.utils.STORY_EMOJIS
+import com.rnandresy.lol.utils.STORY_MARKS
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +63,7 @@ import com.rnandresy.lol.viewmodel.AskipViewModel
 fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit) {
     var content  by remember { mutableStateOf("") }
     var selColor by remember { mutableStateOf(STORY_COLORS.first()) }
-    var selEmoji by remember { mutableStateOf(STORY_EMOJIS.first()) }
+    var selEmoji by remember { mutableStateOf(STORY_MARKS.first()) }
 
     val palette = LocalAskipPalette.current
     val bgColor = runCatching {
@@ -159,9 +161,9 @@ fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit
             }
 
             // Emojis
-            Text("Emoji", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text("Marque", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(STORY_EMOJIS) { emoji ->
+                items(STORY_MARKS) { emoji ->
                     val picked = selEmoji == emoji
                     val shape = RoundedCornerShape(Radius.sm)
                     TapArea(
@@ -176,7 +178,7 @@ fun CreateStoryScreen(vm: AskipViewModel, onDone: () -> Unit, onBack: () -> Unit
                             if (picked) 5.dp else 2.dp
                         )
                     ) {
-                        Text(emoji, fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+                        AskipGlyph(kind = glyphForSymbol(emoji), size = 23.dp, modifier = Modifier.padding(8.dp))
                     }
                 }
             }

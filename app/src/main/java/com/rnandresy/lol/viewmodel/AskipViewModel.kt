@@ -1318,7 +1318,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 savedKb
             }.onSuccess { saved ->
-                info.value = if (saved > 0) "Publié — $saved Ko économisés" else "Publié ✓"
+                info.value = if (saved > 0) "Publié — $saved Ko économisés" else "Publié"
             }.onFailure {
                 error.value = it.message
             }
@@ -1370,7 +1370,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         val clean = newContent.trim()
         runCatching {
             feedRepo.editPost(post.id, clean, RumorEngine.mergeTags(post.tags, clean))
-        }.onSuccess { info.value = "Rumeur modifiée ✓" }
+        }.onSuccess { info.value = "Rumeur modifiée" }
             .onFailure { error.value = it.message }
     }
 
@@ -1541,7 +1541,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             .onSuccess {
                 profileRepo.addClout(post.userId, CLOUT_PER_SCOOP)
                 award(0L, QuestKind.SCOOP)
-                info.value = "Scoop offert ⟡"
+                info.value = "Scoop offert"
             }
             .onFailure {
                 restorePosts(snapshot)
@@ -1648,7 +1648,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         it.won = won
                     }
                     )
-                info.value = if (won) "Pari gagné : +$payout clout ✦"
+                info.value = if (won) "Pari gagné : +$payout clout"
                 else "Pari perdu : $payout clout"
             }
         }
@@ -1682,7 +1682,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             .onSuccess {
                 award(0L, QuestKind.KEY)
                 val left = (post.keysNeeded - post.keysBy.size - 1).coerceAtLeast(0)
-                info.value = if (left == 0) "Capsule ouverte ⌂"
+                info.value = if (left == 0) "Capsule ouverte"
                 else "Clé donnée — encore $left"
             }
             .onFailure {
@@ -1736,7 +1736,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }.onSuccess {
                 award(XP_CHAIN_LINK, QuestKind.CHAIN)
-                info.value = "Maillon ajouté ⋯"
+                info.value = "Maillon ajouté"
             }.onFailure { error.value = it.message }
         }
 
@@ -1783,7 +1783,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                     timestamp = System.currentTimeMillis()
                 )
             )
-        }.onSuccess { info.value = "Réponse publiée ⚖" }
+        }.onSuccess { info.value = "Réponse publiée" }
             .onFailure { error.value = it.message }
     }
 
@@ -2020,10 +2020,10 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                             notif.showMessageNotification(
                                 resolveUsername(msg.senderId, msg.senderUsername),
                                 when {
-                                    msg.isAudio() -> "◍ Message vocal"
-                                    msg.isImage() -> "◫ Photo"
-                                    msg.isVideo() -> "▷ Vidéo"
-                                    msg.isFile() -> "▤ ${msg.mediaName}"
+                                    msg.isAudio() -> "Message vocal"
+                                    msg.isImage() -> "Photo"
+                                    msg.isVideo() -> "Vidéo"
+                                    msg.isFile() -> "${msg.mediaName}"
                                     else -> msg.content
                                 },
                                 fromAdmin
@@ -2101,10 +2101,10 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 val preview = when (mediaType) {
-                    "image" -> "◫ Photo"
-                    "video" -> "▷ Vidéo"
-                    "file" -> "▤ $mediaName"
-                    "audio" -> "◍ Vocal"
+                    "image" -> "Photo"
+                    "video" -> "Vidéo"
+                    "file" -> "$mediaName"
+                    "audio" -> "Vocal"
                     else -> content.take(80)
                 }
                 msgRepo.sendMessage(
@@ -2223,7 +2223,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         "fromIsAdmin" to fromAdmin,
                         "postId" to "",
                         "conversationId" to convId,
-                        "content" to "◍ Message vocal (${durationSec}s)",
+                        "content" to "Message vocal (${durationSec}s)",
                         "isRead" to false,
                         "timestamp" to System.currentTimeMillis()
                     )
@@ -2461,7 +2461,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     fun grantENIBadge(uid: String, granted: Boolean) = viewModelScope.launch {
         if (!isAdmin(currentUserId)) return@launch
         runCatching { profileRepo.updateProfile(uid, mapOf("hasBadgeENI" to granted)) }
-            .onSuccess { info.value = if (granted) "Badge ENI accordé ✓" else "Badge ENI retiré" }
+            .onSuccess { info.value = if (granted) "Badge ENI accordé" else "Badge ENI retiré" }
             .onFailure { error.value = it.message }
     }
 
@@ -2472,7 +2472,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             return@launch
         }
         runCatching { profileRepo.updateProfile(uid, mapOf("isBanned" to banned)) }
-            .onSuccess { info.value = if (banned) "Utilisateur banni" else "Utilisateur réactivé ✓" }
+            .onSuccess { info.value = if (banned) "Utilisateur banni" else "Utilisateur réactivé" }
             .onFailure { error.value = it.message }
     }
 

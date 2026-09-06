@@ -65,6 +65,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleCard
@@ -72,6 +74,7 @@ import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleSize
 import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.glyphForTheme
 import com.rnandresy.lol.ui.components.rememberTapFeedback
 import com.rnandresy.lol.ui.theme.AppTheme
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
@@ -181,7 +184,7 @@ fun SettingsScreen(
                 SettingsDivider()
                 // Verrouillé : les annonces admin passent toujours.
                 SwitchRow(
-                    Icons.Rounded.Campaign, "Annonces admin ✧",
+                    Icons.Rounded.Campaign, "Annonces admin",
                     "Toujours activé — obligatoire", true, enabled = false
                 ) { }
             }
@@ -211,7 +214,7 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Text(
-                        "Askip ❀",
+                        "Askip",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -227,7 +230,7 @@ fun SettingsScreen(
 
             BubbleButton(
                 text = "Se déconnecter",
-                emoji = "⋆",
+                glyph = GlyphKind.STAR,
                 onClick = onLogout,
                 enabled = !loading,
                 tone = BubbleTone.SOFT,
@@ -236,7 +239,7 @@ fun SettingsScreen(
 
             BubbleButton(
                 text = "Supprimer mon compte",
-                emoji = "✕",
+                glyph = GlyphKind.CROSS,
                 onClick = { showDeleteAcct = true },
                 enabled = !loading,
                 tone = BubbleTone.DANGER,
@@ -253,7 +256,7 @@ fun SettingsScreen(
             onConfirm = { email, pwd ->
                 vm.updateEmail(email, pwd) { ok, err ->
                     showEmail = false
-                    msg = ok to if (ok) "✓ Email mis à jour." else "✕ $err"
+                    msg = ok to if (ok) "Email mis à jour." else (err ?: "Échec.")
                 }
             }
         )
@@ -265,7 +268,7 @@ fun SettingsScreen(
             onConfirm = { current, next ->
                 vm.updatePassword(current, next) { ok, err ->
                     showPwd = false
-                    msg = ok to if (ok) "✓ Mot de passe mis à jour." else "✕ $err"
+                    msg = ok to if (ok) "Mot de passe mis à jour." else (err ?: "Échec.")
                 }
             }
         )
@@ -279,7 +282,7 @@ fun SettingsScreen(
                 vm.deleteAccount(
                     pwd,
                     onSuccess = { showDeleteAcct = false; onLogout() },
-                    onError = { err -> showDeleteAcct = false; msg = true to "✕ $err" }
+                    onError = { err -> showDeleteAcct = false; msg = true to (err ?: "Échec.") }
                 )
             }
         )
@@ -295,7 +298,7 @@ fun SettingsScreen(
  *
  * Chaque pastille porte les vraies couleurs du thème : fond, carte, accent.
  * On voit d'un coup d'œil lequel est clair, lequel est sombre — impossible à
- * deviner depuis « Nostalgique ☽ ».
+ * deviner depuis « Nostalgique ».
  */
 @Composable
 private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
@@ -357,11 +360,10 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
                             )
                         }
                         if (picked) {
-                            Text(
-                                "✓",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = swatch.accent,
+                            AskipGlyph(
+                                kind = GlyphKind.CHECK,
+                                size = 11.dp,
+                                tint = swatch.accent,
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
                                     .padding(4.dp)
@@ -369,13 +371,19 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
                         }
                     }
 
-                    Text(
-                        "${t.emoji} ${t.displayName}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (picked) FontWeight.Bold else FontWeight.Normal,
-                        color = if (picked) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        AskipGlyph(kind = glyphForTheme(t), size = 10.dp)
+                        Text(
+                            t.displayName,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (picked) FontWeight.Bold else FontWeight.Normal,
+                            color = if (picked) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -438,7 +446,7 @@ private fun DeleteAccountDialog(
 
     AskipDialog(
         title = "Supprimer mon compte",
-        emoji = "✕",
+        glyph = GlyphKind.CROSS,
         danger = true,
         onDismiss = { if (!loading) onDismiss() },
         confirmLabel = "Supprimer",
@@ -454,7 +462,7 @@ private fun DeleteAccountDialog(
                 .padding(Space.md)
         ) {
             Text(
-                "⚠ Action irréversible. Tes posts, commentaires, stories et " +
+                "Action irréversible. Tes posts, commentaires, stories et " +
                     "données seront supprimés définitivement.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer
@@ -476,7 +484,7 @@ private fun AskipDialog(
     confirmLabel: String,
     confirmEnabled: Boolean,
     onConfirm: () -> Unit,
-    emoji: String? = null,
+    glyph: GlyphKind? = null,
     danger: Boolean = false,
     confirmLoading: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
@@ -490,7 +498,13 @@ private fun AskipDialog(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
-                if (emoji != null) Text(emoji, fontSize = 17.sp)
+                glyph?.let { kind ->
+                    AskipGlyph(
+                        kind = kind,
+                        size = 16.dp,
+                        tint = if (danger) MaterialTheme.colorScheme.error else null
+                    )
+                }
                 Text(
                     title,
                     fontWeight = FontWeight.Bold,

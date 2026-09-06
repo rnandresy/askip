@@ -38,10 +38,10 @@ val ENI_CLASSES = listOf(
 // ── Cadres d'avatar ───────────────────────────────────────────────────────────
 val AVATAR_FRAMES = linkedMapOf(
     "none" to "Aucun",
-    "fire" to "✦ Flammes",
-    "star" to "✧ Étoiles",
-    "rainbow" to "❀ Rainbow",
-    "gold" to "✧ Or"
+    "fire" to "Flammes",
+    "star" to "Étoiles",
+    "rainbow" to "Rainbow",
+    "gold" to "Or"
 )
 
 // ── Couleurs de badge ─────────────────────────────────────────────────────────

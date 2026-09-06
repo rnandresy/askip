@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.AdminBadgeLabel
@@ -88,7 +89,7 @@ fun MembersScreen(
     ) { pad ->
         if (sorted.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {
-                EmptyState("◍", "Aucun membre")
+                EmptyState(GlyphKind.PEOPLE, "Aucun membre")
             }
         } else {
             LazyColumn(
@@ -193,12 +194,12 @@ private fun MemberRow(
                 }
             }
 
-            // La série ne s'affiche qu'à partir de deux jours : « ✦ 1 » n'est
+            // La série ne s'affiche qu'à partir de deux jours : « série de 1 » n'est
             // pas une série, c'est juste être venu aujourd'hui.
             if (profile.streak > 1) {
                 BubbleChip(
                     label = "${profile.streak}",
-                    emoji = "✦",
+                    glyph = GlyphKind.FLAME,
                     accent = palette.streak
                 )
             }

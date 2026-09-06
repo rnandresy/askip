@@ -75,6 +75,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Badge
 import com.rnandresy.lol.model.UserProfile
@@ -90,6 +92,8 @@ import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.SlidingSegmented
 import com.rnandresy.lol.ui.components.StarDust
 import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.glyphForAchievement
+import com.rnandresy.lol.ui.components.glyphForAvatarFrame
 import com.rnandresy.lol.ui.components.softGlow
 import com.rnandresy.lol.ui.theme.AdminGold
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
@@ -427,17 +431,11 @@ private fun ProfileHeader(
 
                 // Le cadre choisi dans « Modifier le profil ». Sans cet
                 // affichage, le réglage existerait sans jamais se voir.
-                val frameEmoji = when (profile.avatarFrame) {
-                    "fire" -> "✦"
-                    "star" -> "✩"
-                    "rainbow" -> "❀"
-                    "gold" -> "✧"
-                    else -> ""
-                }
+                val frameGlyph = glyphForAvatarFrame(profile.avatarFrame)
                 // Le cadre se pose en pastille sur le bord de l'avatar, comme
                 // un badge. Posé à même l'image et deux fois plus gros, il
                 // flottait sans point d'ancrage et mangeait le visage.
-                if (frameEmoji.isNotBlank()) {
+                if (frameGlyph != null) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -448,7 +446,7 @@ private fun ProfileHeader(
                             .border(1.dp, palette.bubbleBorder, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(frameEmoji, fontSize = 12.sp)
+                        AskipGlyph(kind = frameGlyph, size = 12.dp)
                     }
                 }
             }
@@ -488,9 +486,9 @@ private fun IdentityCard(profile: UserProfile, userIsAdmin: Boolean) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (userIsAdmin) BubbleChip("Admin", emoji = "✧", accent = AdminGold)
+                if (userIsAdmin) BubbleChip("Admin", glyph = GlyphKind.SPARKLE, accent = AdminGold)
                 if (profile.hasBadgeENI) {
-                    BubbleChip("ENI", emoji = "⌘", accent = Color(0xFF1565C0))
+                    BubbleChip("ENI", glyph = GlyphKind.BOOK, accent = Color(0xFF1565C0))
                 }
             }
 
@@ -509,16 +507,18 @@ private fun IdentityCard(profile: UserProfile, userIsAdmin: Boolean) {
             // Les informations d'état civil tenaient chacune sa ligne. Groupées
             // sur une rangée qui défile, elles occupent le quart de la place.
             val facts = buildList {
-                if (profile.classeENI.isNotBlank()) add("⌘" to profile.classeENI)
-                if (profile.age > 0) add("✦" to "${profile.age} ans")
+                if (profile.classeENI.isNotBlank()) {
+                    add(GlyphKind.BOOK to profile.classeENI)
+                }
+                if (profile.age > 0) add(GlyphKind.STAR to "${profile.age} ans")
                 if (profile.relationshipStatus.isNotBlank()) {
-                    add("♡" to profile.relationshipStatus)
+                    add(GlyphKind.HEART to profile.relationshipStatus)
                 }
             }
             if (facts.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-                    items(facts) { (emoji, label) ->
-                        BubbleChip(label, emoji = emoji)
+                    items(facts) { (glyph, label) ->
+                        BubbleChip(label, glyph = glyph)
                     }
                 }
             }
@@ -563,7 +563,7 @@ private fun ReputationCard(profile: UserProfile) {
                 }
                 BubbleChip(
                     "${profile.clout} clout",
-                    emoji = "✧",
+                    glyph = GlyphKind.SPARKLE,
                     accent = palette.contested
                 )
             }
@@ -635,7 +635,7 @@ private fun ActivityCard(profile: UserProfile) {
                 ) {
                     BubbleChip(
                         "${profile.streak} jours d'affilée",
-                        emoji = "✦",
+                        glyph = GlyphKind.FLAME,
                         accent = palette.streak
                     )
                     if (profile.bestStreak > profile.streak) {
@@ -737,7 +737,11 @@ private fun TrophyCard(
                                 .border(1.dp, color.copy(alpha = 0.5f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(def.icon, fontSize = 20.sp)
+                            AskipGlyph(
+                                kind = glyphForAchievement(def.id),
+                                size = 19.dp,
+                                tint = color
+                            )
                         }
                     }
                 }
@@ -797,7 +801,7 @@ private fun BadgeCard(
             if (canManage) {
                 BubbleButton(
                     text = "Gérer mes badges",
-                    emoji = "◇",
+                    glyph = GlyphKind.GEM,
                     onClick = onManage,
                     tone = BubbleTone.SOFT,
                     size = BubbleSize.SMALL,
@@ -829,7 +833,7 @@ fun BadgeChipManageable(
     Box {
         BubbleChip(
             label = badge.displayName,
-            emoji = "◇",
+            glyph = GlyphKind.GEM,
             accent = color,
             filled = true,
             onClick = { if (canEdit || canDelete) showMenu = true }
@@ -873,7 +877,7 @@ fun BadgeChipManageable(
 /** Le badge ENI officiel — conservé pour les écrans qui l'affichent encore. */
 @Composable
 fun ENIBadge() {
-    BubbleChip("ENI", emoji = "⌘", accent = Color(0xFF1565C0))
+    BubbleChip("ENI", glyph = GlyphKind.BOOK, accent = Color(0xFF1565C0))
 }
 
 @Composable
@@ -909,7 +913,7 @@ fun BadgeManagerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title            = { Text("◇ Badges") },
+        title            = { Text("Badges") },
         text             = {
             Column(modifier = Modifier.heightIn(max = 500.dp)) {
 
@@ -1040,7 +1044,7 @@ fun BadgeManagerDialog(
                                 shape  = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
-                                    "ℹ Tu peux créer un badge, mais tu devras d'abord retirer le tien pour le porter.",
+                                    "Tu peux créer un badge, mais tu devras d'abord retirer le tien pour le porter.",
                                     modifier = Modifier.padding(10.dp),
                                     style    = MaterialTheme.typography.bodySmall
                                 )
@@ -1168,7 +1172,7 @@ fun BadgeManagerDialog(
                             Spacer(Modifier.height(6.dp))
                             BubbleButton(
                                 text = "Supprimer ce badge",
-                                emoji = "✕",
+                                glyph = GlyphKind.CROSS,
                                 onClick = {
                                     editBadge?.let { b ->
                                         vm.deleteBadge(b.id,

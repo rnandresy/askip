@@ -118,7 +118,8 @@ fun <T> SlidingSegmented(
     selected: T,
     labelOf: (T) -> String,
     onSelect: (T) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    glyphOf: ((T) -> GlyphKind)? = null
 ) {
     val index = items.indexOf(selected).coerceAtLeast(0)
 
@@ -157,15 +158,21 @@ fun <T> SlidingSegmented(
                     scaleDown = 0.94f,
                     modifier = Modifier.weight(1f).fillMaxWidth()
                 ) {
-                    Text(
-                        labelOf(item),
+                    Row(
                         modifier = Modifier.align(Alignment.Center),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (isSelected) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Space.xs)
+                    ) {
+                        glyphOf?.let { AskipGlyph(kind = it(item), size = 12.dp) }
+                        Text(
+                            labelOf(item),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.onSurface
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
@@ -304,13 +311,12 @@ private fun ReactionPicker(
             // Le geste « appuyer ailleurs » referme aussi, mais une croix
             // explicite évite de piéger qui ne le connaît pas.
             TapArea(onTap = onDismiss, modifier = Modifier.size(34.dp)) {
-                Text(
-                    "✕",
+                AskipGlyph(
+                    kind = GlyphKind.CROSS,
+                    size = 12.dp,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .semantics { contentDescription = "Fermer" },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        .semantics { contentDescription = "Fermer" }
                 )
             }
         }
@@ -357,7 +363,7 @@ fun SheetHeader(
 /** Ligne d'action dans une feuille : emoji, libellé, explication facultative. */
 @Composable
 fun SheetAction(
-    emoji: String,
+    glyph: GlyphKind,
     label: String,
     subtitle: String? = null,
     tint: Color = MaterialTheme.colorScheme.onSurface,
@@ -377,7 +383,7 @@ fun SheetAction(
                 .padding(horizontal = Space.xl, vertical = Space.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(emoji, fontSize = 19.sp)
+            AskipGlyph(kind = glyph, size = 17.dp)
             Spacer(Modifier.width(Space.md))
             Column(Modifier.weight(1f)) {
                 Text(

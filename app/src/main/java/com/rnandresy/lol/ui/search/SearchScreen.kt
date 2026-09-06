@@ -48,10 +48,13 @@ import com.rnandresy.lol.model.Post
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.AdminBadgeLabel
 import com.rnandresy.lol.ui.components.AskipAvatar
+import com.rnandresy.lol.ui.components.AskipGlyph
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleChip
 import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.components.glyphForSymbol
 import com.rnandresy.lol.ui.components.rememberTapFeedback
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
@@ -143,7 +146,7 @@ fun SearchScreen(
         if (query.isBlank()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("⌕", fontSize = 48.sp)
+                    AskipGlyph(kind = GlyphKind.SEARCH, size = 46.dp)
                     Spacer(Modifier.height(12.dp))
                     Text("Recherche dans Askip", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
@@ -156,7 +159,7 @@ fun SearchScreen(
             if (totalEmpty) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("◌", fontSize = 40.sp)
+                        AskipGlyph(kind = GlyphKind.VEIL, size = 38.dp)
                         Spacer(Modifier.height(8.dp))
                         Text("Aucun résultat pour « $query »", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -176,7 +179,7 @@ fun SearchScreen(
                     // ── Posts ──────────────────────────────────────────────────
                     if (showPosts && results.posts.isNotEmpty()) {
                         item {
-                            SearchSectionHeader("⋆ Posts")
+                            SearchSectionHeader("Posts")
                         }
                         items(results.posts, key = { it.id }) { post ->
                             SearchPostRow(post = post, onClick = { onOpenPost(post.id) })
@@ -185,7 +188,7 @@ fun SearchScreen(
 
                     // ── Membres ────────────────────────────────────────────────
                     if (showUsers && results.users.isNotEmpty()) {
-                        item { SearchSectionHeader("◍ Membres") }
+                        item { SearchSectionHeader("Membres") }
                         items(results.users, key = { it.userId }) { user ->
                             SearchUserRow(user = user, onClick = { onOpenProfile(user.userId) })
                         }
@@ -193,7 +196,7 @@ fun SearchScreen(
 
                     // ── Groupes ────────────────────────────────────────────────
                     if (showGroups && results.groups.isNotEmpty()) {
-                        item { SearchSectionHeader("◍ Groupes") }
+                        item { SearchSectionHeader("Groupes") }
                         items(results.groups, key = { it.id }) { group ->
                             SearchGroupRow(group = group, onClick = { onOpenGroup(group.id) })
                         }
@@ -233,16 +236,16 @@ private fun SearchPostRow(post: Post, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
             ResultTile(
-                emoji = when (post.postType) {
-                    "poll" -> "◈"
-                    "confession" -> "◌"
-                    else -> "⋆"
+                glyph = when (post.postType) {
+                    "poll" -> GlyphKind.CHART
+                    "confession" -> GlyphKind.VEIL
+                    else -> GlyphKind.STAR
                 },
                 size = 40.dp
             )
             Column(Modifier.weight(1f)) {
                 Text(
-                    if (post.isAnonymous) "Quelqu'un ◌" else post.username,
+                    if (post.isAnonymous) "Quelqu'un" else post.username,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -266,7 +269,7 @@ private fun SearchPostRow(post: Post, onClick: () -> Unit) {
 
 /** La pastille carrée qui ouvre un résultat : rumeur ou groupe. */
 @Composable
-private fun ResultTile(emoji: String, size: Dp) {
+private fun ResultTile(glyph: GlyphKind, size: Dp) {
     Box(
         modifier = Modifier
             .size(size)
@@ -274,7 +277,7 @@ private fun ResultTile(emoji: String, size: Dp) {
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
-        Text(emoji, fontSize = if (size > 42.dp) 21.sp else 18.sp)
+        AskipGlyph(kind = glyph, size = if (size > 42.dp) 21.dp else 18.dp)
     }
 }
 
@@ -319,7 +322,7 @@ private fun SearchUserRow(user: UserProfile, onClick: () -> Unit) {
                 }
                 if (user.classeENI.isNotBlank()) {
                     Text(
-                        "⌘ ${user.classeENI}",
+                        "${user.classeENI}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -347,7 +350,7 @@ private fun SearchGroupRow(group: Group, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            ResultTile(emoji = group.emoji, size = 44.dp)
+            ResultTile(glyph = glyphForSymbol(group.emoji), size = 44.dp)
             Column(modifier = Modifier.weight(1f)) {
                 Text(group.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 Text(

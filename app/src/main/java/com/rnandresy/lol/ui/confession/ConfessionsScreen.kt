@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleIconButton
@@ -69,7 +70,7 @@ fun ConfessionsScreen(
                     Column {
                         Text("Confessions", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text(
-                            "Toujours anonyme ◌",
+                            "Toujours anonyme",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -102,7 +103,7 @@ fun ConfessionsScreen(
         ) {
             if (confessions.isEmpty() && !isRefreshing) {
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    EmptyState("◌", "Aucune confession", "Appuie sur + pour te confesser anonymement")
+                    EmptyState(GlyphKind.VEIL, "Aucune confession", "Appuie sur + pour te confesser anonymement")
                 }
             } else {
                 LazyColumn(
@@ -137,7 +138,7 @@ fun ConfessionsScreen(
         AlertDialog(
             onDismissRequest = { showCreate = false },
             title            = {
-                Text("Confession anonyme ◌", fontWeight = FontWeight.Bold)
+                Text("Confession anonyme", fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,7 +165,7 @@ fun ConfessionsScreen(
             confirmButton = {
                 BubbleButton(
                     text = "Publier",
-                    emoji = "◌",
+                    glyph = GlyphKind.VEIL,
                     onClick = {
                         if (confText.isNotBlank()) {
                             vm.createPost(confText.trim(), "confession")

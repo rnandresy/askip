@@ -119,17 +119,17 @@ fun MessageActionSheet(
                 )
             )
 
-            SheetAction(emoji = "↩", label = "Répondre") { onReply(); onDismiss() }
+            SheetAction(glyph = GlyphKind.REPLY, label = "Répondre") { onReply(); onDismiss() }
 
             if (copyable) {
-                SheetAction(emoji = "⧉", label = "Copier le texte") {
+                SheetAction(glyph = GlyphKind.COPY, label = "Copier le texte") {
                     onCopy(); onDismiss()
                 }
             }
 
             if (canDelete) {
                 SheetAction(
-                    emoji = "✕",
+                    glyph = GlyphKind.CROSS,
                     label = "Supprimer",
                     tint = MaterialTheme.colorScheme.error
                 ) { onDelete(); onDismiss() }
@@ -346,10 +346,9 @@ fun ReplyBanner(
             scaleDown = 0.85f,
             modifier = Modifier.size(26.dp)
         ) {
-            Text(
-                "✕",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            AskipGlyph(
+                kind = GlyphKind.CROSS,
+                size = 12.dp,
                 modifier = Modifier.align(Alignment.Center)
             )
         }

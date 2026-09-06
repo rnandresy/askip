@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Story
 import com.rnandresy.lol.ui.components.BubbleButton
@@ -74,6 +76,10 @@ import com.rnandresy.lol.ui.components.StarDust
 import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.TruthPageHeader
 import com.rnandresy.lol.ui.components.VoiceRecordFab
+import com.rnandresy.lol.ui.components.glyphForFeedTab
+import com.rnandresy.lol.ui.components.glyphForSection
+import com.rnandresy.lol.ui.components.glyphForSymbol
+import com.rnandresy.lol.ui.components.glyphForWeather
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
@@ -209,9 +215,10 @@ fun FeedScreen(
                 SlidingSegmented(
                     items = FeedSection.entries.toList(),
                     selected = section,
-                    labelOf = { "${it.emoji}  ${it.label}" },
+                    labelOf = { it.label },
                     onSelect = vm::setFeedSection,
-                    modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm)
+                    modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm),
+                    glyphOf = ::glyphForSection
                 )
 
                 // Les réglages du fil sont regroupés sur une seule ligne
@@ -226,14 +233,14 @@ fun FeedScreen(
                     ) {
                         BubbleChip(
                             label = tab.label,
-                            emoji = tab.emoji,
+                            glyph = glyphForFeedTab(tab),
                             accent = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { showTuning = true }
                         )
                         Spacer(Modifier.weight(1f))
                         BubbleChip(
                             label = weather.weather.label,
-                            emoji = weather.weather.emoji,
+                            glyph = glyphForWeather(weather.weather),
                             accent = LocalAskipPalette.current.contested,
                             onClick = { showTuning = true }
                         )
@@ -302,7 +309,7 @@ fun FeedScreen(
                                 PostSkeleton()
                             } else if (feed.size > 5) {
                                 Text(
-                                    "Tu as tout lu. ❀",
+                                    "Tu as tout lu.",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(Space.xxl),
@@ -349,22 +356,20 @@ fun FeedScreen(
 @Composable
 private fun FeedEmptyState(section: FeedSection, tab: FeedTab) {
     when (section) {
-        FeedSection.VOICE -> EmptyState(
-            "◍", "Silence radio",
+        FeedSection.VOICE -> EmptyState(GlyphKind.PEOPLE, "Silence radio",
             "Appuie sur le micro et lance la première rumeur vocale."
         )
-        FeedSection.TRUTH -> EmptyState(
-            "⚖", "Registre vierge",
+        FeedSection.TRUTH -> EmptyState(GlyphKind.SCALE, "Registre vierge",
             "Aucun serment n'a encore été prêté."
         )
         FeedSection.MAIN -> EmptyState(
-            emoji = tab.emoji,
+            glyph = glyphForFeedTab(tab),
             title = when (tab) {
                 FeedTab.CONFESSIONS -> "Aucune confession"
                 FeedTab.LEGENDS -> "Pas encore de légende"
                 else -> "Le campus est calme"
             },
-            subtitle = "Lance la première rumeur ❀"
+            subtitle = "Lance la première rumeur"
         )
     }
 }
@@ -400,7 +405,7 @@ private fun FeedTuningSheet(
             SheetHeader("Trier le fil")
             FeedTab.entries.forEach { entry ->
                 SheetAction(
-                    emoji = entry.emoji,
+                    glyph = glyphForFeedTab(entry),
                     label = entry.label,
                     subtitle = if (entry == currentTab) "Actuellement affiché" else null,
                     onClick = { onPickTab(entry) }
@@ -410,31 +415,31 @@ private fun FeedTuningSheet(
             Spacer(Modifier.height(Space.md))
             SheetHeader("Le campus", "$weatherLabel — $weatherBlurb")
             SheetAction(
-                emoji = "◈",
+                glyph = GlyphKind.CHART,
                 label = "$postsToday rumeur(s) sur 24 h",
                 subtitle = "L'ambiance se calcule sur l'activité récente.",
                 onClick = onDismiss
             )
             SheetAction(
-                emoji = "☀",
+                glyph = GlyphKind.SUN,
                 label = "Sujet du jour",
                 subtitle = prompt,
                 onClick = onWritePrompt
             )
             SheetAction(
-                emoji = "◎",
+                glyph = GlyphKind.STAR,
                 label = "Missions du jour",
                 subtitle = "Trois missions, renouvelées à minuit.",
                 onClick = onOpenQuests
             )
             SheetAction(
-                emoji = "✦",
+                glyph = GlyphKind.FLAME,
                 label = "Classement",
                 subtitle = "Informateurs, oracles, séries, rumeurs cultes.",
                 onClick = onOpenLeaderboard
             )
             SheetAction(
-                emoji = "◍",
+                glyph = GlyphKind.PEOPLE,
                 label = "Membres du campus",
                 onClick = onOpenMembers
             )
@@ -490,7 +495,7 @@ private fun FeedFab(
 
         FeedSection.TRUTH -> BubbleButton(
             text = "Jurer",
-            emoji = "⚖",
+            glyph = GlyphKind.SCALE,
             onClick = onNewTruth,
             size = BubbleSize.LARGE
         )
@@ -553,7 +558,11 @@ private fun StoriesRow(
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("＋", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AskipGlyph(
+                        kind = GlyphKind.SPARKLE,
+                        size = 21.dp,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -571,7 +580,7 @@ private fun StoriesRow(
                     Modifier.fillMaxSize().background(bg),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(story.emoji.ifBlank { "⌯" }, fontSize = 26.sp)
+                    AskipGlyph(kind = glyphForSymbol(story.emoji), size = 26.dp, tint = Color.White)
                 }
             }
         }
@@ -644,7 +653,7 @@ private fun StoryFullScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(Space.huge)
             ) {
-                Text(story.emoji.ifBlank { "⌯" }, fontSize = 72.sp)
+                AskipGlyph(kind = glyphForSymbol(story.emoji), size = 72.dp, tint = Color.White)
                 Spacer(Modifier.height(Space.xl))
                 Text(
                     story.content,
@@ -668,9 +677,9 @@ private fun StoryFullScreen(
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
                 if (story.userId == currentUid) {
-                    BubbleChip("Supprimer", emoji = "✕", onClick = onDelete)
+                    BubbleChip("Supprimer", glyph = GlyphKind.CROSS, onClick = onDelete)
                 }
-                BubbleChip("Fermer", emoji = "✕", onClick = onClose)
+                BubbleChip("Fermer", glyph = GlyphKind.CROSS, onClick = onClose)
             }
         }
     }

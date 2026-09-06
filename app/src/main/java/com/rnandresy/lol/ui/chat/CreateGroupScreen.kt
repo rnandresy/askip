@@ -24,7 +24,7 @@ import com.rnandresy.lol.ui.components.bubbleShell
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.components.*
-import com.rnandresy.lol.utils.STORY_EMOJIS
+import com.rnandresy.lol.utils.STORY_MARKS
 import com.rnandresy.lol.utils.isAdmin
 import com.rnandresy.lol.viewmodel.AskipViewModel
 import androidx.compose.ui.draw.clip
@@ -42,7 +42,7 @@ fun CreateGroupScreen(
 
     var groupName   by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var emoji       by remember { mutableStateOf("◍") }
+    var emoji       by remember { mutableStateOf(STORY_MARKS.first()) }
     val selected    = remember { mutableStateListOf<String>() }
 
     val canCreate = groupName.isNotBlank() && selected.isNotEmpty()
@@ -88,10 +88,10 @@ fun CreateGroupScreen(
         ) {
             // ── Emoji du groupe ───────────────────────────────────────────────
             item {
-                Text("Emoji du groupe", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("Marque du groupe", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(6.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(STORY_EMOJIS.take(16)) { e ->
+                    items(STORY_MARKS) { e ->
                         val picked = emoji == e
                         val palette = LocalAskipPalette.current
                         val shape = RoundedCornerShape(Radius.sm)
@@ -108,7 +108,7 @@ fun CreateGroupScreen(
                                 if (picked) 5.dp else 2.dp
                             )
                         ) {
-                            Text(e, fontSize = 22.sp, modifier = Modifier.padding(8.dp))
+                            AskipGlyph(kind = glyphForSymbol(e), size = 21.dp, modifier = Modifier.padding(8.dp))
                         }
                     }
                 }
@@ -120,7 +120,7 @@ fun CreateGroupScreen(
                     value         = groupName,
                     onValueChange = { if (it.length <= 40) groupName = it },
                     label         = { Text("Nom du groupe *") },
-                    leadingIcon   = { Text(emoji) },
+                    leadingIcon   = { AskipGlyph(kind = glyphForSymbol(emoji), size = 16.dp) },
                     singleLine    = true,
                     modifier      = Modifier.fillMaxWidth(),
                     shape         = RoundedCornerShape(12.dp)

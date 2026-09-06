@@ -44,6 +44,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.model.Post
@@ -52,6 +54,7 @@ import com.rnandresy.lol.ui.components.AskipAvatar
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.EmptyState
 import com.rnandresy.lol.ui.components.SegmentedTabs
+import com.rnandresy.lol.ui.components.glyphForRank
 import com.rnandresy.lol.ui.components.rememberTapFeedback
 import com.rnandresy.lol.ui.components.StreakChip
 import com.rnandresy.lol.ui.components.VerdictChip
@@ -69,12 +72,12 @@ import com.rnandresy.lol.viewmodel.AskipViewModel
  * qu'on croit, l'XP récompense la présence, la série récompense la régularité.
  * Personne n'est premier partout, donc tout le monde a un classement à viser.
  */
-private enum class Board(val label: String, val emoji: String) {
-    CLOUT("Informateurs", "✧"),
-    ORACLES("Oracles", "⟡"),
-    XP("Niveaux", "✧"),
-    STREAK("Séries", "✦"),
-    LEGENDS("Rumeurs cultes", "✦")
+private enum class Board(val label: String, val glyph: GlyphKind) {
+    CLOUT("Informateurs", GlyphKind.SPARKLE),
+    ORACLES("Oracles", GlyphKind.GEM),
+    XP("Niveaux", GlyphKind.CHART),
+    STREAK("Séries", GlyphKind.FLAME),
+    LEGENDS("Rumeurs cultes", GlyphKind.CROWN)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,7 +135,7 @@ fun LeaderboardScreen(
                 items = Board.entries.toList(),
                 selected = board,
                 labelOf = { it.label },
-                emojiOf = { it.emoji },
+                glyphOf = { it.glyph },
                 onSelect = { board = it },
                 modifier = Modifier.padding(vertical = Space.sm)
             )
@@ -167,12 +170,12 @@ private fun PeopleList(
         Box(Modifier.fillMaxSize(), Alignment.Center) {
             if (board == Board.ORACLES) {
                 EmptyState(
-                    "⟡",
+                    GlyphKind.GEM,
                     "Aucun oracle pour l'instant",
                     "Il faut 5 paris réglés pour figurer ici."
                 )
             } else {
-                EmptyState("◈", "Classement vide", "Il se remplira dès que ça bougera.")
+                EmptyState(GlyphKind.CHART, "Classement vide", "Il se remplira dès que ça bougera.")
             }
         }
         return
@@ -281,18 +284,13 @@ private fun LeaderRow(
 /** Or, argent, bronze pour le podium ; simple numéro ensuite. */
 @Composable
 private fun RankMedal(rank: Int) {
-    val medal = when (rank) {
-        1 -> "✦"
-        2 -> "✧"
-        3 -> "⋆"
-        else -> null
-    }
+    val medal = if (rank in 1..3) glyphForRank(rank) else null
     Box(
         modifier = Modifier.size(28.dp),
         contentAlignment = Alignment.Center
     ) {
         if (medal != null) {
-            Text(medal, fontSize = 20.sp)
+            AskipGlyph(kind = medal, size = 19.dp)
         } else {
             Text(
                 "$rank",
@@ -308,7 +306,7 @@ private fun RankMedal(rank: Int) {
 private fun LegendList(posts: List<Post>, onOpenPost: (String) -> Unit) {
     if (posts.isEmpty()) {
         Box(Modifier.fillMaxSize(), Alignment.Center) {
-            EmptyState("✦", "Pas encore de légende", "Les rumeurs cultes atterrissent ici.")
+            EmptyState(GlyphKind.FLAME, "Pas encore de légende", "Les rumeurs cultes atterrissent ici.")
         }
         return
     }
@@ -333,7 +331,7 @@ private fun LegendList(posts: List<Post>, onOpenPost: (String) -> Unit) {
                     ) {
                         RankMedal(index + 1)
                         Text(
-                            post.username.ifBlank { "Quelqu'un ◌" },
+                            post.username.ifBlank { "Quelqu'un" },
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -350,9 +348,9 @@ private fun LegendList(posts: List<Post>, onOpenPost: (String) -> Unit) {
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
-                        MiniStat("⌯", post.commentCount)
-                        MiniStat("⟡", post.scoopBy.size, palette.scoop)
-                        MiniStat("♡", post.totalReactions())
+                        MiniStat(GlyphKind.BUBBLE, post.commentCount)
+                        MiniStat(GlyphKind.GEM, post.scoopBy.size, palette.scoop)
+                        MiniStat(GlyphKind.HEART, post.totalReactions())
                     }
                 }
             }
@@ -362,7 +360,7 @@ private fun LegendList(posts: List<Post>, onOpenPost: (String) -> Unit) {
 
 @Composable
 private fun MiniStat(
-    emoji: String,
+    glyph: GlyphKind,
     value: Int,
     tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
@@ -370,7 +368,7 @@ private fun MiniStat(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Text(emoji, fontSize = 11.sp)
+        AskipGlyph(kind = glyph, size = 11.dp, tint = tint)
         Text(
             "$value",
             style = MaterialTheme.typography.labelSmall,

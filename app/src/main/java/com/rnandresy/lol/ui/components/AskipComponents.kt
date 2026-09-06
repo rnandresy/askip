@@ -145,13 +145,11 @@ fun AdminBadgeLabel(modifier: Modifier = Modifier) {
         shape    = RoundedCornerShape(4.dp),
         border   = BorderStroke(0.5.dp, AdminGold.copy(alpha = 0.6f))
     ) {
-        Text(
-            "✧",
-            modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            style      = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color      = AdminGold,
-            fontSize   = 10.sp
+        AskipGlyph(
+            kind     = GlyphKind.CROWN,
+            size     = 10.dp,
+            tint     = AdminGold,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
         )
     }
 }
@@ -166,7 +164,7 @@ fun ENIBadgeLabel(modifier: Modifier = Modifier) {
         border   = BorderStroke(0.5.dp, Color(0xFF1565C0).copy(alpha = 0.6f))
     ) {
         Text(
-            "⌘ ENI",
+            "ENI",
             modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style      = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
@@ -305,7 +303,7 @@ fun AskipAudioPlayer(
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("◍", fontSize = 18.sp)
+        AskipGlyph(kind = GlyphKind.WAVE, size = 17.dp, tint = tint)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             LinearProgressIndicator(
                 progress   = { progress },
@@ -361,7 +359,7 @@ fun AskipFileItem(name: String, url: String, isMe: Boolean, modifier: Modifier =
                 maxLines   = 1
             )
             Text(
-                "Ouvrir ↗",
+                "Ouvrir",
                 style    = MaterialTheme.typography.labelSmall,
                 color    = textColor.copy(0.55f),
                 modifier = Modifier.clickable {
@@ -392,13 +390,18 @@ fun LabelDivider(label: String, modifier: Modifier = Modifier) {
 
 // ── État vide ─────────────────────────────────────────────────────────────────
 @Composable
-fun EmptyState(emoji: String, title: String, subtitle: String = "", modifier: Modifier = Modifier) {
+fun EmptyState(
+    glyph: GlyphKind,
+    title: String,
+    subtitle: String = "",
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier            = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(emoji, fontSize = 48.sp)
+        AskipGlyph(kind = glyph, size = 40.dp)
         Text(
             title,
             style      = MaterialTheme.typography.titleSmall,

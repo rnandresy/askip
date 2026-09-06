@@ -283,10 +283,10 @@ class MessagingRepository {
         val text = (data["content"] as? String).orEmpty()
         if (text.isNotBlank()) return text.take(80)
         return when (data["mediaType"] as? String) {
-            "audio" -> "◍ Message vocal"
-            "image" -> "◫ Photo"
-            "video" -> "▷ Vidéo"
-            "file" -> "▤ ${data["mediaName"] ?: "Fichier"}"
+            "audio" -> "Message vocal"
+            "image" -> "Photo"
+            "video" -> "Vidéo"
+            "file" -> "${data["mediaName"] ?: "Fichier"}"
             else -> ""
         }
     }

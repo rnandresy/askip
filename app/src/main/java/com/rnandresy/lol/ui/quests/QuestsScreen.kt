@@ -33,6 +33,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.BetTokenGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleIconButton
@@ -42,11 +45,11 @@ import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.StatPill
 import com.rnandresy.lol.ui.components.StreakChip
+import com.rnandresy.lol.ui.components.glyphForQuest
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.BETS_PER_DAY
-import com.rnandresy.lol.utils.BET_TOKEN_EMOJI
 import com.rnandresy.lol.utils.QuestDef
 import com.rnandresy.lol.utils.QuestProgress
 import com.rnandresy.lol.utils.RumorEngine
@@ -209,7 +212,7 @@ private fun ScoopCard(available: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            Text("⟡", fontSize = 26.sp)
+            AskipGlyph(kind = GlyphKind.GEM, size = 25.dp, tint = palette.scoop)
             Column(Modifier.weight(1f)) {
                 Text(
                     if (available) "Ton Scoop du jour t'attend" else "Scoop déjà offert",
@@ -258,7 +261,7 @@ private fun BetTokensCard(left: Int, profile: UserProfile?) {
             verticalArrangement = Arrangement.spacedBy(Space.sm)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(BET_TOKEN_EMOJI, fontSize = 22.sp)
+                AskipGlyph(kind = BetTokenGlyph, size = 22.dp, tint = palette.scoop)
                 Spacer(Modifier.width(Space.md))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -310,7 +313,7 @@ private fun QuestRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            Text(quest.emoji, fontSize = 22.sp)
+            AskipGlyph(kind = glyphForQuest(quest.kind), size = 22.dp)
 
             Column(
                 modifier = Modifier.weight(1f),
@@ -339,7 +342,11 @@ private fun QuestRow(
             Spacer(Modifier.width(Space.xs))
 
             when {
-                claimed -> Text("✓", fontSize = 20.sp, color = LocalAskipPalette.current.confirmed)
+                claimed -> AskipGlyph(
+                    kind = GlyphKind.CHECK,
+                    size = 19.dp,
+                    tint = LocalAskipPalette.current.confirmed
+                )
                 done -> BubbleButton(
                     text = "Encaisser",
                     onClick = onClaim,

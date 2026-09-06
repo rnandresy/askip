@@ -53,6 +53,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleSize
@@ -122,7 +124,7 @@ private fun AuthLogo(subtitle: String) {
                     .background(MaterialTheme.colorScheme.surface, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("❀", fontSize = 44.sp)
+                AskipGlyph(kind = GlyphKind.FLOWER, size = 42.dp)
             }
         }
 
@@ -217,7 +219,11 @@ private fun AuthError(message: String?, onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
-                Text("⚠", fontSize = 15.sp)
+                AskipGlyph(
+                    kind = GlyphKind.FLAG,
+                    size = 14.dp,
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
                 Text(
                     message.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
@@ -301,7 +307,7 @@ fun LoginScreen(
 
                     BubbleButton(
                         text = "Se connecter",
-                        emoji = "❀",
+                        glyph = GlyphKind.FLOWER,
                         onClick = { vm.login(email, password) },
                         enabled = canSubmit,
                         loading = loading,
@@ -434,7 +440,7 @@ fun RegisterScreen(
 
                     BubbleButton(
                         text = "Créer mon compte",
-                        emoji = "✧",
+                        glyph = GlyphKind.SPARKLE,
                         onClick = { vm.register(email, password, username) },
                         enabled = canSubmit,
                         loading = loading,

@@ -53,6 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleButton
 import com.rnandresy.lol.ui.components.BubbleCard
@@ -62,6 +64,8 @@ import com.rnandresy.lol.ui.components.BubbleSize
 import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.OathDialog
 import com.rnandresy.lol.ui.components.ProgressTrack
+import com.rnandresy.lol.ui.components.glyphForPostFormat
+import com.rnandresy.lol.ui.components.glyphForTag
 import com.rnandresy.lol.ui.feed.MentionTextField
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
@@ -193,7 +197,7 @@ fun CreatePostScreen(
                         BubbleButton(
                             // Sur la Page de Vérité, on ne publie pas : on jure.
                             text = if (postType == "truth") "Jurer" else "Publier",
-                            emoji = if (postType == "truth") "⚖" else null,
+                            glyph = if (postType == "truth") GlyphKind.SCALE else null,
                             onClick = {
                                 if (postType == "truth") showOath = true else publish()
                             },
@@ -228,7 +232,7 @@ fun CreatePostScreen(
                 items(FORMATS) { f ->
                     BubbleChip(
                         label = f.label,
-                        emoji = f.emoji,
+                        glyph = glyphForPostFormat(f.type),
                         filled = postType == f.type,
                         accent = if (postType == f.type) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -239,7 +243,7 @@ fun CreatePostScreen(
 
             // La règle du format choisi, quand il en a une. Un seul encart :
             // avant, chaque format posait son propre bloc d'explication.
-            format.note?.let { note -> FormatNote(emoji = format.emoji, text = note) }
+            format.note?.let { note -> FormatNote(glyph = glyphForPostFormat(format.type), text = note) }
 
             // ── Le texte ─────────────────────────────────────────────────────
             MentionTextField(
@@ -254,7 +258,7 @@ fun CreatePostScreen(
                     "sealed" -> "Aperçu visible avant l'ouverture (facultatif)…"
                     "chain" -> "La première phrase de la chaîne…"
                     "truth" -> "Énonce les faits. Rien que les faits."
-                    else -> "Askip… qu'est-ce qui se passe ? ◎"
+                    else -> "Askip… qu'est-ce qui se passe ?"
                 },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -270,7 +274,7 @@ fun CreatePostScreen(
 
             // ── La Capsule scellée ───────────────────────────────────────────
             if (postType == "sealed") {
-                FormCard("Contenu scellé", "⌂") {
+                FormCard("Contenu scellé", GlyphKind.LOCK) {
                     FormField(
                         value = sealedText,
                         onValueChange = { sealedText = it },
@@ -299,7 +303,7 @@ fun CreatePostScreen(
                         }
                     }
                     Text(
-                        "⚿ $SEAL_KEYS_TO_OPEN clés du campus l'ouvriront plus tôt.",
+                        "$SEAL_KEYS_TO_OPEN clés du campus l'ouvriront plus tôt.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -308,7 +312,7 @@ fun CreatePostScreen(
 
             // ── Les deux camps du sondage ────────────────────────────────────
             if (postType == "poll") {
-                FormCard("Les deux camps", "◈") {
+                FormCard("Les deux camps", GlyphKind.CHART) {
                     FormField(
                         value = opt1,
                         onValueChange = { if (it.length <= 60) opt1 = it },
@@ -356,19 +360,19 @@ fun CreatePostScreen(
             }
 
             if (videoUri != null) {
-                AttachmentRow(emoji = "▷", label = "Vidéo sélectionnée") { videoUri = null }
+                AttachmentRow(glyph = GlyphKind.PLAY, label = "Vidéo sélectionnée") { videoUri = null }
             }
 
             if (audioFile != null) {
                 AttachmentRow(
-                    emoji = "◍",
+                    glyph = GlyphKind.PEOPLE,
                     label = "Note vocale (${formatDuration(audioDurSec)})"
                 ) { audioFile = null; audioDurSec = 0 }
             }
 
             if (fileUri != null) {
                 AttachmentRow(
-                    emoji = "▤",
+                    glyph = GlyphKind.DOC,
                     label = fileName.take(28).ifBlank { "Fichier" }
                 ) { fileUri = null; fileName = "" }
             }
@@ -380,7 +384,7 @@ fun CreatePostScreen(
                         item {
                             BubbleButton(
                                 text = "Photo",
-                                emoji = "◫",
+                                glyph = GlyphKind.PHOTO,
                                 tone = BubbleTone.SOFT,
                                 size = BubbleSize.SMALL,
                                 onClick = {
@@ -395,7 +399,7 @@ fun CreatePostScreen(
                         item {
                             BubbleButton(
                                 text = "Vidéo",
-                                emoji = "▷",
+                                glyph = GlyphKind.PLAY,
                                 tone = BubbleTone.SOFT,
                                 size = BubbleSize.SMALL,
                                 onClick = {
@@ -410,7 +414,7 @@ fun CreatePostScreen(
                         item {
                             BubbleButton(
                                 text = "Fichier",
-                                emoji = "▤",
+                                glyph = GlyphKind.DOC,
                                 tone = BubbleTone.SOFT,
                                 size = BubbleSize.SMALL,
                                 onClick = { filePicker.launch("*/*") }
@@ -420,7 +424,7 @@ fun CreatePostScreen(
                             item {
                                 BubbleButton(
                                     text = "Voix",
-                                    emoji = "◍",
+                                    glyph = GlyphKind.PEOPLE,
                                     tone = BubbleTone.SOFT,
                                     size = BubbleSize.SMALL,
                                     onClick = { vm.startVoiceRecording(context) }
@@ -466,7 +470,7 @@ fun CreatePostScreen(
                                 Spacer(Modifier.size(8.dp))
                             }
                             Text(
-                                "◍ ${formatDuration(recordingSecs)}",
+                                "${formatDuration(recordingSecs)}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onErrorContainer
@@ -499,14 +503,14 @@ fun CreatePostScreen(
             FormCard(
                 title = if (tags.isEmpty()) "Ranger la rumeur"
                 else "Salons (${tags.size}/$MAX_TAGS_PER_POST)",
-                emoji = "▤"
+                glyph = GlyphKind.DOC
             ) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     items(RUMOR_TAGS) { def ->
                         val selected = def.slug in tags
                         BubbleChip(
                             label = def.label,
-                            emoji = def.emoji,
+                            glyph = glyphForTag(def.slug),
                             filled = selected,
                             accent = if (selected) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -525,7 +529,7 @@ fun CreatePostScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("◴", style = MaterialTheme.typography.titleMedium)
+                    AskipGlyph(kind = GlyphKind.MOON, size = 16.dp)
                     Spacer(Modifier.width(Space.md))
                     Column(Modifier.weight(1f)) {
                         Text("Rumeur éphémère", style = MaterialTheme.typography.bodyMedium)
@@ -575,32 +579,31 @@ fun CreatePostScreen(
  */
 private data class PostFormat(
     val type: String,
-    val emoji: String,
     val label: String,
     val screenTitle: String,
     val note: String? = null
 )
 
 private val FORMATS = listOf(
-    PostFormat("normal", "⋆", "Rumeur", "Nouvelle rumeur"),
-    PostFormat("poll", "◈", "Sondage", "Sondage"),
+    PostFormat("normal", "Rumeur", "Nouvelle rumeur"),
+    PostFormat("poll", "Sondage", "Sondage"),
     PostFormat(
-        "confession", "◌", "Confession", "Confession",
+        "confession", "Confession", "Confession",
         "Ton identité sera très bien cachée."
     ),
     PostFormat(
-        "sealed", "⌂", "Capsule", "Capsule scellée",
+        "sealed", "Capsule", "Capsule scellée",
         "Personne ne pourra lire le contenu scellé avant l'heure — pas même " +
             "en fouillant la base. Le texte du haut, lui, reste visible : " +
             "c'est ton teaser."
     ),
     PostFormat(
-        "chain", "⋯", "Chaîne", "Téléphone arabe",
+        "chain", "Chaîne", "Téléphone arabe",
         "Tu écris la première phrase. Six autres personnes pourront ajouter " +
             "la leur, une seule chacune. La rumeur grandira sans toi."
     ),
     PostFormat(
-        "truth", "⚖", "Vérité", "Page de Vérité",
+        "truth", "Vérité", "Page de Vérité",
         "Ta publication sera faite sous serment. Le campus tranchera : un " +
             "serment démenti est enregistré comme parjure au registre."
     )
@@ -612,13 +615,13 @@ private val FORMATS = listOf(
 
 /** La règle du format choisi. */
 @Composable
-private fun FormatNote(emoji: String, text: String) {
+private fun FormatNote(glyph: GlyphKind, text: String) {
     BubbleCard(modifier = Modifier.fillMaxWidth(), gloss = 0.3f) {
         Row(
             modifier = Modifier.padding(Space.md),
             verticalAlignment = Alignment.Top
         ) {
-            Text(emoji, style = MaterialTheme.typography.titleMedium)
+            AskipGlyph(kind = glyph, size = 16.dp)
             Spacer(Modifier.width(Space.md))
             Text(
                 text,
@@ -633,7 +636,7 @@ private fun FormatNote(emoji: String, text: String) {
 @Composable
 private fun FormCard(
     title: String,
-    emoji: String,
+    glyph: GlyphKind,
     content: @Composable ColumnScope.() -> Unit
 ) {
     BubbleCard(modifier = Modifier.fillMaxWidth()) {
@@ -645,7 +648,7 @@ private fun FormCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
-                Text(emoji, style = MaterialTheme.typography.bodyMedium)
+                AskipGlyph(kind = glyph, size = 14.dp)
                 Text(
                     title,
                     style = MaterialTheme.typography.titleSmall,
@@ -689,7 +692,7 @@ private fun FormField(
 
 /** Une pièce jointe attachée, avec son bouton pour la retirer. */
 @Composable
-private fun AttachmentRow(emoji: String, label: String, onRemove: () -> Unit) {
+private fun AttachmentRow(glyph: GlyphKind, label: String, onRemove: () -> Unit) {
     BubbleCard(modifier = Modifier.fillMaxWidth(), gloss = 0.3f) {
         Row(
             modifier = Modifier
@@ -698,7 +701,7 @@ private fun AttachmentRow(emoji: String, label: String, onRemove: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            Text(emoji, style = MaterialTheme.typography.titleMedium)
+            AskipGlyph(kind = glyph, size = 16.dp)
             Text(
                 label,
                 style = MaterialTheme.typography.bodyMedium,

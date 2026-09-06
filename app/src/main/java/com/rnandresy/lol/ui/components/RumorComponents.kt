@@ -75,7 +75,6 @@ import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.REACTIONS
 import com.rnandresy.lol.utils.REACTION_LABELS
 import com.rnandresy.lol.utils.RumorEngine
-import com.rnandresy.lol.utils.SCOOP_EMOJI
 import com.rnandresy.lol.utils.VERDICT_MIN_VOTES
 import com.rnandresy.lol.utils.tagDef
 
@@ -153,7 +152,7 @@ fun RumorMeter(
         ) {
             VerdictVoteButton(
                 label = "Crédible",
-                emoji = "✓",
+                glyph = GlyphKind.CHECK,
                 count = post.credibleBy.size,
                 selected = myVote == true,
                 accent = palette.confirmed,
@@ -163,7 +162,7 @@ fun RumorMeter(
             )
             VerdictVoteButton(
                 label = "Bidon",
-                emoji = "✕",
+                glyph = GlyphKind.CROSS,
                 count = post.fakeBy.size,
                 selected = myVote == false,
                 accent = palette.debunked,
@@ -222,7 +221,7 @@ fun RumorMeter(
 @Composable
 private fun VerdictVoteButton(
     label: String,
-    emoji: String,
+    glyph: GlyphKind,
     count: Int,
     selected: Boolean,
     accent: Color,
@@ -264,7 +263,11 @@ private fun VerdictVoteButton(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(emoji, fontSize = 14.sp)
+            AskipGlyph(
+                kind = glyph,
+                size = 13.dp,
+                tint = if (selected) accent else null
+            )
             Spacer(Modifier.width(Space.xs))
             Text(
                 label,
@@ -312,7 +315,7 @@ fun VerdictChip(verdict: Verdict, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
-            Text(verdict.emoji, fontSize = 10.sp)
+            AskipGlyph(kind = glyphForVerdict(verdict), size = 10.dp, tint = color)
             Text(
                 verdict.label.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
@@ -494,7 +497,7 @@ fun TagChip(
 ) {
     val def = tagDef(slug)
     val label = def?.label ?: "#$slug"
-    val emoji = def?.emoji ?: "#"
+    val glyph = glyphForTag(slug)
     val palette = LocalAskipPalette.current
     val tap = rememberTapFeedback()
     val shape = RoundedCornerShape(Radius.pill)
@@ -516,7 +519,11 @@ fun TagChip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
-            Text(emoji, fontSize = 11.sp)
+            AskipGlyph(
+                kind = glyph,
+                size = 11.dp,
+                tint = if (selected) MaterialTheme.colorScheme.primary else null
+            )
             Text(
                 label,
                 style = MaterialTheme.typography.labelSmall,
@@ -562,7 +569,7 @@ fun TrendingBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
-            Text("↗", fontSize = 12.sp)
+            AskipGlyph(kind = GlyphKind.CHART, size = 12.dp)
             Text(
                 "ÇA CIRCULE",
                 style = MaterialTheme.typography.labelSmall,
@@ -603,7 +610,7 @@ fun <T> SegmentedTabs(
     items: List<T>,
     selected: T,
     labelOf: (T) -> String,
-    emojiOf: (T) -> String,
+    glyphOf: (T) -> GlyphKind,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -617,7 +624,7 @@ fun <T> SegmentedTabs(
             val isSelected = item == selected
             BubbleChip(
                 label = labelOf(item),
-                emoji = emojiOf(item),
+                glyph = glyphOf(item),
                 filled = isSelected,
                 accent = if (isSelected) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -710,7 +717,11 @@ fun StreakChip(streak: Int, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
-            Text("✦", fontSize = if (streak >= 30) 14.sp else 11.sp)
+            AskipGlyph(
+                kind = GlyphKind.FLAME,
+                size = if (streak >= 30) 13.dp else 11.dp,
+                tint = palette.streak
+            )
             Text(
                 "$streak j",
                 style = MaterialTheme.typography.labelSmall,
@@ -839,7 +850,7 @@ fun LevelUpBanner(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.md)
             ) {
-                Text("✦", fontSize = 26.sp)
+                AskipGlyph(kind = GlyphKind.STAR, size = 25.dp)
                 Column {
                     Text(
                         "Niveau $level atteint",
@@ -889,7 +900,7 @@ fun DailyPromptCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("☀", fontSize = 12.sp)
+                AskipGlyph(kind = GlyphKind.SUN, size = 12.dp)
                 Text(
                     "LE SUJET DU JOUR",
                     style = MaterialTheme.typography.labelSmall,
@@ -944,7 +955,7 @@ fun HotBadge(rank: Int, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xxs)
         ) {
-            Text("✦", fontSize = 10.sp)
+            AskipGlyph(kind = GlyphKind.CROWN, size = 10.dp)
             Text(
                 "#$rank",
                 style = MaterialTheme.typography.labelSmall,

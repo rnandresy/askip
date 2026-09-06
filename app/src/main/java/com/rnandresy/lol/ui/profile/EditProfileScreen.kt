@@ -55,6 +55,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
@@ -68,6 +70,7 @@ import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.SheetAction
 import com.rnandresy.lol.ui.components.SheetHeader
 import com.rnandresy.lol.ui.components.TapArea
+import com.rnandresy.lol.ui.components.glyphForSymbol
 import com.rnandresy.lol.ui.components.readableOn
 import com.rnandresy.lol.ui.components.rememberTapFeedback
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
@@ -76,7 +79,7 @@ import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.AVATAR_FRAMES
 import com.rnandresy.lol.utils.ENI_CLASSES
 import com.rnandresy.lol.utils.STORY_COLORS
-import com.rnandresy.lol.utils.STORY_EMOJIS
+import com.rnandresy.lol.utils.STORY_MARKS
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
 /** Les statuts proposés. Rien d'obligatoire : « — Aucun — » reste possible. */
@@ -275,7 +278,7 @@ fun EditProfileScreen(
         EditSheet.STATUS -> ChoiceSheet(
             title = "Statut amoureux",
             subtitle = "Visible sur ton profil.",
-            emoji = "♡",
+            glyph = GlyphKind.HEART,
             options = REL_STATUSES,
             selected = relStatus,
             onPick = { relStatus = it; sheet = null },
@@ -284,8 +287,8 @@ fun EditProfileScreen(
 
         EditSheet.CLASS -> ChoiceSheet(
             title = "Classe ENI",
-            subtitle = "Choisir une classe débloque le badge ⌘.",
-            emoji = "⌘",
+            subtitle = "Choisir une classe débloque le badge ENI.",
+            glyph = GlyphKind.BOOK,
             options = ENI_CLASSES,
             selected = classeENI,
             onPick = { classeENI = it; sheet = null },
@@ -311,7 +314,7 @@ private fun IdentitySection(
     bio: String,
     onBio: (String) -> Unit
 ) {
-    EditCard("Identité", "◍") {
+    EditCard("Identité", GlyphKind.PEOPLE) {
         EditField(
             value = username,
             onValueChange = onUsername,
@@ -331,7 +334,7 @@ private fun IdentitySection(
                     .padding(Space.md),
                 verticalAlignment = Alignment.Top
             ) {
-                Text("↻", fontSize = 14.sp)
+                AskipGlyph(kind = GlyphKind.FLAG, size = 13.dp)
                 Spacer(Modifier.width(Space.sm))
                 Text(
                     "Ton nouveau pseudo remplacera l'ancien sur tous tes posts, " +
@@ -371,12 +374,12 @@ private fun MoodSection(
     val palette = LocalAskipPalette.current
     val tap = rememberTapFeedback()
 
-    EditCard("Humeur du jour", "◡") {
+    EditCard("Humeur du jour", GlyphKind.MOON) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
             contentPadding = PaddingValues(vertical = Space.xxs)
         ) {
-            items(STORY_EMOJIS.take(12)) { emoji ->
+            items(STORY_MARKS.take(12)) { emoji ->
                 val picked = moodEmoji == emoji
                 TapArea(
                     onTap = { tap(); onMoodEmoji(if (picked) "" else emoji) },
@@ -390,9 +393,9 @@ private fun MoodSection(
                             shape = CircleShape
                         )
                 ) {
-                    Text(
-                        emoji,
-                        fontSize = 21.sp,
+                    AskipGlyph(
+                        kind = glyphForSymbol(emoji),
+                        size = 20.dp,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -421,7 +424,7 @@ private fun LookSection(
     val palette = LocalAskipPalette.current
     val tap = rememberTapFeedback()
 
-    EditCard("Apparence", "◈") {
+    EditCard("Apparence", GlyphKind.GEM) {
         SubLabel("Couleur du profil")
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
@@ -448,11 +451,10 @@ private fun LookSection(
                         )
                 ) {
                     if (picked) {
-                        Text(
-                            "✓",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = readableOn(c),
+                        AskipGlyph(
+                            kind = GlyphKind.CHECK,
+                            size = 15.dp,
+                            tint = readableOn(c),
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
@@ -486,15 +488,15 @@ private fun DetailsSection(
     onOpenStatus: () -> Unit,
     onOpenClass: () -> Unit
 ) {
-    EditCard("Détails", "⧉") {
+    EditCard("Détails", GlyphKind.DOC) {
         PickerRow(
-            emoji = "♡",
+            glyph = GlyphKind.HEART,
             label = "Statut amoureux",
             value = relStatus.ifBlank { "Non précisé" },
             onClick = onOpenStatus
         )
         PickerRow(
-            emoji = "⌘",
+            glyph = GlyphKind.BOOK,
             label = "Classe ENI",
             value = classeENI.ifBlank { "Non précisée" },
             hint = if (classeENI.isNotBlank()) "Badge ENI attribué"
@@ -512,7 +514,7 @@ private fun DetailsSection(
 @Composable
 private fun EditCard(
     title: String,
-    emoji: String,
+    glyph: GlyphKind,
     content: @Composable () -> Unit
 ) {
     BubbleCard(modifier = Modifier.fillMaxWidth()) {
@@ -524,7 +526,7 @@ private fun EditCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
-                Text(emoji, fontSize = 15.sp)
+                AskipGlyph(kind = glyph, size = 14.dp)
                 Text(
                     title,
                     style = MaterialTheme.typography.titleSmall,
@@ -587,7 +589,7 @@ private fun EditField(
 /** Une ligne « libellé → valeur » qui ouvre une feuille de choix. */
 @Composable
 private fun PickerRow(
-    emoji: String,
+    glyph: GlyphKind,
     label: String,
     value: String,
     hint: String? = null,
@@ -611,7 +613,7 @@ private fun PickerRow(
                 .padding(horizontal = Space.md, vertical = Space.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(emoji, fontSize = 16.sp)
+            AskipGlyph(kind = glyph, size = 15.dp)
             Spacer(Modifier.width(Space.md))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -647,7 +649,7 @@ private fun PickerRow(
 private fun ChoiceSheet(
     title: String,
     subtitle: String,
-    emoji: String,
+    glyph: GlyphKind,
     options: List<String>,
     selected: String,
     onPick: (String) -> Unit,
@@ -663,13 +665,13 @@ private fun ChoiceSheet(
             SheetHeader(title, subtitle)
 
             SheetAction(
-                emoji = "✕",
+                glyph = GlyphKind.CROSS,
                 label = "Ne rien indiquer",
                 onClick = { onPick("") }
             )
             options.forEach { option ->
                 SheetAction(
-                    emoji = if (option == selected) "✓" else emoji,
+                    glyph = if (option == selected) GlyphKind.CHECK else glyph,
                     label = option,
                     onClick = { onPick(option) }
                 )
@@ -718,7 +720,7 @@ private fun PhotoSection(
         Color(android.graphics.Color.parseColor(profile?.themeColor ?: "#7C4DFF"))
     }.getOrElse { MaterialTheme.colorScheme.primary }
 
-    EditCard("Photos", "◫") {
+    EditCard("Photos", GlyphKind.PHOTO) {
         // ── Couverture ───────────────────────────────────────────────────────
         SubLabel("Couverture")
         Box(

@@ -30,22 +30,17 @@ object RumorEngine {
         "La Sentinelle", "Le Guetteur", "Le Passant", "L'Écho", "Le Souffleur"
     )
 
-    private val MASK_EMOJIS = listOf(
-        "◌", "◌", "◎", "◎", "◎‍■", "◌", "●", "◌", "◈", "⚿"
-    )
-
     /**
      * Pseudonyme stable pour un utilisateur dans le contexte d'un post donné.
      * Même personne + même post = même masque, toujours.
      * Même personne + autre post = autre masque : impossible de recouper.
      */
     fun anonAlias(userId: String, postId: String): String {
-        if (userId.isBlank()) return "Quelqu'un ◌"
+        if (userId.isBlank()) return "Quelqu'un"
         val h = stableHash("$userId::$postId")
         val mask = MASKS[(h % MASKS.size).toInt()]
-        val emoji = MASK_EMOJIS[((h / 31) % MASK_EMOJIS.size).toInt()]
         val tag = "%03X".format((h / 7) % 4096)
-        return "$mask #$tag $emoji"
+        return "$mask #$tag"
     }
 
     /** Version courte, pour les listes serrées. */
@@ -271,12 +266,12 @@ object RumorEngine {
 
     // ── La Météo du campus ────────────────────────────────────────────────────
 
-    enum class Weather(val emoji: String, val label: String, val blurb: String) {
-        CALM("☾", "Calme plat", "Personne n'a rien à dire aujourd'hui."),
-        CLEAR("☀", "Dégagé", "Ça papote tranquillement."),
-        BREEZY("☀", "Ça bruisse", "Quelques rumeurs circulent."),
-        STORMY("◌", "Orageux", "Ça chauffe sérieusement."),
-        CHAOS("◌", "Tempête", "Le campus est en feu.")
+    enum class Weather(val label: String, val blurb: String) {
+        CALM("Calme plat", "Personne n'a rien à dire aujourd'hui."),
+        CLEAR("Dégagé", "Ça papote tranquillement."),
+        BREEZY("Ça bruisse", "Quelques rumeurs circulent."),
+        STORMY("Orageux", "Ça chauffe sérieusement."),
+        CHAOS("Tempête", "Le campus est en feu.")
     }
 
     data class CampusWeather(

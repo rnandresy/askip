@@ -37,12 +37,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleChip
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.SlidingSegmented
+import com.rnandresy.lol.ui.components.glyphForAchievement
 import com.rnandresy.lol.ui.components.readableOn
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Motion
@@ -273,7 +276,10 @@ private fun TrophyRow(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (unlocked) def.icon else "⌂", fontSize = 23.sp)
+                AskipGlyph(
+                    kind = if (unlocked) glyphForAchievement(def.id) else GlyphKind.LOCK,
+                    size = 22.dp
+                )
             }
 
             Column(

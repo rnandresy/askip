@@ -73,6 +73,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Group
 import com.rnandresy.lol.model.GroupMessage
@@ -83,6 +85,7 @@ import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.bubbleShell
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.components.glyphForSymbol
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
@@ -149,7 +152,7 @@ fun GroupChatScreen(
                             modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Text(group?.emoji ?: "◍", fontSize = 18.sp)
+                                AskipGlyph(kind = glyphForSymbol(group?.emoji ?: ""), size = 18.dp)
                             }
                         }
                         Spacer(Modifier.width(10.dp))
@@ -228,7 +231,7 @@ fun GroupChatScreen(
                                     Text(formatDuration(recordingSecs), style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
                                     Spacer(Modifier.weight(1f))
-                                    Text("◍ Enregistrement…", style = MaterialTheme.typography.labelSmall,
+                                    Text("Enregistrement…", style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onErrorContainer)
                                 }
                             }
@@ -413,7 +416,7 @@ fun GroupChatScreen(
         AlertDialog(
             onDismissRequest = { showInfo = false },
             title            = { Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(group.emoji, fontSize = 24.sp); Text(group.name, fontWeight = FontWeight.Bold)
+                AskipGlyph(kind = glyphForSymbol(group.emoji), size = 22.dp); Text(group.name, fontWeight = FontWeight.Bold)
             }},
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -429,7 +432,7 @@ fun GroupChatScreen(
                             Text(name, style = MaterialTheme.typography.bodySmall)
                             if (memberId == group.createdBy) {
                                 Spacer(Modifier.width(4.dp))
-                                Text("✧", fontSize = 12.sp)
+                                AskipGlyph(kind = GlyphKind.CROWN, size = 11.dp)
                             }
                         }
                     }
@@ -446,9 +449,9 @@ fun GroupChatScreen(
             title            = { Text("Joindre un fichier") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MediaPickOption("◫ Photo") { showMediaPicker = false; imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-                    MediaPickOption("▷ Vidéo") { showMediaPicker = false; videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) }
-                    MediaPickOption("▤ Fichier") { showMediaPicker = false; filePicker.launch("*/*") }
+                    MediaPickOption("Photo") { showMediaPicker = false; imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                    MediaPickOption("Vidéo") { showMediaPicker = false; videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) }
+                    MediaPickOption("Fichier") { showMediaPicker = false; filePicker.launch("*/*") }
                 }
             },
             confirmButton = { TextButton(onClick = { showMediaPicker = false }) { Text("Annuler") } }
@@ -488,7 +491,7 @@ private fun GroupMessageContent(msg: GroupMessage, isMe: Boolean) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(msg.mediaName.take(28), style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium, color = textColor, maxLines = 2)
-                    Text("Ouvrir ↗", style = MaterialTheme.typography.labelSmall,
+                    Text("Ouvrir", style = MaterialTheme.typography.labelSmall,
                         color = if (isMe) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(msg.mediaUrl))) } })
                 }

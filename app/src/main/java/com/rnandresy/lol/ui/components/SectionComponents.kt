@@ -130,7 +130,7 @@ fun FeedSectionBar(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(1.dp)
                 ) {
-                    Text(section.emoji, fontSize = 15.sp)
+                    AskipGlyph(kind = glyphForSection(section), size = 15.dp, tint = fg)
                     Text(
                         section.label,
                         style = MaterialTheme.typography.labelMedium,
@@ -179,7 +179,7 @@ fun TruthPageHeader(
             verticalArrangement = Arrangement.spacedBy(Space.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("⚖", fontSize = 26.sp)
+            AskipGlyph(kind = GlyphKind.SCALE, size = 25.dp)
             Text(
                 "LA PAGE DE VÉRITÉ",
                 style = MaterialTheme.typography.titleMedium,
@@ -279,7 +279,7 @@ fun OathLine(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Space.xs)
     ) {
-        Text("✋", fontSize = 10.sp)
+        AskipGlyph(kind = GlyphKind.CHECK, size = 10.dp)
         Text(
             "PUBLIÉ SOUS SERMENT",
             style = MaterialTheme.typography.labelSmall,
@@ -306,7 +306,7 @@ fun OathDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Text("⚖", fontSize = 28.sp) },
+        icon = { AskipGlyph(kind = GlyphKind.SCALE, size = 27.dp) },
         title = {
             Text(
                 "Serment",
@@ -488,7 +488,7 @@ fun VoiceHero(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("◍", fontSize = 11.sp)
+                AskipGlyph(kind = GlyphKind.WAVE, size = 11.dp)
                 Text(
                     "RUMEUR VOCALE",
                     style = MaterialTheme.typography.labelSmall,

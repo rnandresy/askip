@@ -88,7 +88,73 @@ enum class GlyphKind {
     CROWN,
 
     /** La cloche — les notifications. */
-    BELL
+    BELL,
+
+    // ── Salons et formats ─────────────────────────────────────────────────
+
+    /** Le livre — l'amphi, les cours, l'ENI. */
+    BOOK,
+
+    /** Le crayon — les examens, l'écriture, la modification. */
+    PENCIL,
+
+    /** Le ballon — le sport. */
+    BALL,
+
+    /** Le masque de théâtre — le drama. */
+    DRAMA,
+
+    /** Le cadenas — la capsule scellée, ce qui attend son heure. */
+    LOCK,
+
+    /** La clé — ce qui ouvre la capsule. */
+    KEY,
+
+    /** La balance — la Page de Vérité, le serment. */
+    SCALE,
+
+    /** Les barres — le sondage, les statistiques. */
+    CHART,
+
+    /** Les maillons — le téléphone arabe. */
+    LINK,
+
+    /** Le crâne — ce qui dépasse l'entendement. */
+    SKULL,
+
+    // ── Médias ────────────────────────────────────────────────────────────
+
+    /** Le cadre — une photo. */
+    PHOTO,
+
+    /** Le triangle — une vidéo. */
+    PLAY,
+
+    /** L'onde — un message vocal. */
+    WAVE,
+
+    /** La feuille — un fichier joint. */
+    DOC,
+
+    /** La loupe — la recherche. */
+    SEARCH,
+
+    /** Le billet — un pari. */
+    TICKET,
+
+    // ── Actions ───────────────────────────────────────────────────────────
+
+    /** Le drapeau — signaler à l'administration. */
+    FLAG,
+
+    /** Les deux feuillets — copier. */
+    COPY,
+
+    /** La flèche coudée — répondre. */
+    REPLY,
+
+    /** Deux silhouettes — les membres, un groupe. */
+    PEOPLE
 }
 
 /**
@@ -127,8 +193,19 @@ private fun defaultTintFor(
     GlyphKind.STAR, GlyphKind.SPARKLE, GlyphKind.CROWN, GlyphKind.SUN -> Color(0xFFE7B44C)
     GlyphKind.MOON -> Color(0xFF9AA7D4)
     GlyphKind.CHECK -> Color(0xFF52A06E)
-    GlyphKind.CROSS -> Color(0xFFCB5A63)
-    GlyphKind.BUBBLE, GlyphKind.VEIL, GlyphKind.BELL -> Color(0xFF8D9AAE)
+    GlyphKind.CROSS, GlyphKind.SKULL -> Color(0xFFCB5A63)
+    GlyphKind.BOOK, GlyphKind.PENCIL -> Color(0xFF7E8FB8)
+    GlyphKind.BALL -> Color(0xFF5FA97E)
+    GlyphKind.DRAMA -> Color(0xFFB07BC4)
+    GlyphKind.LOCK, GlyphKind.KEY -> Color(0xFFC49A5A)
+    GlyphKind.SCALE -> Color(0xFF8D9AAE)
+    GlyphKind.CHART -> Color(0xFF6E93C4)
+    GlyphKind.LINK -> Color(0xFF8D9AAE)
+    GlyphKind.TICKET -> scoop
+    GlyphKind.FLAG -> Color(0xFFCB5A63)
+    GlyphKind.PHOTO, GlyphKind.PLAY, GlyphKind.WAVE, GlyphKind.DOC,
+    GlyphKind.SEARCH, GlyphKind.BUBBLE, GlyphKind.VEIL, GlyphKind.BELL,
+    GlyphKind.COPY, GlyphKind.REPLY, GlyphKind.PEOPLE -> Color(0xFF8D9AAE)
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -231,7 +308,445 @@ private fun pathFor(kind: GlyphKind, s: Size): Path = when (kind) {
     GlyphKind.BUBBLE -> bubblePath(s)
     GlyphKind.CROWN -> crownPath(s)
     GlyphKind.BELL -> bellPath(s)
+    GlyphKind.BOOK -> bookPath(s)
+    GlyphKind.PENCIL -> pencilPath(s)
+    GlyphKind.BALL -> ballPath(s)
+    GlyphKind.DRAMA -> dramaPath(s)
+    GlyphKind.LOCK -> lockPath(s)
+    GlyphKind.KEY -> keyPath(s)
+    GlyphKind.SCALE -> scalePath(s)
+    GlyphKind.CHART -> chartPath(s)
+    GlyphKind.LINK -> linkPath(s)
+    GlyphKind.SKULL -> skullPath(s)
+    GlyphKind.PHOTO -> photoPath(s)
+    GlyphKind.PLAY -> playPath(s)
+    GlyphKind.WAVE -> wavePath(s)
+    GlyphKind.DOC -> docPath(s)
+    GlyphKind.SEARCH -> searchPath(s)
+    GlyphKind.TICKET -> ticketPath(s)
+    GlyphKind.FLAG -> flagPath(s)
+    GlyphKind.COPY -> copyPath(s)
+    GlyphKind.REPLY -> replyPath(s)
+    GlyphKind.PEOPLE -> peoplePath(s)
     GlyphKind.CHECK, GlyphKind.CROSS -> Path()
+}
+
+/** Un drapeau et sa hampe. */
+private fun flagPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        // La hampe.
+        moveTo(w * 0.10f, h * 0.04f)
+        lineTo(w * 0.22f, h * 0.04f)
+        lineTo(w * 0.22f, h * 0.96f)
+        lineTo(w * 0.10f, h * 0.96f)
+        close()
+        // Le pan, creusé en bas comme une flamme.
+        moveTo(w * 0.22f, h * 0.10f)
+        lineTo(w * 0.92f, h * 0.10f)
+        lineTo(w * 0.74f, h * 0.34f)
+        lineTo(w * 0.92f, h * 0.58f)
+        lineTo(w * 0.22f, h * 0.58f)
+        close()
+    }
+}
+
+/** Deux feuillets décalés. */
+private fun copyPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val r = w * 0.10f
+    val derriere = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.06f, top = h * 0.06f,
+                right = w * 0.66f, bottom = h * 0.66f,
+                radiusX = r, radiusY = r
+            )
+        )
+    }
+    val devant = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.34f, top = h * 0.34f,
+                right = w * 0.94f, bottom = h * 0.94f,
+                radiusX = r, radiusY = r
+            )
+        )
+    }
+    // Le feuillet du dessous est évidé là où l'autre le recouvre : sans ça les
+    // deux se fondent en une seule forme.
+    val creux = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.26f, top = h * 0.26f,
+                right = w * 0.94f, bottom = h * 0.94f,
+                radiusX = r, radiusY = r
+            )
+        )
+    }
+    val visible = Path().apply { op(derriere, creux, PathOperation.Difference) }
+    return Path().apply { op(visible, devant, PathOperation.Union) }
+}
+
+/** Une flèche qui repart vers la gauche après un coude. */
+private fun replyPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        // La pointe.
+        moveTo(w * 0.04f, h * 0.44f)
+        lineTo(w * 0.38f, h * 0.14f)
+        lineTo(w * 0.38f, h * 0.74f)
+        close()
+        // Le corps coudé.
+        moveTo(w * 0.30f, h * 0.32f)
+        lineTo(w * 0.62f, h * 0.32f)
+        cubicTo(w * 0.96f, h * 0.32f, w * 0.96f, h * 0.92f, w * 0.62f, h * 0.92f)
+        lineTo(w * 0.48f, h * 0.92f)
+        lineTo(w * 0.48f, h * 0.78f)
+        lineTo(w * 0.62f, h * 0.78f)
+        cubicTo(w * 0.78f, h * 0.78f, w * 0.78f, h * 0.46f, w * 0.62f, h * 0.46f)
+        lineTo(w * 0.30f, h * 0.46f)
+        close()
+    }
+}
+
+/** Deux silhouettes, la seconde en retrait. */
+private fun peoplePath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        // Celle de derrière, plus petite et décalée.
+        addOval(Rect(w * 0.52f, h * 0.14f, w * 0.84f, h * 0.46f))
+        moveTo(w * 0.50f, h * 0.92f)
+        cubicTo(w * 0.62f, h * 0.54f, w * 0.98f, h * 0.58f, w * 0.98f, h * 0.92f)
+        close()
+        // Celle de devant.
+        addOval(Rect(w * 0.14f, h * 0.08f, w * 0.54f, h * 0.48f))
+        moveTo(w * 0.02f, h * 0.94f)
+        cubicTo(w * 0.02f, h * 0.56f, w * 0.66f, h * 0.56f, w * 0.66f, h * 0.94f)
+        close()
+    }
+}
+
+/** Un livre ouvert : deux pages et une reliure creusée. */
+private fun bookPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        moveTo(w * 0.50f, h * 0.26f)
+        cubicTo(w * 0.34f, h * 0.12f, w * 0.16f, h * 0.14f, w * 0.05f, h * 0.18f)
+        lineTo(w * 0.05f, h * 0.82f)
+        cubicTo(w * 0.16f, h * 0.78f, w * 0.34f, h * 0.76f, w * 0.50f, h * 0.90f)
+        cubicTo(w * 0.66f, h * 0.76f, w * 0.84f, h * 0.78f, w * 0.95f, h * 0.82f)
+        lineTo(w * 0.95f, h * 0.18f)
+        cubicTo(w * 0.84f, h * 0.14f, w * 0.66f, h * 0.12f, w * 0.50f, h * 0.26f)
+        close()
+    }
+}
+
+/** Un crayon en diagonale, pointe en bas à gauche. */
+private fun pencilPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        moveTo(w * 0.06f, h * 0.94f)
+        lineTo(w * 0.24f, h * 0.86f)
+        lineTo(w * 0.90f, h * 0.20f)
+        lineTo(w * 0.78f, h * 0.08f)
+        lineTo(w * 0.12f, h * 0.74f)
+        close()
+    }
+}
+
+/** Un ballon : un disque et deux méridiens creusés. */
+private fun ballPath(s: Size): Path {
+    val plein = Path().apply { addOval(Rect(0f, 0f, s.width, s.height)) }
+    val meridien = Path().apply {
+        addOval(
+            Rect(
+                s.width * 0.34f, -s.height * 0.06f,
+                s.width * 0.66f, s.height * 1.06f
+            )
+        )
+    }
+    return Path().apply { op(plein, meridien, PathOperation.Difference) }
+}
+
+/** Le masque de théâtre : un ovale et deux yeux évidés. */
+private fun dramaPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val visage = Path().apply {
+        moveTo(w * 0.50f, h * 0.04f)
+        cubicTo(w * 0.92f, h * 0.04f, w * 0.94f, h * 0.44f, w * 0.82f, h * 0.72f)
+        cubicTo(w * 0.72f, h * 0.96f, w * 0.28f, h * 0.96f, w * 0.18f, h * 0.72f)
+        cubicTo(w * 0.06f, h * 0.44f, w * 0.08f, h * 0.04f, w * 0.50f, h * 0.04f)
+        close()
+    }
+    val yeux = Path().apply {
+        addOval(Rect(w * 0.26f, h * 0.32f, w * 0.44f, h * 0.50f))
+        addOval(Rect(w * 0.56f, h * 0.32f, w * 0.74f, h * 0.50f))
+    }
+    return Path().apply { op(visage, yeux, PathOperation.Difference) }
+}
+
+/** Un cadenas : anse et corps. */
+private fun lockPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val corps = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.14f, top = h * 0.44f,
+                right = w * 0.86f, bottom = h * 0.96f,
+                radiusX = w * 0.14f, radiusY = w * 0.14f
+            )
+        )
+    }
+    // L'anse est un anneau dont on ne garde que le haut.
+    val anseExt = Path().apply {
+        addOval(Rect(w * 0.24f, h * 0.06f, w * 0.76f, h * 0.62f))
+    }
+    val anseInt = Path().apply {
+        addOval(Rect(w * 0.38f, h * 0.20f, w * 0.62f, h * 0.62f))
+    }
+    val anse = Path().apply { op(anseExt, anseInt, PathOperation.Difference) }
+    return Path().apply { op(corps, anse, PathOperation.Union) }
+}
+
+/** Une clé : un anneau percé et un panneton. */
+private fun keyPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val anneauExt = Path().apply {
+        addOval(Rect(w * 0.04f, h * 0.16f, w * 0.56f, h * 0.68f))
+    }
+    val anneauInt = Path().apply {
+        addOval(Rect(w * 0.18f, h * 0.30f, w * 0.42f, h * 0.54f))
+    }
+    val anneau = Path().apply { op(anneauExt, anneauInt, PathOperation.Difference) }
+    val tige = Path().apply {
+        moveTo(w * 0.48f, h * 0.36f)
+        lineTo(w * 0.96f, h * 0.36f)
+        lineTo(w * 0.96f, h * 0.50f)
+        lineTo(w * 0.86f, h * 0.50f)
+        lineTo(w * 0.86f, h * 0.64f)
+        lineTo(w * 0.74f, h * 0.64f)
+        lineTo(w * 0.74f, h * 0.50f)
+        lineTo(w * 0.48f, h * 0.50f)
+        close()
+    }
+    return Path().apply { op(anneau, tige, PathOperation.Union) }
+}
+
+/** Une balance : un fléau, deux plateaux, un pied. */
+private fun scalePath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        // Le fléau et le mât.
+        moveTo(w * 0.06f, h * 0.24f)
+        lineTo(w * 0.94f, h * 0.24f)
+        lineTo(w * 0.94f, h * 0.34f)
+        lineTo(w * 0.56f, h * 0.34f)
+        lineTo(w * 0.56f, h * 0.82f)
+        lineTo(w * 0.80f, h * 0.82f)
+        lineTo(w * 0.80f, h * 0.94f)
+        lineTo(w * 0.20f, h * 0.94f)
+        lineTo(w * 0.20f, h * 0.82f)
+        lineTo(w * 0.44f, h * 0.82f)
+        lineTo(w * 0.44f, h * 0.34f)
+        lineTo(w * 0.06f, h * 0.34f)
+        close()
+        // Les deux plateaux.
+        moveTo(w * 0.04f, h * 0.40f)
+        lineTo(w * 0.36f, h * 0.40f)
+        lineTo(w * 0.20f, h * 0.62f)
+        close()
+        moveTo(w * 0.64f, h * 0.40f)
+        lineTo(w * 0.96f, h * 0.40f)
+        lineTo(w * 0.80f, h * 0.62f)
+        close()
+    }
+}
+
+/** Trois barres de hauteurs croissantes. */
+private fun chartPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val r = w * 0.06f
+    return Path().apply {
+        listOf(
+            Triple(0.06f, 0.58f, 0.26f),
+            Triple(0.38f, 0.34f, 0.58f),
+            Triple(0.70f, 0.14f, 0.90f)
+        ).forEach { (gauche, haut, droite) ->
+            addRoundRect(
+                androidx.compose.ui.geometry.RoundRect(
+                    left = w * gauche, top = h * haut,
+                    right = w * droite, bottom = h * 0.94f,
+                    radiusX = r, radiusY = r
+                )
+            )
+        }
+    }
+}
+
+/** Deux anneaux entrelacés. */
+private fun linkPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    fun anneau(g: Float, d: Float): Path {
+        val ext = Path().apply { addOval(Rect(w * g, h * 0.26f, w * d, h * 0.74f)) }
+        val int = Path().apply {
+            addOval(
+                Rect(
+                    w * (g + 0.10f), h * 0.38f,
+                    w * (d - 0.10f), h * 0.62f
+                )
+            )
+        }
+        return Path().apply { op(ext, int, PathOperation.Difference) }
+    }
+    return Path().apply {
+        op(anneau(0.02f, 0.58f), anneau(0.42f, 0.98f), PathOperation.Union)
+    }
+}
+
+/** Un crâne : une calotte, deux orbites, une mâchoire. */
+private fun skullPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val tete = Path().apply {
+        moveTo(w * 0.50f, h * 0.04f)
+        cubicTo(w * 0.90f, h * 0.04f, w * 0.94f, h * 0.42f, w * 0.86f, h * 0.62f)
+        lineTo(w * 0.72f, h * 0.62f)
+        lineTo(w * 0.72f, h * 0.90f)
+        lineTo(w * 0.28f, h * 0.90f)
+        lineTo(w * 0.28f, h * 0.62f)
+        lineTo(w * 0.14f, h * 0.62f)
+        cubicTo(w * 0.06f, h * 0.42f, w * 0.10f, h * 0.04f, w * 0.50f, h * 0.04f)
+        close()
+    }
+    val orbites = Path().apply {
+        addOval(Rect(w * 0.22f, h * 0.30f, w * 0.44f, h * 0.52f))
+        addOval(Rect(w * 0.56f, h * 0.30f, w * 0.78f, h * 0.52f))
+    }
+    return Path().apply { op(tete, orbites, PathOperation.Difference) }
+}
+
+/** Un cadre photo : un rectangle percé d'un disque. */
+private fun photoPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val cadre = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.04f, top = h * 0.14f,
+                right = w * 0.96f, bottom = h * 0.86f,
+                radiusX = w * 0.12f, radiusY = w * 0.12f
+            )
+        )
+    }
+    val objectif = Path().apply {
+        addOval(Rect(w * 0.36f, h * 0.34f, w * 0.64f, h * 0.66f))
+    }
+    return Path().apply { op(cadre, objectif, PathOperation.Difference) }
+}
+
+/** Un triangle de lecture. */
+private fun playPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        moveTo(w * 0.18f, h * 0.08f)
+        lineTo(w * 0.92f, h * 0.50f)
+        lineTo(w * 0.18f, h * 0.92f)
+        close()
+    }
+}
+
+/** Quatre barres verticales, comme un niveau sonore. */
+private fun wavePath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val r = w * 0.06f
+    return Path().apply {
+        listOf(
+            0.34f to 0.66f,
+            0.16f to 0.84f,
+            0.24f to 0.76f,
+            0.42f to 0.58f
+        ).forEachIndexed { i, (haut, bas) ->
+            val g = 0.08f + i * 0.22f
+            addRoundRect(
+                androidx.compose.ui.geometry.RoundRect(
+                    left = w * g, top = h * haut,
+                    right = w * (g + 0.12f), bottom = h * bas,
+                    radiusX = r, radiusY = r
+                )
+            )
+        }
+    }
+}
+
+/** Une feuille au coin replié. */
+private fun docPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
+        moveTo(w * 0.14f, h * 0.06f)
+        lineTo(w * 0.62f, h * 0.06f)
+        lineTo(w * 0.86f, h * 0.30f)
+        lineTo(w * 0.86f, h * 0.94f)
+        lineTo(w * 0.14f, h * 0.94f)
+        close()
+        // Le pli du coin, en creux.
+        moveTo(w * 0.62f, h * 0.06f)
+        lineTo(w * 0.62f, h * 0.30f)
+        lineTo(w * 0.86f, h * 0.30f)
+        close()
+    }
+}
+
+/** Une loupe : un anneau et son manche. */
+private fun searchPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val ext = Path().apply { addOval(Rect(w * 0.06f, h * 0.06f, w * 0.72f, h * 0.72f)) }
+    val int = Path().apply { addOval(Rect(w * 0.20f, h * 0.20f, w * 0.58f, h * 0.58f)) }
+    val anneau = Path().apply { op(ext, int, PathOperation.Difference) }
+    val manche = Path().apply {
+        moveTo(w * 0.58f, h * 0.68f)
+        lineTo(w * 0.72f, h * 0.54f)
+        lineTo(w * 0.96f, h * 0.78f)
+        lineTo(w * 0.82f, h * 0.92f)
+        close()
+    }
+    return Path().apply { op(anneau, manche, PathOperation.Union) }
+}
+
+/** Un billet aux flancs échancrés. */
+private fun ticketPath(s: Size): Path {
+    val w = s.width
+    val h = s.height
+    val corps = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = w * 0.04f, top = h * 0.22f,
+                right = w * 0.96f, bottom = h * 0.78f,
+                radiusX = w * 0.10f, radiusY = w * 0.10f
+            )
+        )
+    }
+    val encoches = Path().apply {
+        addOval(Rect(w * 0.42f, h * 0.10f, w * 0.58f, h * 0.30f))
+        addOval(Rect(w * 0.42f, h * 0.70f, w * 0.58f, h * 0.90f))
+    }
+    return Path().apply { op(corps, encoches, PathOperation.Difference) }
 }
 
 /** Une étoile régulière. [creux] est le rayon intérieur, en part du rayon. */

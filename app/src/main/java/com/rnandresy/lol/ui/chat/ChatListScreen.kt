@@ -42,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Conversation
 import com.rnandresy.lol.model.Group
@@ -56,6 +58,7 @@ import com.rnandresy.lol.ui.components.SheetHeader
 import com.rnandresy.lol.ui.components.SlidingSegmented
 import com.rnandresy.lol.ui.components.TapArea
 import com.rnandresy.lol.ui.components.formatTs
+import com.rnandresy.lol.ui.components.glyphForSymbol
 import com.rnandresy.lol.ui.components.rememberTapFeedback
 import com.rnandresy.lol.ui.theme.LocalAskipPalette
 import com.rnandresy.lol.ui.theme.Radius
@@ -145,7 +148,7 @@ fun ChatListScreen(
                     if (conversations.isEmpty()) {
                         Box(Modifier.fillMaxSize(), Alignment.Center) {
                             EmptyState(
-                                "⌯", "Aucun message",
+                                GlyphKind.BUBBLE, "Aucun message",
                                 "Appuie sur le crayon pour commencer"
                             )
                         }
@@ -177,8 +180,7 @@ fun ChatListScreen(
                 ChatTab.GROUPS -> {
                     if (groups.isEmpty()) {
                         Box(Modifier.fillMaxSize(), Alignment.Center) {
-                            EmptyState(
-                                "◍", "Aucun groupe",
+                            EmptyState(GlyphKind.PEOPLE, "Aucun groupe",
                                 "Appuie sur + pour en créer un"
                             )
                         }
@@ -280,7 +282,7 @@ private fun ConversationRow(
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        conv.lastMessage.ifBlank { "Démarrer la conversation ⋆" },
+                        conv.lastMessage.ifBlank { "Démarrer la conversation" },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (hasUnread) MaterialTheme.colorScheme.onSurface
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -326,7 +328,7 @@ private fun GroupRow(group: Group, onClick: () -> Unit) {
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Text(group.emoji, fontSize = 23.sp)
+                AskipGlyph(kind = glyphForSymbol(group.emoji), size = 23.dp)
             }
             Spacer(Modifier.width(Space.md))
 

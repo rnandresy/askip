@@ -42,11 +42,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.AppNotification
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleChip
 import com.rnandresy.lol.ui.components.BubbleIconButton
+import com.rnandresy.lol.ui.components.glyphForNotification
 import com.rnandresy.lol.ui.components.rememberTapFeedback
 import com.rnandresy.lol.ui.components.EmptyState
 import com.rnandresy.lol.ui.components.formatTs
@@ -89,7 +92,7 @@ fun NotificationsScreen(
                     if (unread > 0) {
                         BubbleChip(
                             label = "Tout lire",
-                            emoji = "✓",
+                            glyph = GlyphKind.CHECK,
                             onClick = { vm.markAllNotificationsRead() },
                             modifier = Modifier.padding(end = Space.lg)
                         )
@@ -105,7 +108,7 @@ fun NotificationsScreen(
     ) { pad ->
         if (notifications.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {
-                EmptyState("◠", "Aucune notification", "Les mentions et annonces apparaîtront ici")
+                EmptyState(GlyphKind.BELL, "Aucune notification", "Les mentions et annonces apparaîtront ici")
             }
         } else {
             LazyColumn(
@@ -190,16 +193,9 @@ private fun NotifRow(notif: AppNotification, onClick: () -> Unit, onDelete: () -
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    when (notif.type) {
-                        "new_post_admin"   -> "⋆"
-                        "new_post"         -> "⋆"
-                        "mention_everyone" -> "⋆"
-                        "mention"          -> if (fromAdmin) "✧" else "⌯"
-                        "message"          -> if (fromAdmin) "✧" else "⌯"
-                        else               -> "◠"
-                    },
-                    fontSize = 18.sp
+                AskipGlyph(
+                    kind = glyphForNotification(notif.type, fromAdmin),
+                    size = 17.dp
                 )
             }
 
@@ -303,7 +299,7 @@ private fun NotifErrorBanner(message: String, onClose: () -> Unit) {
             .padding(horizontal = Space.md, vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("⚠", fontSize = 14.sp)
+        AskipGlyph(kind = GlyphKind.FLAG, size = 13.dp)
         Spacer(Modifier.width(Space.sm))
         Text(
             message,

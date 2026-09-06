@@ -61,11 +61,9 @@ import com.rnandresy.lol.ui.theme.Radius
 import com.rnandresy.lol.ui.theme.Space
 import com.rnandresy.lol.utils.BET_BASE_REWARD
 import com.rnandresy.lol.utils.BET_STAKES
-import com.rnandresy.lol.utils.BET_TOKEN_EMOJI
 import com.rnandresy.lol.utils.CHAIN_MAX_LENGTH
 import com.rnandresy.lol.utils.CHAIN_MAX_LINKS
 import com.rnandresy.lol.utils.RumorEngine
-import com.rnandresy.lol.utils.SEAL_KEY_EMOJI
 import kotlinx.coroutines.delay
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -122,7 +120,7 @@ fun CampusWeatherBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Space.sm)
     ) {
-        Text(weather.weather.emoji, fontSize = 18.sp)
+        AskipGlyph(kind = glyphForWeather(weather.weather), size = 18.dp, tint = accent)
         Column(Modifier.weight(1f)) {
             Text(
                 weather.weather.label,
@@ -199,7 +197,11 @@ fun SealedCapsule(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
-                Text(if (open) "⌂" else "⌂", fontSize = 20.sp)
+                AskipGlyph(
+                    kind = if (open) GlyphKind.KEY else GlyphKind.LOCK,
+                    size = 19.dp,
+                    tint = if (open) palette.confirmed else null
+                )
                 Text(
                     if (open) "Capsule ouverte" else "Capsule scellée",
                     style = MaterialTheme.typography.titleSmall,
@@ -274,19 +276,31 @@ fun SealedCapsule(
                         )
                         if (!gaveKey && !isAuthor) {
                             TextButton(onClick = onGiveKey) {
-                                Text(
-                                    "$SEAL_KEY_EMOJI Ma clé",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(Space.xxs)
+                                ) {
+                                    AskipGlyph(kind = GlyphKind.KEY, size = 12.dp)
+                                    Text(
+                                        "Ma clé",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         } else if (gaveKey) {
-                            Text(
-                                "$SEAL_KEY_EMOJI donnée",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.contested
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(Space.xxs)
+                            ) {
+                                AskipGlyph(kind = GlyphKind.KEY, size = 11.dp, tint = palette.contested)
+                                Text(
+                                    "donnée",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.contested
+                                )
+                            }
                         }
                     }
                 }
@@ -344,7 +358,7 @@ fun ChainPreview(post: Post, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("⋯", fontSize = 12.sp)
+                AskipGlyph(kind = GlyphKind.LINK, size = 12.dp)
                 Text(
                     if (full) "CHAÎNE COMPLÈTE" else "TÉLÉPHONE ARABE",
                     style = MaterialTheme.typography.labelSmall,
@@ -365,7 +379,7 @@ fun ChainPreview(post: Post, modifier: Modifier = Modifier) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "dernier maillon : ${post.chainLastAuthor.ifBlank { "quelqu'un ◌" }}",
+                    "dernier maillon : ${post.chainLastAuthor.ifBlank { "quelqu'un" }}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -411,14 +425,14 @@ fun ChainThread(
     ) {
         ChainBubble(
             index = 1,
-            author = originAuthor.ifBlank { "Quelqu'un ◌" },
+            author = originAuthor.ifBlank { "Quelqu'un" },
             content = origin,
             isOrigin = true
         )
         links.forEachIndexed { i, link ->
             ChainBubble(
                 index = i + 2,
-                author = link.username.ifBlank { "Quelqu'un ◌" },
+                author = link.username.ifBlank { "Quelqu'un" },
                 content = link.content,
                 isOrigin = false
             )
@@ -551,7 +565,7 @@ fun RightOfReplyCard(reply: MentionReply, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("⚖", fontSize = 12.sp)
+                AskipGlyph(kind = GlyphKind.SCALE, size = 12.dp)
                 Text(
                     "DROIT DE RÉPONSE",
                     style = MaterialTheme.typography.labelSmall,
@@ -599,7 +613,7 @@ fun RightOfReplyPrompt(
             verticalArrangement = Arrangement.spacedBy(Space.sm)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⚖", fontSize = 16.sp)
+                AskipGlyph(kind = GlyphKind.SCALE, size = 15.dp)
                 Spacer(Modifier.width(Space.sm))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -710,7 +724,7 @@ fun BetPanel(
             verticalArrangement = Arrangement.spacedBy(Space.sm)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(BET_TOKEN_EMOJI, fontSize = 14.sp)
+                AskipGlyph(kind = BetTokenGlyph, size = 14.dp)
                 Spacer(Modifier.width(Space.xs))
                 Text(
                     "PARIER SUR LE VERDICT",
@@ -740,14 +754,14 @@ fun BetPanel(
 
             Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                 SideChoice(
-                    label = "✓ Ce sera crédible",
+                    label = "Ce sera crédible",
                     selected = side == true,
                     accent = palette.confirmed,
                     modifier = Modifier.weight(1f),
                     onClick = { side = true }
                 )
                 SideChoice(
-                    label = "✕ Ce sera bidon",
+                    label = "Ce sera bidon",
                     selected = side == false,
                     accent = palette.debunked,
                     modifier = Modifier.weight(1f),
@@ -798,7 +812,7 @@ fun BetPanel(
                         }
                         BubbleButton(
                             text = "Parier",
-                            emoji = "◈",
+                            glyph = GlyphKind.CHART,
                             onClick = { side?.let { onPlaceBet(it, stake) } },
                             enabled = stake <= tokensLeft,
                             tone = BubbleTone.PRIMARY,
@@ -859,7 +873,7 @@ private fun SideChoice(
 private fun StakeChip(value: Int, selected: Boolean, onClick: () -> Unit) {
     BubbleChip(
         label = "×$value",
-        emoji = BET_TOKEN_EMOJI,
+        glyph = BetTokenGlyph,
         filled = selected,
         accent = if (selected) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -888,21 +902,27 @@ fun BetTicket(bet: Bet, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.sm)
         ) {
-            Text(
-                when {
-                    !bet.settled -> BET_TOKEN_EMOJI
-                    bet.won -> "✦"
-                    else -> "☠"
+            AskipGlyph(
+                kind = when {
+                    !bet.settled -> BetTokenGlyph
+                    bet.won -> GlyphKind.STAR
+                    else -> GlyphKind.SKULL
                 },
-                fontSize = 18.sp
+                size = 18.dp,
+                tint = accent
             )
             Column(Modifier.weight(1f)) {
-                Text(
-                    "${bet.sideEmoji()} Tu as parié « ${bet.sideLabel()} » " +
-                        "· $BET_TOKEN_EMOJI×${bet.stake}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.xxs)
+                ) {
+                    AskipGlyph(kind = glyphForBetSide(bet.onCredible), size = 11.dp)
+                    Text(
+                        "Tu as parié « ${bet.sideLabel()} » · ×${bet.stake}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
                 Text(
                     when {
                         !bet.settled ->
@@ -947,7 +967,7 @@ fun BetBadge(bet: Bet, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Text(bet.sideEmoji(), fontSize = 9.sp)
+            AskipGlyph(kind = glyphForBetSide(bet.onCredible), size = 9.dp, tint = accent)
             Text(
                 if (bet.settled) {
                     if (bet.won) "+${bet.payout}" else "${bet.payout}"

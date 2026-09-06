@@ -75,6 +75,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import com.rnandresy.lol.ui.components.AskipGlyph
+import com.rnandresy.lol.ui.components.GlyphKind
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.model.Message
 import com.rnandresy.lol.ui.components.AskipAvatar
@@ -254,7 +256,7 @@ fun ChatScreen(
                                     )
                                     Spacer(Modifier.weight(1f))
                                     Text(
-                                        "◍ Enregistrement…",
+                                        "Enregistrement…",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onErrorContainer
                                     )
@@ -457,15 +459,15 @@ fun ChatScreen(
             title            = { Text("Joindre un fichier") },
             text             = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MediaPickOption("◫ Photo") {
+                    MediaPickOption("Photo") {
                         showMediaPicker = false
                         imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     }
-                    MediaPickOption("▷ Vidéo") {
+                    MediaPickOption("Vidéo") {
                         showMediaPicker = false
                         videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
                     }
-                    MediaPickOption("▤ Fichier (PDF, doc…, mbola tsy mety fa andramo iany)") {
+                    MediaPickOption("Fichier (PDF, doc…, mbola tsy mety fa andramo iany)") {
                         showMediaPicker = false
                         filePicker.launch("*/*")
                     }
@@ -634,7 +636,7 @@ fun AudioMessagePlayer(url: String, duration: Int, isMe: Boolean) {
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("◍", fontSize = 20.sp)
+        AskipGlyph(kind = GlyphKind.WAVE, size = 19.dp)
 
         Column(modifier = Modifier.weight(1f)) {
             LinearProgressIndicator(
@@ -700,7 +702,7 @@ private fun FileMessageItem(name: String, url: String, isMe: Boolean) {
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                "Ouvrir ↗",
+                "Ouvrir",
                 style    = MaterialTheme.typography.labelSmall,
                 color    = subColor,
                 modifier = Modifier.clickable {

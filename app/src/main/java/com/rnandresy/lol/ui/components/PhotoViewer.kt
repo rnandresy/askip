@@ -187,7 +187,7 @@ fun PhotoViewer(
                     "L'administrateur du campus la recevra avec ton motif."
                 )
                 PHOTO_REPORTS.forEach { motif ->
-                    SheetAction(emoji = "⚑", label = motif) {
+                    SheetAction(glyph = GlyphKind.FLAG, label = motif) {
                         onReport(motif)
                         showReport = false
                         onDismiss()

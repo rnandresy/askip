@@ -185,7 +185,7 @@ fun BubbleButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    emoji: String? = null,
+    glyph: GlyphKind? = null,
     icon: ImageVector? = null,
     tone: BubbleTone = BubbleTone.PRIMARY,
     size: BubbleSize = BubbleSize.MEDIUM,
@@ -227,7 +227,14 @@ fun BubbleButton(
                     color = c.content,
                     strokeWidth = 2.dp
                 )
-                emoji != null -> Text(emoji, fontSize = (size.textSize + 2).sp)
+                glyph != null -> AskipGlyph(
+                    kind = glyph,
+                    size = (size.textSize + 2).dp,
+                    // Sur une bulle pleine, la figure garde sa couleur propre
+                    // et se perdrait dans le fond : elle prend celle du texte.
+                    tint = if (tone == BubbleTone.PRIMARY || tone == BubbleTone.DANGER)
+                        c.content else null
+                )
                 icon != null -> Icon(icon, null, Modifier.size(18.dp), tint = c.content)
             }
             Text(
@@ -336,7 +343,7 @@ fun BubbleBadge(
 fun BubbleChip(
     label: String,
     modifier: Modifier = Modifier,
-    emoji: String? = null,
+    glyph: GlyphKind? = null,
     accent: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     filled: Boolean = false,
     enabled: Boolean = true,
@@ -357,7 +364,9 @@ fun BubbleChip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            if (emoji != null) Text(emoji, fontSize = 10.sp)
+            if (glyph != null) {
+                AskipGlyph(kind = glyph, size = 11.dp, tint = if (filled) content else null)
+            }
             Text(
                 label,
                 style = MaterialTheme.typography.labelSmall,
