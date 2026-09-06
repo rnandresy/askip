@@ -503,8 +503,20 @@ fun AskipTextField(
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
+
+/**
+ * L'horodatage, construit une fois par thread.
+ *
+ * `SimpleDateFormat` réanalyse son motif et recharge les données de locale à
+ * chaque construction. Il y en avait une par carte, par commentaire et par
+ * message — refaite à chaque recomposition. La classe n'étant pas sûre en
+ * concurrence, on en garde un par thread plutôt qu'un seul partagé.
+ */
+private val HORODATAGE: ThreadLocal<SimpleDateFormat> =
+    ThreadLocal.withInitial { SimpleDateFormat("dd MMM · HH:mm", Locale.FRENCH) }
+
 fun formatTs(ts: Long): String = runCatching {
-    SimpleDateFormat("dd MMM · HH:mm", Locale.FRENCH).format(Date(ts))
+    HORODATAGE.get()!!.format(Date(ts))
 }.getOrElse { "" }
 
 fun formatAudioDuration(seconds: Int): String = "%d:%02d".format(seconds / 60, seconds % 60)

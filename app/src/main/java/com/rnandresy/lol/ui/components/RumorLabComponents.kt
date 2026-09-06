@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -89,8 +90,12 @@ fun CampusWeatherBar(
 
     // Le fond pulse doucement quand ça chauffe — jamais quand la personne
     // a demandé moins de mouvement.
+    // Sans `by`, pour la même raison qu'ailleurs : cette barre coiffe le fil
+    // en permanence, et la lire en composition recomposait la ligne entière —
+    // figure et textes compris — soixante fois par seconde, même par temps
+    // calme, où la valeur ne bouge pourtant pas.
     val transition = rememberInfiniteTransition(label = "weather")
-    val pulse by transition.animateFloat(
+    val pulse = transition.animateFloat(
         initialValue = 0.08f,
         targetValue = if (stormy && !reduceMotion) 0.20f else 0.08f,
         animationSpec = infiniteRepeatable(
@@ -111,11 +116,13 @@ fun CampusWeatherBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.horizontalGradient(
-                    listOf(accent.copy(alpha = pulse), Color.Transparent)
+            .drawBehind {
+                drawRect(
+                    Brush.horizontalGradient(
+                        listOf(accent.copy(alpha = pulse.value), Color.Transparent)
+                    )
                 )
-            )
+            }
             .padding(horizontal = Space.lg, vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Space.sm)

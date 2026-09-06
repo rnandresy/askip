@@ -135,13 +135,22 @@ object RumorEngine {
 
     // ── Le Scoop du jour ──────────────────────────────────────────────────────
 
-    fun today(): String =
-        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+    /**
+     * Le calendrier du jour, construit une fois par thread.
+     *
+     * [today] est l'argument par défaut de six fonctions de `Quests`, elles-mêmes
+     * lues depuis l'écran des missions : un `SimpleDateFormat` neuf par appel
+     * revenait à en construire une poignée par recomposition.
+     */
+    private val JOUR: ThreadLocal<SimpleDateFormat> =
+        ThreadLocal.withInitial { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
+
+    fun today(): String = JOUR.get()!!.format(Date())
 
     fun yesterday(): String {
         val cal = Calendar.getInstance()
         cal.add(Calendar.DAY_OF_YEAR, -1)
-        return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(cal.time)
+        return JOUR.get()!!.format(cal.time)
     }
 
     /** Reste-t-il un Scoop à donner aujourd'hui ? */

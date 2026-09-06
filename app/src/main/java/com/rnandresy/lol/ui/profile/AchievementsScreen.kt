@@ -81,6 +81,13 @@ private fun rarityColor(rarity: String): Color = when (rarity) {
  * permet de ne voir que ce qui reste à décrocher — c'est ce qu'on vient
  * chercher.
  */
+/**
+ * La date de déblocage, construite une fois par thread plutôt qu'une fois par
+ * trophée affiché.
+ */
+private val DEBLOCAGE: ThreadLocal<SimpleDateFormat> =
+    ThreadLocal.withInitial { SimpleDateFormat("d MMMM yyyy", Locale.FRENCH) }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementsScreen(
@@ -312,7 +319,7 @@ private fun TrophyRow(
                 if (unlocked && unlockedAt != null) {
                     Text(
                         "Obtenu le ${
-                            SimpleDateFormat("d MMMM yyyy", Locale.FRENCH).format(Date(unlockedAt))
+                            DEBLOCAGE.get()!!.format(Date(unlockedAt))
                         }",
                         style = MaterialTheme.typography.labelSmall,
                         color = accent

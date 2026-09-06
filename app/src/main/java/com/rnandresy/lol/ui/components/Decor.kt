@@ -98,7 +98,11 @@ fun StarDust(
     }
 
     val transition = rememberInfiniteTransition(label = "dust")
-    val t by transition.animateFloat(
+    // Pas de `by` ici, à dessein : lire la valeur animée dans le corps du
+    // composable ferait *recomposer* tout le bloc à chaque image. Lue dans la
+    // lambda de dessin, la même valeur n'invalide plus que le dessin — c'est
+    // une animation continue, elle tourne tant que l'écran est ouvert.
+    val t = transition.animateFloat(
         initialValue = 0f,
         targetValue = if (reduceMotion) 0f else 2f * PI.toFloat(),
         animationSpec = infiniteRepeatable(
@@ -109,10 +113,11 @@ fun StarDust(
     )
 
     Canvas(modifier = modifier.fillMaxSize()) {
+        val phase = t.value
         specks.forEach { speck ->
             // sin() ramène l'éclat entre 0,15 et 1 : aucune poussière ne
             // disparaît complètement, ce qui éviterait l'effet « clignotant ».
-            val glow = 0.15f + 0.85f * ((sin(t * speck.speed + speck.phase) + 1f) / 2f)
+            val glow = 0.15f + 0.85f * ((sin(phase * speck.speed + speck.phase) + 1f) / 2f)
             drawCircle(
                 color = color.copy(alpha = 0.55f * glow),
                 radius = speck.radius,
@@ -178,7 +183,11 @@ fun SakuraFall(
     }
 
     val transition = rememberInfiniteTransition(label = "sakura")
-    val t by transition.animateFloat(
+    // Pas de `by` ici, à dessein : lire la valeur animée dans le corps du
+    // composable ferait *recomposer* tout le bloc à chaque image. Lue dans la
+    // lambda de dessin, la même valeur n'invalide plus que le dessin — c'est
+    // une animation continue, elle tourne tant que l'écran est ouvert.
+    val t = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -189,7 +198,8 @@ fun SakuraFall(
     )
 
     Canvas(modifier = modifier.fillMaxSize()) {
-        petals.forEach { petal -> drawPetal(petal, t, palette.petal, alpha) }
+        val chute = t.value
+        petals.forEach { petal -> drawPetal(petal, chute, palette.petal, alpha) }
     }
 }
 

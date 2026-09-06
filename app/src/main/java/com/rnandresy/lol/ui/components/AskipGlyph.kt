@@ -1,9 +1,10 @@
 package com.rnandresy.lol.ui.components
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -13,7 +14,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
@@ -174,9 +174,49 @@ fun AskipGlyph(
     val palette = LocalAskipPalette.current
     val base = tint ?: defaultTintFor(kind, palette.scoop, palette.streak, palette.petal)
 
-    Canvas(modifier.size(size)) {
-        drawGlyph(kind, base)
-    }
+    // `drawWithCache` plutôt que `Canvas` : le bloc ci-dessous ne tourne qu'au
+    // changement de taille, de figure ou de couleur. Avec un simple dessin, le
+    // chemin et les deux dégradés étaient reconstruits à chaque frame — étoiles
+    // et fleurs refaisaient leur trigonométrie soixante fois par seconde, pour
+    // chacune des dizaines de figures d'un écran.
+    Spacer(
+        modifier
+            .size(size)
+            .drawWithCache {
+                val h = this.size.height
+
+                // Les traits se dessinent au pinceau, pas au remplissage : une
+                // coche pleine n'aurait aucune allure.
+                if (kind == GlyphKind.CHECK || kind == GlyphKind.CROSS) {
+                    val chemin = strokePathFor(kind, this.size)
+                    val trait = Stroke(
+                        width = this.size.width * 0.17f,
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round
+                    )
+                    val ombre = Color.Black.copy(alpha = 0.14f)
+                    val plein = lerp(base, Color.White, 0.10f)
+                    val decal = h * 0.06f
+                    return@drawWithCache onDrawBehind {
+                        // Un trait plein paraît plat : on double d'une ombre
+                        // légère au-dessous.
+                        translate(top = decal) { drawPath(chemin, ombre, style = trait) }
+                        drawPath(chemin, plein, style = trait)
+                    }
+                }
+
+                val chemin = pathFor(kind, this.size)
+                val volume = volumeBrush(base, this.size)
+                val reflet = highlightBrush(this.size)
+                val ombre = Color.Black.copy(alpha = 0.16f)
+                val decal = h * 0.05f
+                onDrawBehind {
+                    translate(top = decal) { drawPath(chemin, ombre) }
+                    drawPath(chemin, volume)
+                    drawPath(chemin, reflet)
+                }
+            }
+    )
 }
 
 /** La couleur naturelle d'une figure, quand on ne lui en impose pas. */
@@ -213,30 +253,6 @@ private fun defaultTintFor(
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
- * Pose la figure et son relief.
- *
- * L'ombre est dessinée avant la forme, décalée d'un vingtième de la hauteur :
- * assez pour décoller du fond, trop peu pour qu'on la remarque comme une ombre.
- */
-private fun DrawScope.drawGlyph(kind: GlyphKind, base: Color) {
-    val path = pathFor(kind, size)
-
-    // Les traits se dessinent au pinceau, pas au remplissage : une coche pleine
-    // n'aurait aucune allure.
-    if (kind == GlyphKind.CHECK || kind == GlyphKind.CROSS) {
-        drawStrokeGlyph(kind, base)
-        return
-    }
-
-    translate(top = size.height * 0.05f) {
-        drawPath(path, Color.Black.copy(alpha = 0.16f))
-    }
-
-    drawPath(path, volumeBrush(base, size))
-    drawPath(path, highlightBrush(size))
-}
-
-/**
  * Le dégradé qui donne le volume.
  *
  * Il part d'une version éclaircie en haut à gauche pour aller vers une version
@@ -262,16 +278,10 @@ private fun highlightBrush(size: Size): Brush = Brush.radialGradient(
 )
 
 /** Les figures faites d'un trait : coche et croix. */
-private fun DrawScope.drawStrokeGlyph(kind: GlyphKind, base: Color) {
-    val w = size.width
-    val h = size.height
-    val trait = Stroke(
-        width = w * 0.17f,
-        cap = StrokeCap.Round,
-        join = StrokeJoin.Round
-    )
-
-    val chemin = Path().apply {
+private fun strokePathFor(kind: GlyphKind, s: Size): Path {
+    val w = s.width
+    val h = s.height
+    return Path().apply {
         if (kind == GlyphKind.CHECK) {
             moveTo(w * 0.20f, h * 0.54f)
             lineTo(w * 0.42f, h * 0.75f)
@@ -283,12 +293,6 @@ private fun DrawScope.drawStrokeGlyph(kind: GlyphKind, base: Color) {
             lineTo(w * 0.24f, h * 0.76f)
         }
     }
-
-    // Un trait plein paraît plat : on double d'une ombre légère au-dessous.
-    translate(top = h * 0.06f) {
-        drawPath(chemin, Color.Black.copy(alpha = 0.14f), style = trait)
-    }
-    drawPath(chemin, lerp(base, Color.White, 0.10f), style = trait)
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
