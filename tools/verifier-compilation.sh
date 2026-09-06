@@ -153,6 +153,30 @@ RUNTIME_COMPILATEUR=$({
 } | court | tr '\n' ';')
 
 # ── Compilation ──────────────────────────────────────────────────────────────
+# ── Le `R` de remplacement ───────────────────────────────────────────────────
+# `R` est généré par le processeur de ressources d'Android, qu'on ne lance pas
+# ici. Sans lui, tout fichier qui référence une ressource échoue à compiler —
+# et on perdrait le filet sur le reste du projet pour une raison qui n'est pas
+# une vraie erreur. On fabrique donc un `R` minimal, aux identifiants factices,
+# à partir des ressources réellement présentes.
+{
+    echo "package com.rnandresy.lol"
+    echo
+    echo "// Généré par tools/verifier-compilation.sh — jamais versionné."
+    echo "object R {"
+    for DOSSIER in font drawable raw; do
+        [ -d "$PROJET/app/src/main/res/$DOSSIER" ] || continue
+        echo "    object $DOSSIER {"
+        for FICHIER in "$PROJET/app/src/main/res/$DOSSIER"/*; do
+            [ -e "$FICHIER" ] || continue
+            NOM=$(basename "$FICHIER"); NOM=${NOM%%.*}
+            echo "        const val $NOM: Int = 0"
+        done
+        echo "    }"
+    done
+    echo "}"
+} > "$SORTIE/R_stub.kt"
+
 echo "→ Compilation…"
 {
     echo "-classpath";   cat "$SORTIE/cp.txt"; echo
@@ -164,6 +188,8 @@ echo "→ Compilation…"
     echo "-no-reflect"
     echo "-d"; echo "$SORTIE_WIN/out"
     ( cd "$PROJET" && find app/src/main -name "*.kt" )
+    # Le `R` de remplacement, décrit plus bas.
+    echo "$SORTIE_WIN/R_stub.kt"
 } > "$SORTIE/args.txt"
 
 rm -rf "$SORTIE/out"

@@ -1,0 +1,39 @@
+<meta charset="utf-8">
+<title>Fonte iOS — les 52 dessins</title>
+<style>
+  @font-face { font-family: "iOS"; src: url("../app/src/main/res/font/ios_icons.ttf"); }
+  body { font-family: system-ui, sans-serif; background: #FBF7F1; color: #2C2723;
+         margin: 0; padding: 32px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  p  { font-size: 13px; color: #7A6E63; margin: 0 0 28px; max-width: 60ch; line-height: 1.6; }
+  .grille { display: grid; gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .case { background: #fff; border: 1px solid #DCCDBB; border-radius: 14px;
+          padding: 16px 8px 10px; text-align: center;
+          box-shadow: 0 2px 6px rgba(107,78,46,.10); }
+  .dessin { font-family: "iOS"; font-size: 30px; line-height: 1.2; display: block; }
+  .code { font-size: 10px; color: #9C9086; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .num { font-size: 10px; color: #C0B4A8; }
+</style>
+
+<h1>Fonte iOS — les 52 dessins</h1>
+<p>
+  Cette police ne contient aucune lettre : uniquement ces 52 dessins, rangés
+  de U+E900 à U+E933. Dis-moi lesquels tu veux voir apparaître où
+  (« le 3 pour envoyer, le 12 pour le micro… ») et je les câble à la place des
+  icônes actuelles.
+</p>
+
+<div class="grille" id="g"></div>
+<script>
+  const g = document.getElementById("g");
+  for (let c = 0xE900; c <= 0xE933; c++) {
+    const i = c - 0xE900;
+    const d = document.createElement("div");
+    d.className = "case";
+    d.innerHTML = '<span class="dessin">' + String.fromCharCode(c) + '</span>' +
+                  '<div class="num">n° ' + i + '</div>' +
+                  '<div class="code">U+' + c.toString(16).toUpperCase() + '</div>';
+    g.appendChild(d);
+  }
+</script>

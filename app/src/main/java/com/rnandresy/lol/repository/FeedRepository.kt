@@ -211,6 +211,34 @@ class FeedRepository {
         ).await()
     }
 
+    /**
+     * Signale une photo de profil ou de couverture.
+     *
+     * Atterrit dans la même collection que les rumeurs signalées : l'admin a
+     * une seule pile à traiter, et `photoUrl` lui dit de quoi il s'agit.
+     */
+    suspend fun reportPhoto(
+        ownerId: String,
+        photoUrl: String,
+        reporterId: String,
+        reason: String
+    ) {
+        val ref = db.collection(COL_REPORTS).document()
+        ref.set(
+            mapOf(
+                "id" to ref.id,
+                "postId" to "",
+                "targetUserId" to ownerId,
+                "photoUrl" to photoUrl,
+                "reporterId" to reporterId,
+                "reason" to reason,
+                "details" to "Photo de profil",
+                "handled" to false,
+                "timestamp" to System.currentTimeMillis()
+            )
+        ).await()
+    }
+
     // ── Commentaires ──────────────────────────────────────────────────────────
 
     fun listenToComments(postId: String, limit: Long = COMMENTS_WINDOW): Flow<List<Comment>> =

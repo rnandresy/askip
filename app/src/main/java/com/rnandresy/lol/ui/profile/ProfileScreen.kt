@@ -85,6 +85,7 @@ import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleSize
 import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.CustomBadgeChip
+import com.rnandresy.lol.ui.components.PhotoViewer
 import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.SlidingSegmented
 import com.rnandresy.lol.ui.components.StarDust
@@ -124,9 +125,9 @@ fun ProfileScreen(
     val allBadges by vm.allBadges.collectAsState()
     val myBadges by vm.myBadges.collectAsState()
     val uploadProgress by vm.uploadProgress.collectAsState()
-    // Pendant un envoi, les commandes photo se verrouillent : sans ça, deux
-    // appuis lancent deux uploads pour la même image.
-    val busy by vm.loading.collectAsState()
+
+    // La photo ouverte en grand, s'il y en a une.
+    var openPhoto by remember { mutableStateOf<String?>(null) }
 
     val profile = if (isMe) myProfile else viewedProf
     val achievements = if (isMe) vm.myAchievements.collectAsState().value
@@ -155,14 +156,6 @@ fun ProfileScreen(
     } else {
         allBadges.filter { it.id in (profile?.badgeIds ?: emptyList()) }
     }
-
-    val avatarPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? -> uri?.let { vm.uploadAvatar(it) } }
-
-    val coverPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? -> uri?.let { vm.uploadCover(it) } }
 
     Scaffold(
         topBar = {
@@ -248,26 +241,9 @@ fun ProfileScreen(
             item(key = "head") {
                 ProfileHeader(
                     profile = profile,
-                    isMe = isMe,
                     userIsAdmin = userIsAdmin,
                     uploadProgress = uploadProgress,
-                    busy = busy,
-                    onPickCover = {
-                        coverPicker.launch(
-                            PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    },
-                    onPickAvatar = {
-                        avatarPicker.launch(
-                            PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    },
-                    onRemoveCover = vm::deleteCoverPhoto,
-                    onRemoveAvatar = vm::deleteProfilePhoto
+                    onOpenPhoto = { openPhoto = it }
                 )
             }
 
@@ -303,6 +279,17 @@ fun ProfileScreen(
         }
     }
 
+    openPhoto?.let { url ->
+        PhotoViewer(
+            url = url,
+            onDismiss = { openPhoto = null },
+            // On ne signale pas ses propres photos.
+            onReport = if (isMe) null else { motif ->
+                vm.reportUserPhoto(userId, url, motif)
+            }
+        )
+    }
+
     if (showBadgeMgr && isMe) {
         BadgeManagerDialog(
             vm = vm,
@@ -330,14 +317,9 @@ fun ProfileScreen(
 @Composable
 private fun ProfileHeader(
     profile: UserProfile,
-    isMe: Boolean,
     userIsAdmin: Boolean,
     uploadProgress: Int,
-    busy: Boolean,
-    onPickCover: () -> Unit,
-    onPickAvatar: () -> Unit,
-    onRemoveCover: () -> Unit,
-    onRemoveAvatar: () -> Unit
+    onOpenPhoto: (String) -> Unit
 ) {
     val palette = LocalAskipPalette.current
     val accent = runCatching {
@@ -361,7 +343,9 @@ private fun ProfileHeader(
                     model = profile.coverUrl,
                     contentDescription = "Couverture",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable { onOpenPhoto(profile.coverUrl) }
                 )
             } else {
                 StarDust(count = 20, seed = 13, tint = Color.White)
@@ -379,29 +363,9 @@ private fun ProfileHeader(
                     )
             )
 
-            if (isMe) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(Space.md),
-                    horizontalArrangement = Arrangement.spacedBy(Space.sm)
-                ) {
-                    if (profile.coverUrl.isNotBlank()) {
-                        BubbleChip(
-                            "Retirer",
-                            emoji = "✕",
-                            enabled = !busy,
-                            onClick = onRemoveCover
-                        )
-                    }
-                    BubbleChip(
-                        "Couverture",
-                        emoji = "◫",
-                        enabled = !busy,
-                        onClick = onPickCover
-                    )
-                }
-            }
+            // Les commandes photo vivent dans « Modifier le profil » : posées
+            // ici, elles encombraient la couverture de tout le monde pour un
+            // geste qu'on fait deux fois par an.
 
             if (uploadProgress in 1..99) {
                 ProgressTrack(
@@ -446,7 +410,10 @@ private fun ProfileHeader(
                             model = profile.photoUrl,
                             contentDescription = "Photo de profil",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape)
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .clickable { onOpenPhoto(profile.photoUrl) }
                         )
                     } else {
                         Text(
@@ -462,7 +429,7 @@ private fun ProfileHeader(
                 // affichage, le réglage existerait sans jamais se voir.
                 val frameEmoji = when (profile.avatarFrame) {
                     "fire" -> "✦"
-                    "star" -> "✧"
+                    "star" -> "✩"
                     "rainbow" -> "❀"
                     "gold" -> "✧"
                     else -> ""
@@ -486,35 +453,10 @@ private fun ProfileHeader(
                 }
             }
 
-            if (isMe) {
-                Row(
-                    modifier = Modifier.align(Alignment.BottomEnd),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (profile.photoUrl.isNotBlank()) {
-                        BubbleIconButton(
-                            icon = Icons.Default.Close,
-                            contentDescription = "Retirer la photo",
-                            onClick = onRemoveAvatar,
-                            tone = BubbleTone.SOFT,
-                            enabled = !busy,
-                            diameter = 30.dp
-                        )
-                    }
-                    BubbleIconButton(
-                        icon = Icons.Rounded.PhotoCamera,
-                        contentDescription = "Changer la photo",
-                        onClick = onPickAvatar,
-                        tone = BubbleTone.PRIMARY,
-                        enabled = !busy,
-                        diameter = 34.dp
-                    )
-                }
-            }
         }
 
-        // Couverture (170) + la part d'avatar qui déborde, bouton compris.
-        Spacer(Modifier.height(246.dp))
+        // Couverture (170) + la part d'avatar qui la déborde.
+        Spacer(Modifier.height(226.dp))
     }
 }
 

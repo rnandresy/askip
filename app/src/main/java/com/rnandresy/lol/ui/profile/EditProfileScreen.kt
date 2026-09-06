@@ -1,5 +1,9 @@
 package com.rnandresy.lol.ui.profile
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -51,12 +56,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rnandresy.lol.ui.components.barEdge
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.rnandresy.lol.ui.components.BubbleCard
 import com.rnandresy.lol.ui.components.BubbleChip
 import com.rnandresy.lol.ui.components.BubbleIconButton
 import com.rnandresy.lol.ui.components.BubbleSize
 import com.rnandresy.lol.ui.components.BubbleTone
 import com.rnandresy.lol.ui.components.BubbleButton
+import com.rnandresy.lol.ui.components.ProgressTrack
 import com.rnandresy.lol.ui.components.SheetAction
 import com.rnandresy.lol.ui.components.SheetHeader
 import com.rnandresy.lol.ui.components.TapArea
@@ -97,6 +105,19 @@ fun EditProfileScreen(
 ) {
     val profile by vm.myProfile.collectAsState()
     val isSyncing by vm.isSyncing.collectAsState()
+    val uploadProgress by vm.uploadProgress.collectAsState()
+
+    // Pendant un envoi, les commandes photo se verrouillent : sans ça, deux
+    // appuis lancent deux envois pour la même image.
+    val busy by vm.loading.collectAsState()
+
+    val avatarPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? -> uri?.let { vm.uploadAvatar(it) } }
+
+    val coverPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? -> uri?.let { vm.uploadCover(it) } }
 
     var username by remember(profile) { mutableStateOf(profile?.username ?: "") }
     var age by remember(profile) {
@@ -193,6 +214,28 @@ fun EditProfileScreen(
                 .padding(horizontal = Space.lg),
             verticalArrangement = Arrangement.spacedBy(Space.md)
         ) {
+            PhotoSection(
+                profile = profile,
+                uploadProgress = uploadProgress,
+                busy = busy,
+                onPickCover = {
+                    coverPicker.launch(
+                        PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                        )
+                    )
+                },
+                onPickAvatar = {
+                    avatarPicker.launch(
+                        PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                        )
+                    )
+                },
+                onRemoveCover = vm::deleteCoverPhoto,
+                onRemoveAvatar = vm::deleteProfilePhoto
+            )
+
             IdentitySection(
                 username = username,
                 onUsername = { username = it },
@@ -648,4 +691,137 @@ fun SectionLabel(text: String) {
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary
     )
+}
+
+/**
+ * Les deux photos : couverture et portrait.
+ *
+ * Elles vivent ici plutôt que sur le profil lui-même. Sur la couverture, les
+ * commandes encombraient l'écran que tout le monde regarde, pour un geste
+ * qu'on fait deux fois par an — et elles n'apparaissaient que sur son propre
+ * profil, donc à moitié du temps.
+ *
+ * L'aperçu montre exactement ce que verront les autres, aux mêmes proportions.
+ */
+@Composable
+private fun PhotoSection(
+    profile: com.rnandresy.lol.model.UserProfile?,
+    uploadProgress: Int,
+    busy: Boolean,
+    onPickCover: () -> Unit,
+    onPickAvatar: () -> Unit,
+    onRemoveCover: () -> Unit,
+    onRemoveAvatar: () -> Unit
+) {
+    val palette = LocalAskipPalette.current
+    val accent = runCatching {
+        Color(android.graphics.Color.parseColor(profile?.themeColor ?: "#7C4DFF"))
+    }.getOrElse { MaterialTheme.colorScheme.primary }
+
+    EditCard("Photos", "◫") {
+        // ── Couverture ───────────────────────────────────────────────────────
+        SubLabel("Couverture")
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(96.dp)
+                .clip(RoundedCornerShape(Radius.sm))
+                .background(accent.copy(alpha = 0.20f))
+                .border(1.dp, palette.bubbleBorder, RoundedCornerShape(Radius.sm))
+        ) {
+            if (!profile?.coverUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = profile?.coverUrl,
+                    contentDescription = "Aperçu de la couverture",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(
+                    "Aucune couverture",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+            BubbleButton(
+                text = if (profile?.coverUrl.isNullOrBlank()) "Choisir" else "Changer",
+                onClick = onPickCover,
+                enabled = !busy,
+                tone = BubbleTone.SOFT,
+                size = BubbleSize.SMALL
+            )
+            if (!profile?.coverUrl.isNullOrBlank()) {
+                BubbleButton(
+                    text = "Retirer",
+                    onClick = onRemoveCover,
+                    enabled = !busy,
+                    tone = BubbleTone.GHOST,
+                    size = BubbleSize.SMALL
+                )
+            }
+        }
+
+        // ── Portrait ─────────────────────────────────────────────────────────
+        SubLabel("Photo de profil")
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.md)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(1.dp, palette.bubbleBorder, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!profile?.photoUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = profile?.photoUrl,
+                        contentDescription = "Aperçu du portrait",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
+                } else {
+                    Text(
+                        profile?.username?.firstOrNull()?.uppercase() ?: "?",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accent
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                BubbleButton(
+                    text = if (profile?.photoUrl.isNullOrBlank()) "Choisir" else "Changer",
+                    onClick = onPickAvatar,
+                    enabled = !busy,
+                    tone = BubbleTone.SOFT,
+                    size = BubbleSize.SMALL
+                )
+                if (!profile?.photoUrl.isNullOrBlank()) {
+                    BubbleButton(
+                        text = "Retirer",
+                        onClick = onRemoveAvatar,
+                        enabled = !busy,
+                        tone = BubbleTone.GHOST,
+                        size = BubbleSize.SMALL
+                    )
+                }
+            }
+        }
+
+        if (uploadProgress in 1..99) {
+            ProgressTrack(progress = uploadProgress / 100f, height = 4.dp, color = accent)
+            Text(
+                "Envoi : $uploadProgress %",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }

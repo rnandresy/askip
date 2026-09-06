@@ -1411,6 +1411,14 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             .onFailure { error.value = it.message }
     }
 
+    /** Signale la photo de profil ou de couverture de quelqu'un. */
+    fun reportUserPhoto(ownerId: String, photoUrl: String, reason: String) =
+        viewModelScope.launch {
+            runCatching { feedRepo.reportPhoto(ownerId, photoUrl, currentUserId, reason) }
+                .onSuccess { info.value = "Photo signalée. Merci." }
+                .onFailure { error.value = it.message }
+        }
+
     // ── Réactions ─────────────────────────────────────────────────────────────
 
     // ── Mises à jour optimistes ───────────────────────────────────────────────

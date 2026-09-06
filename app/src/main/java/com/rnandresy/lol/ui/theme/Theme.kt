@@ -639,21 +639,22 @@ val AskipTypography = Typography(
         letterSpacing = (-0.5).sp,
         lineHeight = 32.sp
     ),
-    headlineSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp),
-    titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
-    titleMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp),
-    titleSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp),
-    // Le corps du fil : assez grand pour se lire d'une traite, assez aéré pour
-    // que dix rumeurs empilées ne forment pas un bloc.
-    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 15.sp, lineHeight = 23.sp),
-    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 21.sp),
+    headlineSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 15.sp, lineHeight = 21.sp),
+    titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 21.sp),
+    titleMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 19.sp),
+    titleSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 17.sp),
+    // Le corps du fil. On ne descend pas plus bas : en dessous de 13 sp, un
+    // paragraphe de rumeur devient pénible à lire au bras tendu, et le
+    // réglage système « petite police » enfoncerait encore le clou.
+    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 21.sp),
+    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 13.sp, lineHeight = 20.sp),
     bodySmall = TextStyle(
-        fontWeight = FontWeight.Normal, fontSize = 12.sp,
-        lineHeight = 18.sp, letterSpacing = 0.1.sp
+        fontWeight = FontWeight.Normal, fontSize = 11.sp,
+        lineHeight = 17.sp, letterSpacing = 0.1.sp
     ),
-    labelLarge = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, letterSpacing = 0.3.sp),
-    labelMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, letterSpacing = 0.4.sp),
-    labelSmall = TextStyle(fontWeight = FontWeight.Normal, fontSize = 10.sp, letterSpacing = 0.5.sp)
+    labelLarge = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, letterSpacing = 0.3.sp),
+    labelMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 10.sp, letterSpacing = 0.4.sp),
+    labelSmall = TextStyle(fontWeight = FontWeight.Normal, fontSize = 9.sp, letterSpacing = 0.5.sp)
 )
 
 // ═════════════════════════════════════════════════════════════════════════════
