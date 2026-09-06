@@ -64,6 +64,7 @@ import com.rnandresy.lol.ui.components.VoiceCommentBubble
 import com.rnandresy.lol.ui.components.formatTs
 import com.rnandresy.lol.ui.feed.MentionTextField
 import com.rnandresy.lol.utils.CHAIN_MAX_LINKS
+import com.rnandresy.lol.utils.MAX_COMMENT_LENGTH
 import com.rnandresy.lol.utils.MAX_VOICE_COMMENT_SECONDS
 import com.rnandresy.lol.utils.RumorEngine
 import com.rnandresy.lol.utils.isAdmin
@@ -195,7 +196,11 @@ fun CommentsScreen(
                     Row(verticalAlignment = Alignment.Bottom) {
                         MentionTextField(
                             value         = textTfv,
-                            onValueChange = { textTfv = it },
+                            // Le serveur refuse au-delà de 500 signes : mieux
+                            // vaut empêcher la saisie que rejeter l'envoi.
+                            onValueChange = {
+                                if (it.text.length <= MAX_COMMENT_LENGTH) textTfv = it
+                            },
                             allProfiles   = allProfiles,
                             currentUserId = uid,
                             isAdminUser   = isAdminUser,

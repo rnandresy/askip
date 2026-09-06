@@ -84,8 +84,17 @@ service cloud.firestore {
 
       allow update: if
         // Son propre profil : tout sauf les champs de statut.
+        //
+        // `hasBadgeENI` est le seul champ de statut qu'on se pose soi-même,
+        // mais jamais librement : il doit rester d'accord avec la classe
+        // déclarée. Le bloquer entièrement rendait la sauvegarde du profil
+        // impossible dès qu'on choisissait sa classe pour la première fois —
+        // le formulaire écrit les deux champs ensemble.
         (canWrite() && userId == uid()
-          && !changed().hasAny(['isAdmin', 'isBanned', 'hasBadgeENI']))
+          && !changed().hasAny(['isAdmin', 'isBanned'])
+          && (!('hasBadgeENI' in changed())
+              || request.resource.data.hasBadgeENI
+                 == (request.resource.data.classeENI != '')))
 
         // La réputation est modifiée par les autres (vote crédible / Scoop).
         // ⚠️ Compromis assumé : sans Cloud Function, seul le client peut
