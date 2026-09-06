@@ -623,11 +623,12 @@ private val AskipShapes = Shapes(
  */
 val AskipTypography = Typography(
     // ── Les titres, à la main ─────────────────────────────────────────────
-    // « Titan One » donne son caractère à l'app. Elle reste au-dessus de
-    // 15 sp et ne descend pas dans le corps de texte : une grasse d'affiche
-    // porte un titre et fatigue sur un paragraphe. Elle n'a qu'une graisse —
-    // d'où le `Normal` partout ici, le faux gras d'Android sur une police
-    // déjà grasse ne fait qu'empâter le dessin.
+    // « Sedgwick Ave » donne son caractère à l'app. Elle reste au-dessus de
+    // 15 sp et ne descend pas dans le corps de texte : une écriture à la main
+    // se lit très bien en grand et devient une bouillie en petit, surtout sur
+    // un téléphone tenu à bout de bras. Elle n'a qu'une graisse — d'où le
+    // `Normal` partout ici : le faux gras d'Android sur une manuscrite
+    // épaissit les traits sans les redessiner.
     displayLarge = TextStyle(
         fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
         fontSize = 34.sp, lineHeight = 42.sp

@@ -1,5 +1,4 @@
-Copyright (c) 2011, Rodrigo Fuenzalida (www.rfuenzalida.com|hello@rfuenzalida.com),
-with Reserved Font Name Titan.
+Copyright 2017 The Sedgwick Ave Project Authors (https://github.com/googlefonts/sedgwickave)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
