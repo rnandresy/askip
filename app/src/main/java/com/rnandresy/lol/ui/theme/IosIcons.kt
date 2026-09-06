@@ -26,6 +26,21 @@ import com.rnandresy.lol.R
 val IosFont = FontFamily(Font(R.font.ios_icons))
 
 /**
+ * L'écriture de l'app — « Shooting Star », une main manuscrite.
+ *
+ * Elle couvre l'ASCII et tous les accents français, ce qui suffit pour les
+ * titres. Il lui manque en revanche les guillemets français, le tiret cadratin
+ * et les points de suspension — trois signes que l'app emploie beaucoup.
+ * Android les remplace glyphe par glyphe depuis la police système, donc rien
+ * ne casse : ils sortent simplement dans un autre dessin. C'est une raison de
+ * plus de la réserver aux titres, où ces signes ne figurent pas.
+ *
+ * ⚠️ Licence « usage personnel » : l'auteur exige une licence commerciale pour
+ * toute diffusion qui en relève. Voir le READ ME livré avec la police.
+ */
+val ScriptFont = FontFamily(Font(R.font.shooting_star))
+
+/**
  * Les 52 dessins, par leur position dans la police.
  *
  * Les noms sont pour l'instant numérotés : la police ne porte aucune table de

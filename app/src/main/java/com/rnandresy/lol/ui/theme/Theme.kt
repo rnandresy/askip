@@ -622,25 +622,45 @@ private val AskipShapes = Shapes(
  * un seul endroit à changer, toute l'app suit.
  */
 val AskipTypography = Typography(
+    // ── Les titres, à la main ─────────────────────────────────────────────
+    // « Shooting Star » donne son caractère à l'app. Elle reste au-dessus de
+    // 15 sp et ne descend pas dans le corps de texte : une écriture manuscrite
+    // se lit très bien en grand et devient illisible en petit, surtout sur un
+    // écran de téléphone tenu à bout de bras. Une graisse manuscrite n'existe
+    // pas non plus — d'où le `Normal` partout ici, le faux gras d'Android sur
+    // une script donne une bouillie.
     displayLarge = TextStyle(
-        fontWeight = FontWeight.Bold, fontSize = 30.sp,
-        letterSpacing = (-0.6).sp, lineHeight = 36.sp
+        fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
+        fontSize = 34.sp, lineHeight = 42.sp
     ),
     displayMedium = TextStyle(
-        fontWeight = FontWeight.Bold, fontSize = 25.sp,
-        letterSpacing = (-0.4).sp, lineHeight = 31.sp
+        fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
+        fontSize = 29.sp, lineHeight = 37.sp
     ),
-    displaySmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 21.sp, lineHeight = 27.sp),
-    headlineLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 19.sp, lineHeight = 25.sp),
+    displaySmall = TextStyle(
+        fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
+        fontSize = 25.sp, lineHeight = 32.sp
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
+        fontSize = 23.sp, lineHeight = 30.sp
+    ),
     // Le grand titre qui se replie au défilement.
     headlineMedium = TextStyle(
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 26.sp,
-        letterSpacing = (-0.5).sp,
-        lineHeight = 32.sp
+        fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
+        fontSize = 30.sp, lineHeight = 38.sp
     ),
-    headlineSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 15.sp, lineHeight = 21.sp),
-    titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 21.sp),
+    headlineSmall = TextStyle(
+        fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
+        fontSize = 19.sp, lineHeight = 25.sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = ScriptFont, fontWeight = FontWeight.Normal,
+        fontSize = 19.sp, lineHeight = 25.sp
+    ),
+    // ── Le reste, en police système ───────────────────────────────────────
+    // À partir d'ici on lit vraiment : pseudos, horodatages, libellés de
+    // boutons. La régularité prime sur le caractère.
     titleMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 19.sp),
     titleSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 17.sp),
     // Le corps du fil. On ne descend pas plus bas : en dessous de 13 sp, un
