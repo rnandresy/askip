@@ -43,7 +43,7 @@ data class Bet(
     fun sideLabel(): String = if (onCredible) "Crédible" else "Bidon"
 
     @Exclude
-    fun sideEmoji(): String = if (onCredible) "🧐" else "🚫"
+    fun sideEmoji(): String = if (onCredible) "✓" else "✕"
 
     /** Ce que ce pari rapporterait s'il était gagnant. */
     @Exclude

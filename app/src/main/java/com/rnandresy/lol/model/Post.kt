@@ -10,10 +10,10 @@ import kotlin.math.pow
 
 /** Où en est une rumeur : le campus a tranché, ou pas encore. */
 enum class Verdict(val label: String, val emoji: String, val colorHex: String) {
-    INVESTIGATING("En enquête", "🔍", "#8E8E93"),
-    CONTESTED("Contestée", "⚔️", "#F59E0B"),
-    CONFIRMED("Confirmée", "✅", "#10B981"),
-    DEBUNKED("Démentie", "❌", "#EF4444")
+    INVESTIGATING("En enquête", "⌕", "#8E8E93"),
+    CONTESTED("Contestée", "⚔", "#F59E0B"),
+    CONFIRMED("Confirmée", "✓", "#10B981"),
+    DEBUNKED("Démentie", "✕", "#EF4444")
 }
 
 data class Post(
@@ -92,20 +92,20 @@ data class Post(
     // ── Réactions ─────────────────────────────────────────────────────────────
 
     fun getUserReaction(uid: String): String? = when {
-        uid in likedBy -> "❤️"
-        uid in fireBy -> "🔥"
-        uid in lolBy -> "😂"
-        uid in shockBy -> "😱"
-        uid in eyesBy -> "👀"
+        uid in likedBy -> "♡"
+        uid in fireBy -> "✦"
+        uid in lolBy -> "◎"
+        uid in shockBy -> "◎"
+        uid in eyesBy -> "◎"
         else -> null
     }
 
     fun reactionCount(emoji: String) = when (emoji) {
-        "❤️" -> likedBy.size
-        "🔥" -> fireBy.size
-        "😂" -> lolBy.size
-        "😱" -> shockBy.size
-        "👀" -> eyesBy.size
+        "♡" -> likedBy.size
+        "✦" -> fireBy.size
+        "◎" -> lolBy.size
+        "◍" -> shockBy.size
+        "◑" -> eyesBy.size
         else -> 0
     }
 
@@ -118,11 +118,11 @@ data class Post(
      * Une seule réaction par personne : la nouvelle remplace l'ancienne.
      */
     fun withReaction(uid: String, emoji: String?): Post = copy(
-        likedBy = likedBy.toggled(uid, emoji == "❤️"),
-        fireBy = fireBy.toggled(uid, emoji == "🔥"),
-        lolBy = lolBy.toggled(uid, emoji == "😂"),
-        shockBy = shockBy.toggled(uid, emoji == "😱"),
-        eyesBy = eyesBy.toggled(uid, emoji == "👀")
+        likedBy = likedBy.toggled(uid, emoji == "♡"),
+        fireBy = fireBy.toggled(uid, emoji == "✦"),
+        lolBy = lolBy.toggled(uid, emoji == "◎"),
+        shockBy = shockBy.toggled(uid, emoji == "◎"),
+        eyesBy = eyesBy.toggled(uid, emoji == "◎")
     )
 
     // ── Rumeur-mètre ──────────────────────────────────────────────────────────
@@ -272,11 +272,11 @@ data class Post(
 
     companion object {
         fun reactionFieldFor(emoji: String) = when (emoji) {
-            "❤️" -> "likedBy"
-            "🔥" -> "fireBy"
-            "😂" -> "lolBy"
-            "😱" -> "shockBy"
-            "👀" -> "eyesBy"
+            "♡" -> "likedBy"
+            "✦" -> "fireBy"
+            "◎" -> "lolBy"
+            "◍" -> "shockBy"
+            "◑" -> "eyesBy"
             else -> "likedBy"
         }
 

@@ -8,7 +8,7 @@ data class Story(
     val username: String = "",
     val userPhotoUrl: String = "",
     val content: String = "",
-    val emoji: String = "💭",
+    val emoji: String = "⌯",
     val backgroundColor: String = "#7C4DFF",
     /** Qui l'a déjà ouverte — l'anneau s'éteint une fois vue. */
     val viewedBy: List<String> = emptyList(),

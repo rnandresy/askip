@@ -143,7 +143,7 @@ fun SearchScreen(
         if (query.isBlank()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🔍", fontSize = 48.sp)
+                    Text("⌕", fontSize = 48.sp)
                     Spacer(Modifier.height(12.dp))
                     Text("Recherche dans Askip", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
@@ -156,7 +156,7 @@ fun SearchScreen(
             if (totalEmpty) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🤷", fontSize = 40.sp)
+                        Text("◌", fontSize = 40.sp)
                         Spacer(Modifier.height(8.dp))
                         Text("Aucun résultat pour « $query »", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -176,7 +176,7 @@ fun SearchScreen(
                     // ── Posts ──────────────────────────────────────────────────
                     if (showPosts && results.posts.isNotEmpty()) {
                         item {
-                            SearchSectionHeader("📢 Posts")
+                            SearchSectionHeader("⋆ Posts")
                         }
                         items(results.posts, key = { it.id }) { post ->
                             SearchPostRow(post = post, onClick = { onOpenPost(post.id) })
@@ -185,7 +185,7 @@ fun SearchScreen(
 
                     // ── Membres ────────────────────────────────────────────────
                     if (showUsers && results.users.isNotEmpty()) {
-                        item { SearchSectionHeader("👤 Membres") }
+                        item { SearchSectionHeader("◍ Membres") }
                         items(results.users, key = { it.userId }) { user ->
                             SearchUserRow(user = user, onClick = { onOpenProfile(user.userId) })
                         }
@@ -193,7 +193,7 @@ fun SearchScreen(
 
                     // ── Groupes ────────────────────────────────────────────────
                     if (showGroups && results.groups.isNotEmpty()) {
-                        item { SearchSectionHeader("👥 Groupes") }
+                        item { SearchSectionHeader("◍ Groupes") }
                         items(results.groups, key = { it.id }) { group ->
                             SearchGroupRow(group = group, onClick = { onOpenGroup(group.id) })
                         }
@@ -234,15 +234,15 @@ private fun SearchPostRow(post: Post, onClick: () -> Unit) {
         ) {
             ResultTile(
                 emoji = when (post.postType) {
-                    "poll" -> "📊"
-                    "confession" -> "🎭"
-                    else -> "📢"
+                    "poll" -> "◈"
+                    "confession" -> "◌"
+                    else -> "⋆"
                 },
                 size = 40.dp
             )
             Column(Modifier.weight(1f)) {
                 Text(
-                    if (post.isAnonymous) "Quelqu'un 🎭" else post.username,
+                    if (post.isAnonymous) "Quelqu'un ◌" else post.username,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -319,7 +319,7 @@ private fun SearchUserRow(user: UserProfile, onClick: () -> Unit) {
                 }
                 if (user.classeENI.isNotBlank()) {
                     Text(
-                        "🎓 ${user.classeENI}",
+                        "⌘ ${user.classeENI}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

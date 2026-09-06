@@ -17,7 +17,7 @@ import java.net.URL
  * Upload vers Cloudinary sans SDK (économise ~2 Mo d'APK).
  * Les images sont compressées automatiquement avant envoi.
  *
- * ⚠️ Renseigner CLOUD_NAME et UPLOAD_PRESET.
+ * ⚠ Renseigner CLOUD_NAME et UPLOAD_PRESET.
  */
 object CloudinaryUploader {
 

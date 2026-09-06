@@ -4,7 +4,7 @@ data class Group(
     val id: String = "",
     val name: String = "",
     val description: String = "",
-    val emoji: String = "👥",
+    val emoji: String = "◍",
     val createdBy: String = "",
     val createdByUsername: String = "",
     val members: List<String> = emptyList(),

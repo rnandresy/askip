@@ -104,7 +104,7 @@ fun TagFeedScreen(
 
                 posts.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
                     EmptyState(
-                        def?.emoji ?: "🏷️",
+                        def?.emoji ?: "◇",
                         "Rien dans ce salon",
                         "Sois le premier à lancer une rumeur avec #$tag"
                     )

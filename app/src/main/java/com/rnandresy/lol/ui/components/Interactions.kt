@@ -216,7 +216,7 @@ fun ReactionAction(
                 modifier = Modifier.padding(Space.xs)
             ) {
                 Text(
-                    myReaction ?: "🤍",
+                    myReaction ?: "♡",
                     fontSize = 17.sp,
                     modifier = Modifier
                         .scale(scale.value)

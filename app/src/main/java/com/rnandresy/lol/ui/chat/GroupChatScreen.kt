@@ -149,7 +149,7 @@ fun GroupChatScreen(
                             modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Text(group?.emoji ?: "👥", fontSize = 18.sp)
+                                Text(group?.emoji ?: "◍", fontSize = 18.sp)
                             }
                         }
                         Spacer(Modifier.width(10.dp))
@@ -228,7 +228,7 @@ fun GroupChatScreen(
                                     Text(formatDuration(recordingSecs), style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
                                     Spacer(Modifier.weight(1f))
-                                    Text("🎤 Enregistrement…", style = MaterialTheme.typography.labelSmall,
+                                    Text("◍ Enregistrement…", style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onErrorContainer)
                                 }
                             }
@@ -429,7 +429,7 @@ fun GroupChatScreen(
                             Text(name, style = MaterialTheme.typography.bodySmall)
                             if (memberId == group.createdBy) {
                                 Spacer(Modifier.width(4.dp))
-                                Text("👑", fontSize = 12.sp)
+                                Text("✧", fontSize = 12.sp)
                             }
                         }
                     }
@@ -446,9 +446,9 @@ fun GroupChatScreen(
             title            = { Text("Joindre un fichier") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MediaPickOption("📷 Photo") { showMediaPicker = false; imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-                    MediaPickOption("🎥 Vidéo") { showMediaPicker = false; videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) }
-                    MediaPickOption("📎 Fichier") { showMediaPicker = false; filePicker.launch("*/*") }
+                    MediaPickOption("◫ Photo") { showMediaPicker = false; imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                    MediaPickOption("▷ Vidéo") { showMediaPicker = false; videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) }
+                    MediaPickOption("▤ Fichier") { showMediaPicker = false; filePicker.launch("*/*") }
                 }
             },
             confirmButton = { TextButton(onClick = { showMediaPicker = false }) { Text("Annuler") } }

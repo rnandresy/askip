@@ -57,18 +57,19 @@ service cloud.firestore {
      * Réagir à un message : on ne touche que sa propre clé.
      *
      * `reactions` associe un UID à un emoji. Comparer les deux cartes clé par
-     * clé permet d'autoriser tout le monde à réagir sans permettre à personne
-     * d'effacer la réaction d'un autre.
+     * clé autorise tout le monde à réagir sans permettre à personne d'effacer
+     * la réaction d'un autre.
      *
-     * Le second cas couvre la toute première réaction d'un message : le champ
-     * n'existe pas encore sur le document.
+     * Le `get(..., {})` n'est pas une précaution de style : la carte est
+     * absente d'un message qui n'a jamais reçu de réaction, et Firestore la
+     * supprime entièrement quand on retire la dernière. Lire le champ
+     * directement ferait échouer la règle dans ces deux cas — dont celui,
+     * très ordinaire, où l'on retire la réaction qu'on venait de poser.
      */
     function touchesOwnReactionOnly() {
-      return (!('reactions' in resource.data)
-              && request.resource.data.reactions.keys().hasOnly([uid()]))
-        || ('reactions' in resource.data
-            && request.resource.data.reactions
-                 .diff(resource.data.reactions).affectedKeys().hasOnly([uid()]));
+      return request.resource.data.get('reactions', {})
+               .diff(resource.data.get('reactions', {}))
+               .affectedKeys().hasOnly([uid()]);
     }
 
     /**

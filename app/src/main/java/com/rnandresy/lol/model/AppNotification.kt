@@ -1,5 +1,7 @@
 package com.rnandresy.lol.model
 
+import com.google.firebase.firestore.PropertyName
+
 data class AppNotification(
     val id: String = "",
     val targetUserId: String = "",
@@ -10,7 +12,13 @@ data class AppNotification(
     val postId: String = "",
     val conversationId: String = "",
     val content: String = "",
-    val isRead: Boolean = false,
+    // Sans ces annotations, Firestore ampute le préfixe `is` du getter et
+    // cherche un champ nommé `read` — qui n'existe pas. La notification
+    // revenait donc toujours non lue : « Tout lire » écrivait bien sur le
+    // serveur, mais chaque relecture repartait de zéro.
+    @get:PropertyName("isRead")
+    @set:PropertyName("isRead")
+    var isRead: Boolean = false,
     val timestamp: Long = 0L,
     val fromIsAdmin: Boolean = false
 ) {

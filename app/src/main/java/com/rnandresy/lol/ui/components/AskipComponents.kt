@@ -146,7 +146,7 @@ fun AdminBadgeLabel(modifier: Modifier = Modifier) {
         border   = BorderStroke(0.5.dp, AdminGold.copy(alpha = 0.6f))
     ) {
         Text(
-            "👑",
+            "✧",
             modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style      = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
@@ -166,7 +166,7 @@ fun ENIBadgeLabel(modifier: Modifier = Modifier) {
         border   = BorderStroke(0.5.dp, Color(0xFF1565C0).copy(alpha = 0.6f))
     ) {
         Text(
-            "🎓 ENI",
+            "⌘ ENI",
             modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style      = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
@@ -305,7 +305,7 @@ fun AskipAudioPlayer(
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("🎤", fontSize = 18.sp)
+        Text("◍", fontSize = 18.sp)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             LinearProgressIndicator(
                 progress   = { progress },

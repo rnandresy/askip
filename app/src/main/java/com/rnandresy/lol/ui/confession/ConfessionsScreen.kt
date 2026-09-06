@@ -69,7 +69,7 @@ fun ConfessionsScreen(
                     Column {
                         Text("Confessions", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text(
-                            "Toujours anonyme 🎭",
+                            "Toujours anonyme ◌",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -102,7 +102,7 @@ fun ConfessionsScreen(
         ) {
             if (confessions.isEmpty() && !isRefreshing) {
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    EmptyState("🎭", "Aucune confession", "Appuie sur + pour te confesser anonymement")
+                    EmptyState("◌", "Aucune confession", "Appuie sur + pour te confesser anonymement")
                 }
             } else {
                 LazyColumn(
@@ -137,7 +137,7 @@ fun ConfessionsScreen(
         AlertDialog(
             onDismissRequest = { showCreate = false },
             title            = {
-                Text("Confession anonyme 🎭", fontWeight = FontWeight.Bold)
+                Text("Confession anonyme ◌", fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,7 +164,7 @@ fun ConfessionsScreen(
             confirmButton = {
                 BubbleButton(
                     text = "Publier",
-                    emoji = "🎭",
+                    emoji = "◌",
                     onClick = {
                         if (confText.isNotBlank()) {
                             vm.createPost(confText.trim(), "confession")

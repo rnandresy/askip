@@ -3,7 +3,7 @@ package com.rnandresy.lol.utils
 /**
  * Administrateurs et listes de personnalisation.
  *
- * ⚠️ [isAdmin] n'est qu'un raccourci d'affichage côté client. La vraie
+ * ⚠ [isAdmin] n'est qu'un raccourci d'affichage côté client. La vraie
  * autorisation est appliquée par les règles Firestore (voir `firestore.rules`) :
  * quelqu'un qui modifierait l'APK ne pourrait toujours pas écrire les champs
  * réservés.
@@ -38,10 +38,10 @@ val ENI_CLASSES = listOf(
 // ── Cadres d'avatar ───────────────────────────────────────────────────────────
 val AVATAR_FRAMES = linkedMapOf(
     "none" to "Aucun",
-    "fire" to "🔥 Flammes",
-    "star" to "⭐ Étoiles",
-    "rainbow" to "🌈 Rainbow",
-    "gold" to "👑 Or"
+    "fire" to "✦ Flammes",
+    "star" to "✧ Étoiles",
+    "rainbow" to "❀ Rainbow",
+    "gold" to "✧ Or"
 )
 
 // ── Couleurs de badge ─────────────────────────────────────────────────────────

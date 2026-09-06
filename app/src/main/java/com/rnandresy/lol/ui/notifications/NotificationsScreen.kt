@@ -105,7 +105,7 @@ fun NotificationsScreen(
     ) { pad ->
         if (notifications.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {
-                EmptyState("🔕", "Aucune notification", "Les mentions et annonces apparaîtront ici")
+                EmptyState("◠", "Aucune notification", "Les mentions et annonces apparaîtront ici")
             }
         } else {
             LazyColumn(
@@ -192,12 +192,12 @@ private fun NotifRow(notif: AppNotification, onClick: () -> Unit, onDelete: () -
             ) {
                 Text(
                     when (notif.type) {
-                        "new_post_admin"   -> "📣"
-                        "new_post"         -> "📢"
-                        "mention_everyone" -> "📣"
-                        "mention"          -> if (fromAdmin) "👑" else "💬"
-                        "message"          -> if (fromAdmin) "👑" else "✉️"
-                        else               -> "🔔"
+                        "new_post_admin"   -> "⋆"
+                        "new_post"         -> "⋆"
+                        "mention_everyone" -> "⋆"
+                        "mention"          -> if (fromAdmin) "✧" else "⌯"
+                        "message"          -> if (fromAdmin) "✧" else "⌯"
+                        else               -> "◠"
                     },
                     fontSize = 18.sp
                 )
@@ -303,7 +303,7 @@ private fun NotifErrorBanner(message: String, onClose: () -> Unit) {
             .padding(horizontal = Space.md, vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("⚠️", fontSize = 14.sp)
+        Text("⚠", fontSize = 14.sp)
         Spacer(Modifier.width(Space.sm))
         Text(
             message,

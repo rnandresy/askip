@@ -70,11 +70,11 @@ import com.rnandresy.lol.viewmodel.AskipViewModel
  * Personne n'est premier partout, donc tout le monde a un classement à viser.
  */
 private enum class Board(val label: String, val emoji: String) {
-    CLOUT("Informateurs", "🎖"),
-    ORACLES("Oracles", "🎟"),
-    XP("Niveaux", "⭐"),
-    STREAK("Séries", "🔥"),
-    LEGENDS("Rumeurs cultes", "🏆")
+    CLOUT("Informateurs", "✧"),
+    ORACLES("Oracles", "⟡"),
+    XP("Niveaux", "✧"),
+    STREAK("Séries", "✦"),
+    LEGENDS("Rumeurs cultes", "✦")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -167,12 +167,12 @@ private fun PeopleList(
         Box(Modifier.fillMaxSize(), Alignment.Center) {
             if (board == Board.ORACLES) {
                 EmptyState(
-                    "🎟",
+                    "⟡",
                     "Aucun oracle pour l'instant",
                     "Il faut 5 paris réglés pour figurer ici."
                 )
             } else {
-                EmptyState("📊", "Classement vide", "Il se remplira dès que ça bougera.")
+                EmptyState("◈", "Classement vide", "Il se remplira dès que ça bougera.")
             }
         }
         return
@@ -282,9 +282,9 @@ private fun LeaderRow(
 @Composable
 private fun RankMedal(rank: Int) {
     val medal = when (rank) {
-        1 -> "🥇"
-        2 -> "🥈"
-        3 -> "🥉"
+        1 -> "✦"
+        2 -> "✧"
+        3 -> "⋆"
         else -> null
     }
     Box(
@@ -308,7 +308,7 @@ private fun RankMedal(rank: Int) {
 private fun LegendList(posts: List<Post>, onOpenPost: (String) -> Unit) {
     if (posts.isEmpty()) {
         Box(Modifier.fillMaxSize(), Alignment.Center) {
-            EmptyState("🏆", "Pas encore de légende", "Les rumeurs cultes atterrissent ici.")
+            EmptyState("✦", "Pas encore de légende", "Les rumeurs cultes atterrissent ici.")
         }
         return
     }
@@ -333,7 +333,7 @@ private fun LegendList(posts: List<Post>, onOpenPost: (String) -> Unit) {
                     ) {
                         RankMedal(index + 1)
                         Text(
-                            post.username.ifBlank { "Quelqu'un 🎭" },
+                            post.username.ifBlank { "Quelqu'un ◌" },
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -350,9 +350,9 @@ private fun LegendList(posts: List<Post>, onOpenPost: (String) -> Unit) {
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
-                        MiniStat("💬", post.commentCount)
-                        MiniStat("💎", post.scoopBy.size, palette.scoop)
-                        MiniStat("❤️", post.totalReactions())
+                        MiniStat("⌯", post.commentCount)
+                        MiniStat("⟡", post.scoopBy.size, palette.scoop)
+                        MiniStat("♡", post.totalReactions())
                     }
                 }
             }

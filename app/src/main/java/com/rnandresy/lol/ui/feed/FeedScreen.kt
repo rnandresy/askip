@@ -302,7 +302,7 @@ fun FeedScreen(
                                 PostSkeleton()
                             } else if (feed.size > 5) {
                                 Text(
-                                    "Tu as tout lu. 🌸",
+                                    "Tu as tout lu. ❀",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(Space.xxl),
@@ -350,11 +350,11 @@ fun FeedScreen(
 private fun FeedEmptyState(section: FeedSection, tab: FeedTab) {
     when (section) {
         FeedSection.VOICE -> EmptyState(
-            "🎙", "Silence radio",
+            "◍", "Silence radio",
             "Appuie sur le micro et lance la première rumeur vocale."
         )
         FeedSection.TRUTH -> EmptyState(
-            "⚖️", "Registre vierge",
+            "⚖", "Registre vierge",
             "Aucun serment n'a encore été prêté."
         )
         FeedSection.MAIN -> EmptyState(
@@ -364,7 +364,7 @@ private fun FeedEmptyState(section: FeedSection, tab: FeedTab) {
                 FeedTab.LEGENDS -> "Pas encore de légende"
                 else -> "Le campus est calme"
             },
-            subtitle = "Lance la première rumeur 🌸"
+            subtitle = "Lance la première rumeur ❀"
         )
     }
 }
@@ -410,31 +410,31 @@ private fun FeedTuningSheet(
             Spacer(Modifier.height(Space.md))
             SheetHeader("Le campus", "$weatherLabel — $weatherBlurb")
             SheetAction(
-                emoji = "📊",
+                emoji = "◈",
                 label = "$postsToday rumeur(s) sur 24 h",
                 subtitle = "L'ambiance se calcule sur l'activité récente.",
                 onClick = onDismiss
             )
             SheetAction(
-                emoji = "☀️",
+                emoji = "☀",
                 label = "Sujet du jour",
                 subtitle = prompt,
                 onClick = onWritePrompt
             )
             SheetAction(
-                emoji = "🎯",
+                emoji = "◎",
                 label = "Missions du jour",
                 subtitle = "Trois missions, renouvelées à minuit.",
                 onClick = onOpenQuests
             )
             SheetAction(
-                emoji = "🏆",
+                emoji = "✦",
                 label = "Classement",
                 subtitle = "Informateurs, oracles, séries, rumeurs cultes.",
                 onClick = onOpenLeaderboard
             )
             SheetAction(
-                emoji = "👥",
+                emoji = "◍",
                 label = "Membres du campus",
                 onClick = onOpenMembers
             )
@@ -490,7 +490,7 @@ private fun FeedFab(
 
         FeedSection.TRUTH -> BubbleButton(
             text = "Jurer",
-            emoji = "⚖️",
+            emoji = "⚖",
             onClick = onNewTruth,
             size = BubbleSize.LARGE
         )
@@ -571,7 +571,7 @@ private fun StoriesRow(
                     Modifier.fillMaxSize().background(bg),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(story.emoji.ifBlank { "💭" }, fontSize = 26.sp)
+                    Text(story.emoji.ifBlank { "⌯" }, fontSize = 26.sp)
                 }
             }
         }
@@ -644,7 +644,7 @@ private fun StoryFullScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(Space.huge)
             ) {
-                Text(story.emoji.ifBlank { "💭" }, fontSize = 72.sp)
+                Text(story.emoji.ifBlank { "⌯" }, fontSize = 72.sp)
                 Spacer(Modifier.height(Space.xl))
                 Text(
                     story.content,
@@ -668,7 +668,7 @@ private fun StoryFullScreen(
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
                 if (story.userId == currentUid) {
-                    BubbleChip("Supprimer", emoji = "🗑️", onClick = onDelete)
+                    BubbleChip("Supprimer", emoji = "✕", onClick = onDelete)
                 }
                 BubbleChip("Fermer", emoji = "✕", onClick = onClose)
             }

@@ -48,6 +48,18 @@ class MessagingRepository {
      * L'id d'une conversation est déterministe : les deux UID triés puis collés.
      * Deux personnes ne peuvent donc jamais créer deux fils en double.
      */
+    /**
+     * Lit une conversation par son identifiant.
+     *
+     * Sert quand l'écoute n'a pas encore livré la conversation — typiquement
+     * juste après l'avoir créée, au moment d'envoyer le tout premier message.
+     */
+    suspend fun getConversation(convId: String): Conversation? =
+        runCatching {
+            conversations.document(convId).get().await()
+                .toObject(Conversation::class.java)?.copy(id = convId)
+        }.getOrNull()
+
     suspend fun getOrCreateConversation(
         meId: String,
         meUsername: String,
@@ -271,10 +283,10 @@ class MessagingRepository {
         val text = (data["content"] as? String).orEmpty()
         if (text.isNotBlank()) return text.take(80)
         return when (data["mediaType"] as? String) {
-            "audio" -> "🎤 Message vocal"
-            "image" -> "📸 Photo"
-            "video" -> "🎥 Vidéo"
-            "file" -> "📎 ${data["mediaName"] ?: "Fichier"}"
+            "audio" -> "◍ Message vocal"
+            "image" -> "◫ Photo"
+            "video" -> "▷ Vidéo"
+            "file" -> "▤ ${data["mediaName"] ?: "Fichier"}"
             else -> ""
         }
     }

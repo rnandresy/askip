@@ -71,7 +71,7 @@ class NotificationHelper(private val context: Context) {
             NotificationManagerCompat.from(context).notify(idCounter++,
                 NotificationCompat.Builder(context, CH_ADMIN)
                     .setSmallIcon(android.R.drawable.ic_menu_share)
-                    .setContentTitle("📢 Annonce de $username")
+                    .setContentTitle("⋆ Annonce de $username")
                     .setContentText(content)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(content))
                     .setAutoCancel(true)
@@ -89,7 +89,7 @@ class NotificationHelper(private val context: Context) {
             NotificationManagerCompat.from(context).notify(idCounter++,
                 NotificationCompat.Builder(context, CH_ADMIN)
                     .setSmallIcon(android.R.drawable.ic_menu_share)
-                    .setContentTitle("📣 $fromUsername vous interpelle à tous !")
+                    .setContentTitle("⋆ $fromUsername vous interpelle à tous !")
                     .setContentText(content)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(content))
                     .setAutoCancel(true)
@@ -108,7 +108,7 @@ class NotificationHelper(private val context: Context) {
             NotificationManagerCompat.from(context).notify(idCounter++,
                 NotificationCompat.Builder(context, channel)
                     .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                    .setContentTitle(if (fromAdmin) "👑 $fromUsername te mentionne !" else "💬 $fromUsername te mentionne")
+                    .setContentTitle(if (fromAdmin) "✧ $fromUsername te mentionne !" else "⌯ $fromUsername te mentionne")
                     .setContentText(content)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(content))
                     .setAutoCancel(true)
@@ -127,7 +127,7 @@ class NotificationHelper(private val context: Context) {
             NotificationManagerCompat.from(context).notify(idCounter++,
                 NotificationCompat.Builder(context, channel)
                     .setSmallIcon(android.R.drawable.ic_dialog_email)
-                    .setContentTitle(if (fromAdmin) "👑 $sender" else "💬 $sender")
+                    .setContentTitle(if (fromAdmin) "✧ $sender" else "⌯ $sender")
                     .setContentText(body)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                     .setAutoCancel(true)
@@ -145,7 +145,7 @@ class NotificationHelper(private val context: Context) {
             NotificationManagerCompat.from(context).notify(idCounter++,
                 NotificationCompat.Builder(context, CH_POSTS)
                     .setSmallIcon(android.R.drawable.ic_menu_share)
-                    .setContentTitle("🔥 $username a posté")
+                    .setContentTitle("✦ $username a posté")
                     .setContentText(content)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(content))
                     .setAutoCancel(true)

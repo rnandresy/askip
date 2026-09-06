@@ -88,7 +88,7 @@ fun MembersScreen(
     ) { pad ->
         if (sorted.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {
-                EmptyState("👥", "Aucun membre")
+                EmptyState("◍", "Aucun membre")
             }
         } else {
             LazyColumn(
@@ -193,12 +193,12 @@ private fun MemberRow(
                 }
             }
 
-            // La série ne s'affiche qu'à partir de deux jours : « 🔥 1 » n'est
+            // La série ne s'affiche qu'à partir de deux jours : « ✦ 1 » n'est
             // pas une série, c'est juste être venu aujourd'hui.
             if (profile.streak > 1) {
                 BubbleChip(
                     label = "${profile.streak}",
-                    emoji = "🔥",
+                    emoji = "✦",
                     accent = palette.streak
                 )
             }

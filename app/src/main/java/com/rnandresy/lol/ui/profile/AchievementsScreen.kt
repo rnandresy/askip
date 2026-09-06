@@ -273,7 +273,7 @@ private fun TrophyRow(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (unlocked) def.icon else "🔒", fontSize = 23.sp)
+                Text(if (unlocked) def.icon else "⌂", fontSize = 23.sp)
             }
 
             Column(

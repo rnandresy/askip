@@ -181,7 +181,7 @@ fun SettingsScreen(
                 SettingsDivider()
                 // Verrouillé : les annonces admin passent toujours.
                 SwitchRow(
-                    Icons.Rounded.Campaign, "Annonces admin 👑",
+                    Icons.Rounded.Campaign, "Annonces admin ✧",
                     "Toujours activé — obligatoire", true, enabled = false
                 ) { }
             }
@@ -211,7 +211,7 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Text(
-                        "Askip 🌸",
+                        "Askip ❀",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -227,7 +227,7 @@ fun SettingsScreen(
 
             BubbleButton(
                 text = "Se déconnecter",
-                emoji = "👋",
+                emoji = "⋆",
                 onClick = onLogout,
                 enabled = !loading,
                 tone = BubbleTone.SOFT,
@@ -236,7 +236,7 @@ fun SettingsScreen(
 
             BubbleButton(
                 text = "Supprimer mon compte",
-                emoji = "🗑️",
+                emoji = "✕",
                 onClick = { showDeleteAcct = true },
                 enabled = !loading,
                 tone = BubbleTone.DANGER,
@@ -253,7 +253,7 @@ fun SettingsScreen(
             onConfirm = { email, pwd ->
                 vm.updateEmail(email, pwd) { ok, err ->
                     showEmail = false
-                    msg = ok to if (ok) "✅ Email mis à jour." else "❌ $err"
+                    msg = ok to if (ok) "✓ Email mis à jour." else "✕ $err"
                 }
             }
         )
@@ -265,7 +265,7 @@ fun SettingsScreen(
             onConfirm = { current, next ->
                 vm.updatePassword(current, next) { ok, err ->
                     showPwd = false
-                    msg = ok to if (ok) "✅ Mot de passe mis à jour." else "❌ $err"
+                    msg = ok to if (ok) "✓ Mot de passe mis à jour." else "✕ $err"
                 }
             }
         )
@@ -279,7 +279,7 @@ fun SettingsScreen(
                 vm.deleteAccount(
                     pwd,
                     onSuccess = { showDeleteAcct = false; onLogout() },
-                    onError = { err -> showDeleteAcct = false; msg = true to "❌ $err" }
+                    onError = { err -> showDeleteAcct = false; msg = true to "✕ $err" }
                 )
             }
         )
@@ -295,7 +295,7 @@ fun SettingsScreen(
  *
  * Chaque pastille porte les vraies couleurs du thème : fond, carte, accent.
  * On voit d'un coup d'œil lequel est clair, lequel est sombre — impossible à
- * deviner depuis « Nostalgique 🕯 ».
+ * deviner depuis « Nostalgique ☽ ».
  */
 @Composable
 private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
@@ -438,7 +438,7 @@ private fun DeleteAccountDialog(
 
     AskipDialog(
         title = "Supprimer mon compte",
-        emoji = "🗑️",
+        emoji = "✕",
         danger = true,
         onDismiss = { if (!loading) onDismiss() },
         confirmLabel = "Supprimer",
@@ -454,7 +454,7 @@ private fun DeleteAccountDialog(
                 .padding(Space.md)
         ) {
             Text(
-                "⚠️ Action irréversible. Tes posts, commentaires, stories et " +
+                "⚠ Action irréversible. Tes posts, commentaires, stories et " +
                     "données seront supprimés définitivement.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer

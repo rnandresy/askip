@@ -179,7 +179,7 @@ fun TruthPageHeader(
             verticalArrangement = Arrangement.spacedBy(Space.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("⚖️", fontSize = 26.sp)
+            Text("⚖", fontSize = 26.sp)
             Text(
                 "LA PAGE DE VÉRITÉ",
                 style = MaterialTheme.typography.titleMedium,
@@ -306,7 +306,7 @@ fun OathDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Text("⚖️", fontSize = 28.sp) },
+        icon = { Text("⚖", fontSize = 28.sp) },
         title = {
             Text(
                 "Serment",
@@ -488,7 +488,7 @@ fun VoiceHero(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("🎙", fontSize = 11.sp)
+                Text("◍", fontSize = 11.sp)
                 Text(
                     "RUMEUR VOCALE",
                     style = MaterialTheme.typography.labelSmall,

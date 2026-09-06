@@ -112,10 +112,17 @@ enum class BubbleTone {
     DANGER
 }
 
+/**
+ * Les trois tailles de bulle.
+ *
+ * Volontairement menues : une commande secondaire ne doit pas peser autant que
+ * ce qu'elle commande. `LARGE` reste réservée aux boutons qui portent tout un
+ * écran — se connecter, publier.
+ */
 enum class BubbleSize(val height: Dp, val padding: Dp, val textSize: Int) {
-    SMALL(34.dp, Space.md, 13),
-    MEDIUM(44.dp, Space.xl, 15),
-    LARGE(54.dp, Space.xxl, 16)
+    SMALL(28.dp, Space.sm, 11),
+    MEDIUM(36.dp, Space.lg, 13),
+    LARGE(46.dp, Space.xl, 14)
 }
 
 private data class BubbleColors(
@@ -243,7 +250,7 @@ fun BubbleIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     tone: BubbleTone = BubbleTone.SOFT,
-    diameter: Dp = 40.dp,
+    diameter: Dp = 32.dp,
     badge: Int = 0,
     enabled: Boolean = true
 ) {
@@ -346,11 +353,11 @@ fun BubbleChip(
         Row(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = Space.sm, vertical = 4.dp),
+                .padding(horizontal = 7.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            if (emoji != null) Text(emoji, fontSize = 11.sp)
+            if (emoji != null) Text(emoji, fontSize = 10.sp)
             Text(
                 label,
                 style = MaterialTheme.typography.labelSmall,

@@ -199,7 +199,7 @@ fun SealedCapsule(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
-                Text(if (open) "🔓" else "🔒", fontSize = 20.sp)
+                Text(if (open) "⌂" else "⌂", fontSize = 20.sp)
                 Text(
                     if (open) "Capsule ouverte" else "Capsule scellée",
                     style = MaterialTheme.typography.titleSmall,
@@ -344,7 +344,7 @@ fun ChainPreview(post: Post, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("📞", fontSize = 12.sp)
+                Text("⋯", fontSize = 12.sp)
                 Text(
                     if (full) "CHAÎNE COMPLÈTE" else "TÉLÉPHONE ARABE",
                     style = MaterialTheme.typography.labelSmall,
@@ -365,7 +365,7 @@ fun ChainPreview(post: Post, modifier: Modifier = Modifier) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "dernier maillon : ${post.chainLastAuthor.ifBlank { "quelqu'un 🎭" }}",
+                    "dernier maillon : ${post.chainLastAuthor.ifBlank { "quelqu'un ◌" }}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -411,14 +411,14 @@ fun ChainThread(
     ) {
         ChainBubble(
             index = 1,
-            author = originAuthor.ifBlank { "Quelqu'un 🎭" },
+            author = originAuthor.ifBlank { "Quelqu'un ◌" },
             content = origin,
             isOrigin = true
         )
         links.forEachIndexed { i, link ->
             ChainBubble(
                 index = i + 2,
-                author = link.username.ifBlank { "Quelqu'un 🎭" },
+                author = link.username.ifBlank { "Quelqu'un ◌" },
                 content = link.content,
                 isOrigin = false
             )
@@ -551,7 +551,7 @@ fun RightOfReplyCard(reply: MentionReply, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("⚖️", fontSize = 12.sp)
+                Text("⚖", fontSize = 12.sp)
                 Text(
                     "DROIT DE RÉPONSE",
                     style = MaterialTheme.typography.labelSmall,
@@ -599,7 +599,7 @@ fun RightOfReplyPrompt(
             verticalArrangement = Arrangement.spacedBy(Space.sm)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⚖️", fontSize = 16.sp)
+                Text("⚖", fontSize = 16.sp)
                 Spacer(Modifier.width(Space.sm))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -740,14 +740,14 @@ fun BetPanel(
 
             Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                 SideChoice(
-                    label = "🧐 Ce sera crédible",
+                    label = "✓ Ce sera crédible",
                     selected = side == true,
                     accent = palette.confirmed,
                     modifier = Modifier.weight(1f),
                     onClick = { side = true }
                 )
                 SideChoice(
-                    label = "🚫 Ce sera bidon",
+                    label = "✕ Ce sera bidon",
                     selected = side == false,
                     accent = palette.debunked,
                     modifier = Modifier.weight(1f),
@@ -798,7 +798,7 @@ fun BetPanel(
                         }
                         BubbleButton(
                             text = "Parier",
-                            emoji = "🎲",
+                            emoji = "◈",
                             onClick = { side?.let { onPlaceBet(it, stake) } },
                             enabled = stake <= tokensLeft,
                             tone = BubbleTone.PRIMARY,
@@ -891,8 +891,8 @@ fun BetTicket(bet: Bet, modifier: Modifier = Modifier) {
             Text(
                 when {
                     !bet.settled -> BET_TOKEN_EMOJI
-                    bet.won -> "🎉"
-                    else -> "💀"
+                    bet.won -> "✦"
+                    else -> "☠"
                 },
                 fontSize = 18.sp
             )

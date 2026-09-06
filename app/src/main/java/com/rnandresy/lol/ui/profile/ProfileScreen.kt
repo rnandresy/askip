@@ -389,14 +389,14 @@ private fun ProfileHeader(
                     if (profile.coverUrl.isNotBlank()) {
                         BubbleChip(
                             "Retirer",
-                            emoji = "🗑️",
+                            emoji = "✕",
                             enabled = !busy,
                             onClick = onRemoveCover
                         )
                     }
                     BubbleChip(
                         "Couverture",
-                        emoji = "🖼️",
+                        emoji = "◫",
                         enabled = !busy,
                         onClick = onPickCover
                     )
@@ -461,20 +461,28 @@ private fun ProfileHeader(
                 // Le cadre choisi dans « Modifier le profil ». Sans cet
                 // affichage, le réglage existerait sans jamais se voir.
                 val frameEmoji = when (profile.avatarFrame) {
-                    "fire" -> "🔥"
-                    "star" -> "⭐"
-                    "rainbow" -> "🌈"
-                    "gold" -> "👑"
+                    "fire" -> "✦"
+                    "star" -> "✧"
+                    "rainbow" -> "❀"
+                    "gold" -> "✧"
                     else -> ""
                 }
+                // Le cadre se pose en pastille sur le bord de l'avatar, comme
+                // un badge. Posé à même l'image et deux fois plus gros, il
+                // flottait sans point d'ancrage et mangeait le visage.
                 if (frameEmoji.isNotBlank()) {
-                    Text(
-                        frameEmoji,
-                        fontSize = 22.sp,
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .offset(x = 2.dp, y = (-2).dp)
-                    )
+                            .align(Alignment.TopEnd)
+                            .padding(top = 14.dp, end = 14.dp)
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, palette.bubbleBorder, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(frameEmoji, fontSize = 12.sp)
+                    }
                 }
             }
 
@@ -538,9 +546,9 @@ private fun IdentityCard(profile: UserProfile, userIsAdmin: Boolean) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (userIsAdmin) BubbleChip("Admin", emoji = "👑", accent = AdminGold)
+                if (userIsAdmin) BubbleChip("Admin", emoji = "✧", accent = AdminGold)
                 if (profile.hasBadgeENI) {
-                    BubbleChip("ENI", emoji = "🎓", accent = Color(0xFF1565C0))
+                    BubbleChip("ENI", emoji = "⌘", accent = Color(0xFF1565C0))
                 }
             }
 
@@ -559,10 +567,10 @@ private fun IdentityCard(profile: UserProfile, userIsAdmin: Boolean) {
             // Les informations d'état civil tenaient chacune sa ligne. Groupées
             // sur une rangée qui défile, elles occupent le quart de la place.
             val facts = buildList {
-                if (profile.classeENI.isNotBlank()) add("🏫" to profile.classeENI)
-                if (profile.age > 0) add("🎂" to "${profile.age} ans")
+                if (profile.classeENI.isNotBlank()) add("⌘" to profile.classeENI)
+                if (profile.age > 0) add("✦" to "${profile.age} ans")
                 if (profile.relationshipStatus.isNotBlank()) {
-                    add("💑" to profile.relationshipStatus)
+                    add("♡" to profile.relationshipStatus)
                 }
             }
             if (facts.isNotEmpty()) {
@@ -613,7 +621,7 @@ private fun ReputationCard(profile: UserProfile) {
                 }
                 BubbleChip(
                     "${profile.clout} clout",
-                    emoji = "🎖",
+                    emoji = "✧",
                     accent = palette.contested
                 )
             }
@@ -685,7 +693,7 @@ private fun ActivityCard(profile: UserProfile) {
                 ) {
                     BubbleChip(
                         "${profile.streak} jours d'affilée",
-                        emoji = "🔥",
+                        emoji = "✦",
                         accent = palette.streak
                     )
                     if (profile.bestStreak > profile.streak) {
@@ -847,7 +855,7 @@ private fun BadgeCard(
             if (canManage) {
                 BubbleButton(
                     text = "Gérer mes badges",
-                    emoji = "🏷️",
+                    emoji = "◇",
                     onClick = onManage,
                     tone = BubbleTone.SOFT,
                     size = BubbleSize.SMALL,
@@ -879,7 +887,7 @@ fun BadgeChipManageable(
     Box {
         BubbleChip(
             label = badge.displayName,
-            emoji = "🏷️",
+            emoji = "◇",
             accent = color,
             filled = true,
             onClick = { if (canEdit || canDelete) showMenu = true }
@@ -923,7 +931,7 @@ fun BadgeChipManageable(
 /** Le badge ENI officiel — conservé pour les écrans qui l'affichent encore. */
 @Composable
 fun ENIBadge() {
-    BubbleChip("ENI", emoji = "🎓", accent = Color(0xFF1565C0))
+    BubbleChip("ENI", emoji = "⌘", accent = Color(0xFF1565C0))
 }
 
 @Composable
@@ -959,7 +967,7 @@ fun BadgeManagerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title            = { Text("🏷️ Badges") },
+        title            = { Text("◇ Badges") },
         text             = {
             Column(modifier = Modifier.heightIn(max = 500.dp)) {
 
@@ -1090,7 +1098,7 @@ fun BadgeManagerDialog(
                                 shape  = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
-                                    "ℹ️ Tu peux créer un badge, mais tu devras d'abord retirer le tien pour le porter.",
+                                    "ℹ Tu peux créer un badge, mais tu devras d'abord retirer le tien pour le porter.",
                                     modifier = Modifier.padding(10.dp),
                                     style    = MaterialTheme.typography.bodySmall
                                 )
@@ -1218,7 +1226,7 @@ fun BadgeManagerDialog(
                             Spacer(Modifier.height(6.dp))
                             BubbleButton(
                                 text = "Supprimer ce badge",
-                                emoji = "🗑️",
+                                emoji = "✕",
                                 onClick = {
                                     editBadge?.let { b ->
                                         vm.deleteBadge(b.id,

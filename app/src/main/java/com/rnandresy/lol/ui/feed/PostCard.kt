@@ -261,7 +261,7 @@ private fun PostHeader(
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
                 Text(
-                    if (post.isAnonymous) post.username.ifBlank { "Quelqu'un 🎭" }
+                    if (post.isAnonymous) post.username.ifBlank { "Quelqu'un ◌" }
                     else post.username,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -293,11 +293,11 @@ private fun PostHeader(
             post.isTruth() && verdict == Verdict.DEBUNKED -> OathStamp(perjury = true)
             post.isTruth() && verdict == Verdict.CONFIRMED -> OathStamp(perjury = false)
             verdict == Verdict.CONFIRMED ->
-                BubbleChip("Confirmée", emoji = "✅", accent = palette.confirmed)
+                BubbleChip("Confirmée", emoji = "✓", accent = palette.confirmed)
             verdict == Verdict.DEBUNKED ->
-                BubbleChip("Démentie", emoji = "❌", accent = palette.debunked)
+                BubbleChip("Démentie", emoji = "✕", accent = palette.debunked)
             hotRank in 1..3 ->
-                BubbleChip("#$hotRank", emoji = "🔥", accent = palette.heatHigh)
+                BubbleChip("#$hotRank", emoji = "✦", accent = palette.heatHigh)
             else -> Unit
         }
 
@@ -413,7 +413,7 @@ private fun PostActions(
         if (post.postType != "poll" && (!post.isSealed() || post.isUnsealed())) {
             BubbleChip(
                 label = if (settled) "${(ratio * 100).toInt()} %" else "Enquête",
-                emoji = if (settled) "⚖️" else "🔍",
+                emoji = if (settled) "⚖" else "⌕",
                 accent = when {
                     !settled -> palette.unknown
                     ratio >= 0.6f -> palette.confirmed
@@ -531,14 +531,14 @@ private fun MoreSheet(
 
             if (userIsAdmin) {
                 SheetAction(
-                    emoji = "📌",
+                    emoji = "⚑",
                     label = if (post.isPinned) "Désépingler" else "Épingler en tête",
                     onClick = { onPin(); close() }
                 )
             }
             if (!isMyPost) {
                 SheetAction(
-                    emoji = "🚩",
+                    emoji = "⚑",
                     label = "Signaler",
                     subtitle = "L'administration recevra ton signalement.",
                     onClick = { onReport() }
@@ -546,7 +546,7 @@ private fun MoreSheet(
             }
             if (isMyPost || userIsAdmin) {
                 SheetAction(
-                    emoji = "🗑️",
+                    emoji = "✕",
                     label = "Supprimer",
                     tint = MaterialTheme.colorScheme.error,
                     onClick = { onDelete(); close() }

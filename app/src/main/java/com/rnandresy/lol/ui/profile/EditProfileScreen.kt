@@ -232,7 +232,7 @@ fun EditProfileScreen(
         EditSheet.STATUS -> ChoiceSheet(
             title = "Statut amoureux",
             subtitle = "Visible sur ton profil.",
-            emoji = "💑",
+            emoji = "♡",
             options = REL_STATUSES,
             selected = relStatus,
             onPick = { relStatus = it; sheet = null },
@@ -241,8 +241,8 @@ fun EditProfileScreen(
 
         EditSheet.CLASS -> ChoiceSheet(
             title = "Classe ENI",
-            subtitle = "Choisir une classe débloque le badge 🎓.",
-            emoji = "🎓",
+            subtitle = "Choisir une classe débloque le badge ⌘.",
+            emoji = "⌘",
             options = ENI_CLASSES,
             selected = classeENI,
             onPick = { classeENI = it; sheet = null },
@@ -268,7 +268,7 @@ private fun IdentitySection(
     bio: String,
     onBio: (String) -> Unit
 ) {
-    EditCard("Identité", "👤") {
+    EditCard("Identité", "◍") {
         EditField(
             value = username,
             onValueChange = onUsername,
@@ -288,7 +288,7 @@ private fun IdentitySection(
                     .padding(Space.md),
                 verticalAlignment = Alignment.Top
             ) {
-                Text("🔄", fontSize = 14.sp)
+                Text("↻", fontSize = 14.sp)
                 Spacer(Modifier.width(Space.sm))
                 Text(
                     "Ton nouveau pseudo remplacera l'ancien sur tous tes posts, " +
@@ -328,7 +328,7 @@ private fun MoodSection(
     val palette = LocalAskipPalette.current
     val tap = rememberTapFeedback()
 
-    EditCard("Humeur du jour", "😊") {
+    EditCard("Humeur du jour", "◡") {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
             contentPadding = PaddingValues(vertical = Space.xxs)
@@ -378,7 +378,7 @@ private fun LookSection(
     val palette = LocalAskipPalette.current
     val tap = rememberTapFeedback()
 
-    EditCard("Apparence", "🎨") {
+    EditCard("Apparence", "◈") {
         SubLabel("Couleur du profil")
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
@@ -443,15 +443,15 @@ private fun DetailsSection(
     onOpenStatus: () -> Unit,
     onOpenClass: () -> Unit
 ) {
-    EditCard("Détails", "📋") {
+    EditCard("Détails", "⧉") {
         PickerRow(
-            emoji = "💑",
+            emoji = "♡",
             label = "Statut amoureux",
             value = relStatus.ifBlank { "Non précisé" },
             onClick = onOpenStatus
         )
         PickerRow(
-            emoji = "🎓",
+            emoji = "⌘",
             label = "Classe ENI",
             value = classeENI.ifBlank { "Non précisée" },
             hint = if (classeENI.isNotBlank()) "Badge ENI attribué"
@@ -620,13 +620,13 @@ private fun ChoiceSheet(
             SheetHeader(title, subtitle)
 
             SheetAction(
-                emoji = "🚫",
+                emoji = "✕",
                 label = "Ne rien indiquer",
                 onClick = { onPick("") }
             )
             options.forEach { option ->
                 SheetAction(
-                    emoji = if (option == selected) "✅" else emoji,
+                    emoji = if (option == selected) "✓" else emoji,
                     label = option,
                     onClick = { onPick(option) }
                 )

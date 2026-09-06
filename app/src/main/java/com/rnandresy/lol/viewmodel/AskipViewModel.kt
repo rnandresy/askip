@@ -642,11 +642,21 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             authRepo.reauthenticate(password)
             // 2. Le contenu, tant qu'on est encore authentifié : une fois le
             //    compte supprimé, les règles Firestore refusent toute écriture.
-            profileRepo.deleteAllUserContent(currentUserId)
+            //    Une étape qui échoue ne bloque pas les autres — le compte doit
+            //    partir dans tous les cas, c'est ce qui a été demandé.
+            val restes = profileRepo.deleteAllUserContent(currentUserId)
             // 3. Le compte Auth en dernier.
             authRepo.deleteAccount(password)
-        }.onSuccess {
+            restes
+        }.onSuccess { restes ->
             stopAll()
+            if (restes.isNotEmpty()) {
+                // Le compte est bien supprimé : on le dit, en signalant ce qui
+                // n'a pas pu être nettoyé plutôt que de le passer sous silence.
+                error.value =
+                    "Compte supprimé. Ces éléments n'ont pas pu être effacés : " +
+                        restes.joinToString(", ") + "."
+            }
             onSuccess()
         }.onFailure { e ->
             onError(
@@ -1523,7 +1533,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             .onSuccess {
                 profileRepo.addClout(post.userId, CLOUT_PER_SCOOP)
                 award(0L, QuestKind.SCOOP)
-                info.value = "Scoop offert 💎"
+                info.value = "Scoop offert ⟡"
             }
             .onFailure {
                 restorePosts(snapshot)
@@ -1630,7 +1640,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         it.won = won
                     }
                     )
-                info.value = if (won) "Pari gagné : +$payout clout 🎉"
+                info.value = if (won) "Pari gagné : +$payout clout ✦"
                 else "Pari perdu : $payout clout"
             }
         }
@@ -1664,7 +1674,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             .onSuccess {
                 award(0L, QuestKind.KEY)
                 val left = (post.keysNeeded - post.keysBy.size - 1).coerceAtLeast(0)
-                info.value = if (left == 0) "Capsule ouverte 🔓"
+                info.value = if (left == 0) "Capsule ouverte ⌂"
                 else "Clé donnée — encore $left"
             }
             .onFailure {
@@ -1718,7 +1728,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }.onSuccess {
                 award(XP_CHAIN_LINK, QuestKind.CHAIN)
-                info.value = "Maillon ajouté 📞"
+                info.value = "Maillon ajouté ⋯"
             }.onFailure { error.value = it.message }
         }
 
@@ -1765,7 +1775,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                     timestamp = System.currentTimeMillis()
                 )
             )
-        }.onSuccess { info.value = "Réponse publiée ⚖️" }
+        }.onSuccess { info.value = "Réponse publiée ⚖" }
             .onFailure { error.value = it.message }
     }
 
@@ -2002,10 +2012,10 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                             notif.showMessageNotification(
                                 resolveUsername(msg.senderId, msg.senderUsername),
                                 when {
-                                    msg.isAudio() -> "🎤 Message vocal"
-                                    msg.isImage() -> "📸 Photo"
-                                    msg.isVideo() -> "🎥 Vidéo"
-                                    msg.isFile() -> "📎 ${msg.mediaName}"
+                                    msg.isAudio() -> "◍ Message vocal"
+                                    msg.isImage() -> "◫ Photo"
+                                    msg.isVideo() -> "▷ Vidéo"
+                                    msg.isFile() -> "▤ ${msg.mediaName}"
                                     else -> msg.content
                                 },
                                 fromAdmin
@@ -2031,11 +2041,21 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         replyTo: Message? = null
     ) {
         val profile = _myProfile.value ?: return
-        val conv = _rawConversations.value.find { it.id == convId } ?: return
-        val receiverId = conv.participants.firstOrNull { it != currentUserId } ?: return
         val fromAdmin = isAdmin(currentUserId) || profile.isAdmin
 
         viewModelScope.launch {
+            // Une conversation qu'on vient de créer n'est pas encore arrivée
+            // par l'écoute. Abandonner ici, comme avant, faisait disparaître
+            // en silence le tout premier message d'un nouveau fil — et la
+            // notification qui allait avec.
+            val conv = _rawConversations.value.find { it.id == convId }
+                ?: msgRepo.getConversation(convId)
+            val receiverId = conv?.participants?.firstOrNull { it != currentUserId }
+            if (receiverId == null) {
+                error.value = "Conversation introuvable."
+                return@launch
+            }
+
             val hasMedia = imageUri != null || videoUri != null || fileUri != null
             if (hasMedia) {
                 loading.value = true
@@ -2073,10 +2093,10 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 val preview = when (mediaType) {
-                    "image" -> "📸 Photo"
-                    "video" -> "🎥 Vidéo"
-                    "file" -> "📎 $mediaName"
-                    "audio" -> "🎤 Vocal"
+                    "image" -> "◫ Photo"
+                    "video" -> "▷ Vidéo"
+                    "file" -> "▤ $mediaName"
+                    "audio" -> "◍ Vocal"
                     else -> content.take(80)
                 }
                 msgRepo.sendMessage(
@@ -2195,7 +2215,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         "fromIsAdmin" to fromAdmin,
                         "postId" to "",
                         "conversationId" to convId,
-                        "content" to "🎤 Message vocal (${durationSec}s)",
+                        "content" to "◍ Message vocal (${durationSec}s)",
                         "isRead" to false,
                         "timestamp" to System.currentTimeMillis()
                     )

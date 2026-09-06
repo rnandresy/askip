@@ -343,45 +343,73 @@ class ProfileRepository {
      * À appeler **avant** [AuthRepository.deleteAccount] : une fois déconnecté,
      * les règles Firestore bloquent ces écritures.
      */
-    suspend fun deleteAllUserContent(uid: String) {
-        // 1. Posts et leurs commentaires
-        val posts = db.collection("posts").whereEqualTo("userId", uid).get().await()
-        posts.documents.forEach { postDoc ->
-            postDoc.reference.collection("comments").deleteAll()
+    /**
+     * Efface tout ce que [uid] a laissé, puis son profil.
+     *
+     * Chaque étape est isolée et renvoie son nom en cas d'échec, au lieu de
+     * faire tomber les suivantes. C'est délibéré : les deux requêtes
+     * `collectionGroup` échouent tant que leurs index ne sont pas déployés, et
+     * une seule d'entre elles suffisait à interrompre la suppression après
+     * l'effacement des rumeurs — la personne se retrouvait alors sans son
+     * contenu et avec son compte toujours actif, soit le pire des deux mondes.
+     *
+     * Renvoie la liste des étapes qui n'ont pas abouti, vide si tout a marché.
+     */
+    suspend fun deleteAllUserContent(uid: String): List<String> {
+        val echecs = mutableListOf<String>()
+
+        suspend fun etape(nom: String, bloc: suspend () -> Unit) {
+            runCatching { bloc() }.onFailure { echecs += nom }
         }
-        posts.documents.commitInChunks { batch, doc -> batch.delete(doc.reference) }
 
-        // 2. Commentaires laissés ailleurs
-        db.collectionGroup("comments").whereEqualTo("userId", uid).deleteAll()
+        etape("rumeurs") {
+            val posts = db.collection("posts").whereEqualTo("userId", uid).get().await()
+            posts.documents.forEach { it.reference.collection("comments").deleteAll() }
+            posts.documents.commitInChunks { batch, doc -> batch.delete(doc.reference) }
+        }
 
-        // 3. Stories
-        db.collection("stories").whereEqualTo("userId", uid).deleteAll()
+        etape("commentaires") {
+            db.collectionGroup("comments").whereEqualTo("userId", uid).deleteAll()
+        }
 
-        // 4. Notifications envoyées et reçues
-        db.collection("notifications").whereEqualTo("fromUserId", uid).deleteAll()
-        db.collection("notifications").whereEqualTo("targetUserId", uid).deleteAll()
+        etape("stories") {
+            db.collection("stories").whereEqualTo("userId", uid).deleteAll()
+        }
 
-        // 5. Badges créés — retirés de tous les profils qui les portaient
-        db.collection(COL_BADGES).whereEqualTo("createdBy", uid).get().await()
-            .documents.forEach { badgeDoc ->
-                deleteBadge(badgeDoc.id)
-            }
+        etape("notifications") {
+            db.collection("notifications").whereEqualTo("fromUserId", uid).deleteAll()
+            db.collection("notifications").whereEqualTo("targetUserId", uid).deleteAll()
+        }
 
-        // 6. Sortie des groupes
-        db.collection("groups").whereArrayContains("members", uid).get().await()
-            .documents.commitInChunks { batch, doc ->
-                batch.update(doc.reference, "members", FieldValue.arrayRemove(uid))
-            }
+        etape("badges") {
+            db.collection(COL_BADGES).whereEqualTo("createdBy", uid).get().await()
+                .documents.forEach { deleteBadge(it.id) }
+        }
 
-        // 7. Messages privés : on garde le fil mais on anonymise l'expéditeur,
-        //    sinon les conversations des autres deviendraient illisibles.
-        db.collectionGroup("messages").whereEqualTo("senderId", uid).get().await()
-            .documents.commitInChunks { batch, doc ->
-                batch.update(doc.reference, "senderUsername", "Compte supprimé")
-            }
+        etape("groupes") {
+            db.collection("groups").whereArrayContains("members", uid).get().await()
+                .documents.commitInChunks { batch, doc ->
+                    batch.update(doc.reference, "members", FieldValue.arrayRemove(uid))
+                }
+        }
 
-        // 8. Succès puis profil
-        profiles.document(uid).collection(COL_ACHIEVEMENTS).deleteAll()
-        profiles.document(uid).delete().await()
+        // On garde le fil de discussion mais on anonymise l'expéditeur : le
+        // supprimer rendrait illisibles les conversations des autres.
+        etape("messages") {
+            db.collectionGroup("messages").whereEqualTo("senderId", uid).get().await()
+                .documents.commitInChunks { batch, doc ->
+                    batch.update(doc.reference, "senderUsername", "Compte supprimé")
+                }
+        }
+
+        etape("succès") {
+            profiles.document(uid).collection(COL_ACHIEVEMENTS).deleteAll()
+        }
+
+        // Le profil en dernier : les étapes précédentes en ont besoin pour
+        // passer le contrôle « pas banni » des règles.
+        etape("profil") { profiles.document(uid).delete().await() }
+
+        return echecs
     }
 }

@@ -74,21 +74,23 @@ const val MIN_MS_BETWEEN_MESSAGES = 500L
 const val MAX_POSTS_PER_HOUR      = 15
 
 // ── Réactions ─────────────────────────────────────────────────────────────────
-val REACTIONS = listOf("❤️", "🔥", "😂", "😱", "👀")
+// Cinq marques distinctes : elles servent de clé pour retrouver le champ
+// correspondant, donc deux réactions ne peuvent pas partager le même signe.
+val REACTIONS = listOf("♡", "✦", "◎", "◍", "◑")
 
 /** Libellés lus par les lecteurs d'écran — même ordre que [REACTIONS]. */
 val REACTION_LABELS = mapOf(
-    "❤️" to "J'aime",
-    "🔥" to "Ça chauffe",
-    "😂" to "Drôle",
-    "😱" to "Choquant",
-    "👀" to "Intrigant"
+    "♡" to "J'aime",
+    "✦" to "Ça chauffe",
+    "◎" to "Drôle",
+    "◍" to "Choquant",
+    "◑" to "Intrigant"
 )
 
 // ── Le Scoop : une pépite par jour, par personne ───────────────────────────────
 // Rareté volontaire. Un Scoop pèse lourd dans le classement « ça chauffe »,
 // donc le donner est un vrai choix — c'est ce qui lui donne de la valeur.
-const val SCOOP_EMOJI          = "💎"
+const val SCOOP_EMOJI          = "⟡"
 const val SCOOPS_PER_DAY       = 1
 const val SCOOP_HOT_WEIGHT     = 12.0
 
@@ -109,7 +111,7 @@ const val CLOUT_DEBUNKED_POST  = -25L    // ta rumeur passe « DÉMENTIE »
 // Trois jetons par jour, pas plus. Le jeton n'est pas la récompense — c'est le
 // droit de parier. Le gain, lui, est du clout. Résultat : on ne mise pas au
 // hasard, et un nouveau venu peut jouer dès le premier jour sans réputation.
-const val BET_TOKEN_EMOJI   = "🎟"
+const val BET_TOKEN_EMOJI   = "⟡"
 const val BETS_PER_DAY      = 3
 
 /** Mises possibles — plus on mise, plus le gain et la perte suivent. */
@@ -130,7 +132,7 @@ const val BET_EARLY_VOTES   = 30
 // ── La Capsule scellée : une rumeur qu'on ne peut pas encore lire ─────────────
 // Le verrou est appliqué par les règles Firestore (comparaison à `request.time`),
 // pas par l'affichage : le contenu est réellement illisible avant l'heure.
-const val SEAL_KEY_EMOJI    = "🔑"
+const val SEAL_KEY_EMOJI    = "⚿"
 
 /** Durées proposées à la publication, en heures. */
 val SEAL_DURATIONS_HOURS = listOf(1, 6, 24, 72, 168)
@@ -193,9 +195,11 @@ val STORY_COLORS = listOf(
     "#2563EB", "#DB2777", "#0891B2", "#4F46E5"
 )
 
+// Seize marques, toutes différentes : c'est un sélecteur, deux signes
+// identiques y seraient impossibles à distinguer l'un de l'autre.
 val STORY_EMOJIS = listOf(
-    "💭", "🔥", "😂", "😴", "📚", "☕", "🎧", "💻",
-    "🎉", "😤", "🥺", "✨", "🍜", "⚡", "🌙", "💀"
+    "✦", "✧", "⋆", "❀", "✿", "♡", "☾", "☀",
+    "◎", "◍", "◑", "◌", "⟡", "◈", "✩", "❁"
 )
 
 // ── Types de post ─────────────────────────────────────────────────────────────
@@ -212,17 +216,17 @@ const val POST_TYPE_CONFESSION = "confession"
  * Vérité qu'après avoir juré.
  */
 enum class FeedSection(val label: String, val emoji: String, val tagline: String) {
-    MAIN("Actualité", "📰", "Tout ce qui se raconte"),
-    VOICE("Vocal", "🎙", "Ici, on ne lit pas. On écoute."),
-    TRUTH("Vérité", "⚖️", "Uniquement des faits, sous serment.")
+    MAIN("Actualité", "▤", "Tout ce qui se raconte"),
+    VOICE("Vocal", "◍", "Ici, on ne lit pas. On écoute."),
+    TRUTH("Vérité", "⚖", "Uniquement des faits, sous serment.")
 }
 
 // ── Onglets de tri, dans l'actualité principale ───────────────────────────────
 enum class FeedTab(val label: String, val emoji: String) {
-    HOT("Ça chauffe", "🔥"),
-    FRESH("Frais", "🆕"),
-    CONFESSIONS("Confessions", "🎭"),
-    LEGENDS("Légendes", "🏆")
+    HOT("Ça chauffe", "✦"),
+    FRESH("Frais", "₊"),
+    CONFESSIONS("Confessions", "◌"),
+    LEGENDS("Légendes", "✩")
 }
 
 // ── L'actualité vocale ────────────────────────────────────────────────────────
@@ -245,16 +249,16 @@ const val PERJURY_STAMP = "PARJURE"
 data class TagDef(val slug: String, val label: String, val emoji: String)
 
 val RUMOR_TAGS = listOf(
-    TagDef("amphi",   "Amphi",       "🎓"),
-    TagDef("couple",  "Couples",     "💘"),
-    TagDef("prof",    "Profs",       "👨‍🏫"),
-    TagDef("exam",    "Exams",       "📝"),
-    TagDef("soiree",  "Soirées",     "🎉"),
+    TagDef("amphi",   "Amphi",       "⌘"),
+    TagDef("couple",  "Couples",     "♡"),
+    TagDef("prof",    "Profs",       "⌬"),
+    TagDef("exam",    "Exams",       "✎"),
+    TagDef("soiree",  "Soirées",     "✦"),
     TagDef("sport",   "Sport",       "⚽"),
-    TagDef("drama",   "Drama",       "🍿"),
-    TagDef("mystere", "Mystère",     "🕵️"),
-    TagDef("bon_plan","Bons plans",  "💡"),
-    TagDef("wtf",     "WTF",         "💀")
+    TagDef("drama",   "Drama",       "○"),
+    TagDef("mystere", "Mystère",     "◌"),
+    TagDef("bon_plan","Bons plans",  "✧"),
+    TagDef("wtf",     "WTF",         "☠")
 )
 
 fun tagDef(slug: String): TagDef? = RUMOR_TAGS.firstOrNull { it.slug == slug }

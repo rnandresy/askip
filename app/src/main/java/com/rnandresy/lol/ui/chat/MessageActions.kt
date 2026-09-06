@@ -46,7 +46,7 @@ import com.rnandresy.lol.ui.theme.Space
  * Six, pas plus : au-delà, la rangée ne tient plus sur un écran étroit et le
  * choix devient une corvée au lieu d'un réflexe.
  */
-val MESSAGE_REACTIONS = listOf("❤️", "😂", "😮", "😢", "🔥", "👍")
+val MESSAGE_REACTIONS = listOf("♡", "◎", "◎", "◡", "✦", "✓")
 
 /** Copie [text] dans le presse-papiers. */
 fun copyToClipboard(context: Context, text: String) {
@@ -91,17 +91,17 @@ fun MessageActionSheet(
                 )
             )
 
-            SheetAction(emoji = "↩️", label = "Répondre") { onReply(); onDismiss() }
+            SheetAction(emoji = "↩", label = "Répondre") { onReply(); onDismiss() }
 
             if (copyable) {
-                SheetAction(emoji = "📋", label = "Copier le texte") {
+                SheetAction(emoji = "⧉", label = "Copier le texte") {
                     onCopy(); onDismiss()
                 }
             }
 
             if (canDelete) {
                 SheetAction(
-                    emoji = "🗑️",
+                    emoji = "✕",
                     label = "Supprimer",
                     tint = MaterialTheme.colorScheme.error
                 ) { onDelete(); onDismiss() }
@@ -130,7 +130,7 @@ fun ReactionRow(
                 onTap = { tap(); onPick(emoji) },
                 scaleDown = 0.85f,
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(38.dp)
                     .bubbleShell(
                         androidx.compose.foundation.shape.CircleShape,
                         if (picked) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
@@ -141,7 +141,7 @@ fun ReactionRow(
                     )
             ) {
                 BubbleGloss(androidx.compose.foundation.shape.CircleShape, if (picked) 0.6f else 0.3f)
-                Text(emoji, fontSize = 21.sp, modifier = Modifier.align(Alignment.Center))
+                Text(emoji, fontSize = 17.sp, modifier = Modifier.align(Alignment.Center))
             }
         }
     }
@@ -185,18 +185,18 @@ fun ReactionStrip(
             ) {
                 BubbleGloss(shape, if (isMine) 0.6f else 0.3f)
                 Row(
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    Text(emoji, fontSize = 12.sp)
+                    Text(emoji, fontSize = 10.sp)
                     // Un seul auteur, c'est déjà dit par l'emoji : le « 1 »
                     // n'ajoute rien et alourdit la ligne.
                     if (count > 1) {
                         Text(
                             "$count",
                             style = MaterialTheme.typography.labelSmall,
-                            fontSize = 10.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

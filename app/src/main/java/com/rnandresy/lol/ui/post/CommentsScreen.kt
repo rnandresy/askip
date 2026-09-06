@@ -156,7 +156,7 @@ fun CommentsScreen(
                         ) {
                             BubbleChip(
                                 label = if (anonymous) "Masqué" else "Commenter masqué",
-                                emoji = "🎭",
+                                emoji = "◌",
                                 filled = anonymous,
                                 accent = if (anonymous) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -165,7 +165,7 @@ fun CommentsScreen(
                         }
                     } else {
                         Text(
-                            "🎭 Sous une confession, tout le monde commente masqué",
+                            "◌ Sous une confession, tout le monde commente masqué",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -278,7 +278,7 @@ fun CommentsScreen(
                         item(key = "chainClosed") {
                             Text(
                                 if (post.chainIsFull(CHAIN_MAX_LINKS))
-                                    "🔗 Chaîne complète — $CHAIN_MAX_LINKS maillons."
+                                    "⋯ Chaîne complète — $CHAIN_MAX_LINKS maillons."
                                 else "Tu as déjà posé ton maillon.",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -295,7 +295,7 @@ fun CommentsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("🤫", fontSize = 40.sp)
+                            Text("◌", fontSize = 40.sp)
                             Spacer(Modifier.height(8.dp))
                             Text("Personne n'a encore commenté…",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -363,7 +363,7 @@ fun CommentRow(
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
                         Text(
-                            comment.username.ifBlank { "Anonyme 🎭" },
+                            comment.username.ifBlank { "Anonyme ◌" },
                             style      = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color      = if (comment.isAnonymous)
@@ -420,7 +420,7 @@ fun CommentRow(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
-                        Text(if (liked) "❤️" else "🤍", fontSize = 11.sp)
+                        Text(if (liked) "♡" else "♡", fontSize = 11.sp)
                         if (comment.likeCount() > 0) {
                             Text(
                                 "${comment.likeCount()}",

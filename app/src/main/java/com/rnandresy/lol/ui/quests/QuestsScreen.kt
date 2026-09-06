@@ -209,7 +209,7 @@ private fun ScoopCard(available: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.md)
         ) {
-            Text("💎", fontSize = 26.sp)
+            Text("⟡", fontSize = 26.sp)
             Column(Modifier.weight(1f)) {
                 Text(
                     if (available) "Ton Scoop du jour t'attend" else "Scoop déjà offert",

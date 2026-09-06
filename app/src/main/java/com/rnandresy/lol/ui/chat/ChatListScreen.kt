@@ -145,7 +145,7 @@ fun ChatListScreen(
                     if (conversations.isEmpty()) {
                         Box(Modifier.fillMaxSize(), Alignment.Center) {
                             EmptyState(
-                                "💌", "Aucun message",
+                                "⌯", "Aucun message",
                                 "Appuie sur le crayon pour commencer"
                             )
                         }
@@ -178,7 +178,7 @@ fun ChatListScreen(
                     if (groups.isEmpty()) {
                         Box(Modifier.fillMaxSize(), Alignment.Center) {
                             EmptyState(
-                                "👥", "Aucun groupe",
+                                "◍", "Aucun groupe",
                                 "Appuie sur + pour en créer un"
                             )
                         }
@@ -280,7 +280,7 @@ private fun ConversationRow(
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        conv.lastMessage.ifBlank { "Démarrer la conversation 👋" },
+                        conv.lastMessage.ifBlank { "Démarrer la conversation ⋆" },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (hasUnread) MaterialTheme.colorScheme.onSurface
                         else MaterialTheme.colorScheme.onSurfaceVariant,

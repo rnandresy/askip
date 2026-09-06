@@ -42,7 +42,7 @@ fun CreateGroupScreen(
 
     var groupName   by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var emoji       by remember { mutableStateOf("👥") }
+    var emoji       by remember { mutableStateOf("◍") }
     val selected    = remember { mutableStateListOf<String>() }
 
     val canCreate = groupName.isNotBlank() && selected.isNotEmpty()

@@ -193,7 +193,7 @@ fun CreatePostScreen(
                         BubbleButton(
                             // Sur la Page de Vérité, on ne publie pas : on jure.
                             text = if (postType == "truth") "Jurer" else "Publier",
-                            emoji = if (postType == "truth") "⚖️" else null,
+                            emoji = if (postType == "truth") "⚖" else null,
                             onClick = {
                                 if (postType == "truth") showOath = true else publish()
                             },
@@ -254,7 +254,7 @@ fun CreatePostScreen(
                     "sealed" -> "Aperçu visible avant l'ouverture (facultatif)…"
                     "chain" -> "La première phrase de la chaîne…"
                     "truth" -> "Énonce les faits. Rien que les faits."
-                    else -> "Askip… qu'est-ce qui se passe ? 👀"
+                    else -> "Askip… qu'est-ce qui se passe ? ◎"
                 },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -270,7 +270,7 @@ fun CreatePostScreen(
 
             // ── La Capsule scellée ───────────────────────────────────────────
             if (postType == "sealed") {
-                FormCard("Contenu scellé", "🔒") {
+                FormCard("Contenu scellé", "⌂") {
                     FormField(
                         value = sealedText,
                         onValueChange = { sealedText = it },
@@ -299,7 +299,7 @@ fun CreatePostScreen(
                         }
                     }
                     Text(
-                        "🔑 $SEAL_KEYS_TO_OPEN clés du campus l'ouvriront plus tôt.",
+                        "⚿ $SEAL_KEYS_TO_OPEN clés du campus l'ouvriront plus tôt.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -308,7 +308,7 @@ fun CreatePostScreen(
 
             // ── Les deux camps du sondage ────────────────────────────────────
             if (postType == "poll") {
-                FormCard("Les deux camps", "📊") {
+                FormCard("Les deux camps", "◈") {
                     FormField(
                         value = opt1,
                         onValueChange = { if (it.length <= 60) opt1 = it },
@@ -356,19 +356,19 @@ fun CreatePostScreen(
             }
 
             if (videoUri != null) {
-                AttachmentRow(emoji = "🎬", label = "Vidéo sélectionnée") { videoUri = null }
+                AttachmentRow(emoji = "▷", label = "Vidéo sélectionnée") { videoUri = null }
             }
 
             if (audioFile != null) {
                 AttachmentRow(
-                    emoji = "🎤",
+                    emoji = "◍",
                     label = "Note vocale (${formatDuration(audioDurSec)})"
                 ) { audioFile = null; audioDurSec = 0 }
             }
 
             if (fileUri != null) {
                 AttachmentRow(
-                    emoji = "📎",
+                    emoji = "▤",
                     label = fileName.take(28).ifBlank { "Fichier" }
                 ) { fileUri = null; fileName = "" }
             }
@@ -380,7 +380,7 @@ fun CreatePostScreen(
                         item {
                             BubbleButton(
                                 text = "Photo",
-                                emoji = "🖼️",
+                                emoji = "◫",
                                 tone = BubbleTone.SOFT,
                                 size = BubbleSize.SMALL,
                                 onClick = {
@@ -395,7 +395,7 @@ fun CreatePostScreen(
                         item {
                             BubbleButton(
                                 text = "Vidéo",
-                                emoji = "🎬",
+                                emoji = "▷",
                                 tone = BubbleTone.SOFT,
                                 size = BubbleSize.SMALL,
                                 onClick = {
@@ -410,7 +410,7 @@ fun CreatePostScreen(
                         item {
                             BubbleButton(
                                 text = "Fichier",
-                                emoji = "📎",
+                                emoji = "▤",
                                 tone = BubbleTone.SOFT,
                                 size = BubbleSize.SMALL,
                                 onClick = { filePicker.launch("*/*") }
@@ -420,7 +420,7 @@ fun CreatePostScreen(
                             item {
                                 BubbleButton(
                                     text = "Voix",
-                                    emoji = "🎤",
+                                    emoji = "◍",
                                     tone = BubbleTone.SOFT,
                                     size = BubbleSize.SMALL,
                                     onClick = { vm.startVoiceRecording(context) }
@@ -466,7 +466,7 @@ fun CreatePostScreen(
                                 Spacer(Modifier.size(8.dp))
                             }
                             Text(
-                                "🎤 ${formatDuration(recordingSecs)}",
+                                "◍ ${formatDuration(recordingSecs)}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onErrorContainer
@@ -499,7 +499,7 @@ fun CreatePostScreen(
             FormCard(
                 title = if (tags.isEmpty()) "Ranger la rumeur"
                 else "Salons (${tags.size}/$MAX_TAGS_PER_POST)",
-                emoji = "🗂"
+                emoji = "▤"
             ) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     items(RUMOR_TAGS) { def ->
@@ -525,7 +525,7 @@ fun CreatePostScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("⏳", style = MaterialTheme.typography.titleMedium)
+                    Text("◴", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.width(Space.md))
                     Column(Modifier.weight(1f)) {
                         Text("Rumeur éphémère", style = MaterialTheme.typography.bodyMedium)
@@ -582,25 +582,25 @@ private data class PostFormat(
 )
 
 private val FORMATS = listOf(
-    PostFormat("normal", "📢", "Rumeur", "Nouvelle rumeur"),
-    PostFormat("poll", "📊", "Sondage", "Sondage"),
+    PostFormat("normal", "⋆", "Rumeur", "Nouvelle rumeur"),
+    PostFormat("poll", "◈", "Sondage", "Sondage"),
     PostFormat(
-        "confession", "🎭", "Confession", "Confession",
+        "confession", "◌", "Confession", "Confession",
         "Ton identité sera très bien cachée."
     ),
     PostFormat(
-        "sealed", "🔒", "Capsule", "Capsule scellée",
+        "sealed", "⌂", "Capsule", "Capsule scellée",
         "Personne ne pourra lire le contenu scellé avant l'heure — pas même " +
             "en fouillant la base. Le texte du haut, lui, reste visible : " +
             "c'est ton teaser."
     ),
     PostFormat(
-        "chain", "📞", "Chaîne", "Téléphone arabe",
+        "chain", "⋯", "Chaîne", "Téléphone arabe",
         "Tu écris la première phrase. Six autres personnes pourront ajouter " +
             "la leur, une seule chacune. La rumeur grandira sans toi."
     ),
     PostFormat(
-        "truth", "⚖️", "Vérité", "Page de Vérité",
+        "truth", "⚖", "Vérité", "Page de Vérité",
         "Ta publication sera faite sous serment. Le campus tranchera : un " +
             "serment démenti est enregistré comme parjure au registre."
     )

@@ -153,7 +153,7 @@ fun RumorMeter(
         ) {
             VerdictVoteButton(
                 label = "Crédible",
-                emoji = "🧐",
+                emoji = "✓",
                 count = post.credibleBy.size,
                 selected = myVote == true,
                 accent = palette.confirmed,
@@ -163,7 +163,7 @@ fun RumorMeter(
             )
             VerdictVoteButton(
                 label = "Bidon",
-                emoji = "🚫",
+                emoji = "✕",
                 count = post.fakeBy.size,
                 selected = myVote == false,
                 accent = palette.debunked,
@@ -555,7 +555,7 @@ fun TrendingBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
-            Text("📈", fontSize = 12.sp)
+            Text("↗", fontSize = 12.sp)
             Text(
                 "ÇA CIRCULE",
                 style = MaterialTheme.typography.labelSmall,
@@ -703,7 +703,7 @@ fun StreakChip(streak: Int, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
-            Text("🔥", fontSize = if (streak >= 30) 14.sp else 11.sp)
+            Text("✦", fontSize = if (streak >= 30) 14.sp else 11.sp)
             Text(
                 "$streak j",
                 style = MaterialTheme.typography.labelSmall,
@@ -832,7 +832,7 @@ fun LevelUpBanner(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.md)
             ) {
-                Text("🎉", fontSize = 26.sp)
+                Text("✦", fontSize = 26.sp)
                 Column {
                     Text(
                         "Niveau $level atteint",
@@ -882,7 +882,7 @@ fun DailyPromptCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
-                Text("☀️", fontSize = 12.sp)
+                Text("☀", fontSize = 12.sp)
                 Text(
                     "LE SUJET DU JOUR",
                     style = MaterialTheme.typography.labelSmall,
@@ -937,7 +937,7 @@ fun HotBadge(rank: Int, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.xxs)
         ) {
-            Text("🔥", fontSize = 10.sp)
+            Text("✦", fontSize = 10.sp)
             Text(
                 "#$rank",
                 style = MaterialTheme.typography.labelSmall,

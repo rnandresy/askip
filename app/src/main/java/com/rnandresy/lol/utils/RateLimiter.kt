@@ -5,7 +5,7 @@ package com.rnandresy.lol.utils
  * avant même de toucher Firestore — économise de la data
  * et évite d'atteindre les quotas.
  *
- * ⚠️ Complémentaire aux règles Firestore, pas un remplacement.
+ * ⚠ Complémentaire aux règles Firestore, pas un remplacement.
  */
 object RateLimiter {
 

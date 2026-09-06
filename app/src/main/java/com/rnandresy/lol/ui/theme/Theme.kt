@@ -24,15 +24,18 @@ import androidx.compose.ui.unit.sp
 // ═════════════════════════════════════════════════════════════════════════════
 
 enum class AppTheme(val displayName: String, val emoji: String, val isLight: Boolean = false) {
-    SAKURA("Sakura", "🌸", isLight = true),
-    BLACK_WHITE("Noir & Blanc", "◼"),
-    NEON("Néon", "💜"),
-    NOSTALGIC("Nostalgique", "🕯"),
-    CRIMSON("Sang d'encre", "🩸"),
-    TABLOID("Tabloïd", "📰", isLight = true),
-    MATRIX("Matrice", "🟩"),
-    DAYLIGHT("Grand jour", "☀️", isLight = true),
-    SYSTEM("Automatique", "🌗")
+    // Neuf signes distincts : la pastille de thème ne montre déjà que trois
+    // couleurs, le signe est ce qui reste pour les différencier au premier
+    // coup d'œil dans la liste.
+    SAKURA("Sakura", "❀", isLight = true),
+    BLACK_WHITE("Noir & Blanc", "◐"),
+    NEON("Néon", "✧"),
+    NOSTALGIC("Nostalgique", "☾"),
+    CRIMSON("Sang d'encre", "✦"),
+    TABLOID("Tabloïd", "▤", isLight = true),
+    MATRIX("Matrice", "▢"),
+    DAYLIGHT("Grand jour", "☀", isLight = true),
+    SYSTEM("Automatique", "◑")
 }
 
 // ── Sakura — le thème par défaut ─────────────────────────────────────────────
@@ -603,38 +606,54 @@ private val AskipShapes = Shapes(
 //  Typographie
 // ═════════════════════════════════════════════════════════════════════════════
 
+/**
+ * La typographie de l'app.
+ *
+ * Plus menue et plus aérée qu'avant : les titres perdent deux points et une
+ * graisse, les libellés gagnent de l'interlettrage. Le gras noir a disparu —
+ * il donnait un ton de gros titre à une app qui raconte des potins de couloir.
+ *
+ * L'interlettrage positif sur les petites tailles n'est pas un détail : c'est
+ * lui qui rend une police système lisible et gracieuse à 10 sp, là où un texte
+ * serré devient une bouillie grise.
+ *
+ * Pour poser une vraie police d'écriture : déposer le fichier dans
+ * `res/font/`, déclarer un `FontFamily`, et le passer en `fontFamily` ici —
+ * un seul endroit à changer, toute l'app suit.
+ */
 val AskipTypography = Typography(
     displayLarge = TextStyle(
-        fontWeight = FontWeight.Black, fontSize = 34.sp,
-        letterSpacing = (-1).sp, lineHeight = 40.sp
+        fontWeight = FontWeight.Bold, fontSize = 30.sp,
+        letterSpacing = (-0.6).sp, lineHeight = 36.sp
     ),
     displayMedium = TextStyle(
-        fontWeight = FontWeight.ExtraBold, fontSize = 28.sp,
-        letterSpacing = (-0.5).sp, lineHeight = 34.sp
+        fontWeight = FontWeight.Bold, fontSize = 25.sp,
+        letterSpacing = (-0.4).sp, lineHeight = 31.sp
     ),
-    displaySmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 30.sp),
-    headlineLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 28.sp),
-    // Le grand titre qui se replie au défilement. Gros, gras, resserré :
-    // c'est la signature visuelle des apps iPhone, et Material3 pioche
-    // justement ce style pour l'état déplié de LargeTopAppBar.
+    displaySmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 21.sp, lineHeight = 27.sp),
+    headlineLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 19.sp, lineHeight = 25.sp),
+    // Le grand titre qui se replie au défilement.
     headlineMedium = TextStyle(
-        fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        letterSpacing = (-0.8).sp,
-        lineHeight = 38.sp
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 26.sp,
+        letterSpacing = (-0.5).sp,
+        lineHeight = 32.sp
     ),
-    headlineSmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 24.sp),
-    titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp),
-    titleMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
-    titleSmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp),
-    // Le corps du fil : 15sp et interligne généreux, c'est ce qui se lit le
-    // mieux sur des textes courts empilés à la chaîne.
-    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
-    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 15.sp, lineHeight = 23.sp),
-    bodySmall = TextStyle(fontWeight = FontWeight.Normal, fontSize = 13.sp, lineHeight = 19.sp),
-    labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 14.sp, letterSpacing = 0.1.sp),
-    labelMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, letterSpacing = 0.1.sp),
-    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, letterSpacing = 0.2.sp)
+    headlineSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp),
+    titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
+    titleMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp),
+    titleSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp),
+    // Le corps du fil : assez grand pour se lire d'une traite, assez aéré pour
+    // que dix rumeurs empilées ne forment pas un bloc.
+    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 15.sp, lineHeight = 23.sp),
+    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 21.sp),
+    bodySmall = TextStyle(
+        fontWeight = FontWeight.Normal, fontSize = 12.sp,
+        lineHeight = 18.sp, letterSpacing = 0.1.sp
+    ),
+    labelLarge = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, letterSpacing = 0.3.sp),
+    labelMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, letterSpacing = 0.4.sp),
+    labelSmall = TextStyle(fontWeight = FontWeight.Normal, fontSize = 10.sp, letterSpacing = 0.5.sp)
 )
 
 // ═════════════════════════════════════════════════════════════════════════════

@@ -122,7 +122,7 @@ private fun AuthLogo(subtitle: String) {
                     .background(MaterialTheme.colorScheme.surface, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("🌸", fontSize = 44.sp)
+                Text("❀", fontSize = 44.sp)
             }
         }
 
@@ -217,7 +217,7 @@ private fun AuthError(message: String?, onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
-                Text("⚠️", fontSize = 15.sp)
+                Text("⚠", fontSize = 15.sp)
                 Text(
                     message.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
@@ -301,7 +301,7 @@ fun LoginScreen(
 
                     BubbleButton(
                         text = "Se connecter",
-                        emoji = "🌸",
+                        emoji = "❀",
                         onClick = { vm.login(email, password) },
                         enabled = canSubmit,
                         loading = loading,
@@ -434,7 +434,7 @@ fun RegisterScreen(
 
                     BubbleButton(
                         text = "Créer mon compte",
-                        emoji = "✨",
+                        emoji = "✧",
                         onClick = { vm.register(email, password, username) },
                         enabled = canSubmit,
                         loading = loading,

@@ -34,10 +34,10 @@ data class GroupMessage(
 
     fun quote(): String = when {
         content.isNotBlank() -> content
-        isImage() -> "📷 Photo"
-        isVideo() -> "🎥 Vidéo"
-        isAudio() -> "🎤 Message vocal"
-        isFile() -> "📎 ${mediaName.ifBlank { "Fichier" }}"
+        isImage() -> "◫ Photo"
+        isVideo() -> "▷ Vidéo"
+        isAudio() -> "◍ Message vocal"
+        isFile() -> "▤ ${mediaName.ifBlank { "Fichier" }}"
         else -> ""
     }
 }
