@@ -4,14 +4,15 @@ rules_version = '2';
 //  Règles de sécurité Askip
 //
 //  À déployer :   firebase deploy --only firestore:rules
+//                 ou console Firebase → Firestore → Règles → coller → Publier
 //
 //  Principe : le client peut écrire ce qui le concerne, et uniquement les
 //  champs partagés qui ont un sens (réagir, voter, commenter). Tout le reste
 //  — statut admin, bannissement, épinglage — est verrouillé.
 //
-//  ⚠️ Remplacer l'UID ci-dessous par celui de l'administrateur
-//     (console Firebase → Authentication → Users). Il doit correspondre à
-//     ADMIN_UIDS dans utils/AdminConfig.kt.
+//  L'UID ci-dessous est celui de l'administrateur (console Firebase →
+//  Authentication → Users). Il doit correspondre à ADMIN_UID dans
+//  utils/AdminConfig.kt.
 // ═══════════════════════════════════════════════════════════════════════════
 
 service cloud.firestore {
@@ -34,6 +35,8 @@ service cloud.firestore {
     }
 
     // Le compte n'est pas banni : un banni peut encore lire, pas écrire.
+    // Les deux accès portent sur le même document, donc Firestore ne les
+    // compte qu'une fois — y compris dans un lot de 400 écritures.
     function notBanned() {
       return !exists(/databases/$(database)/documents/profiles/$(uid()))
         || get(/databases/$(database)/documents/profiles/$(uid())).data.isBanned != true;
@@ -56,9 +59,9 @@ service cloud.firestore {
     /**
      * Réagir à un message : on ne touche que sa propre clé.
      *
-     * `reactions` associe un UID à un emoji. Comparer les deux cartes clé par
-     * clé autorise tout le monde à réagir sans permettre à personne d'effacer
-     * la réaction d'un autre.
+     * `reactions` associe un UID à une réaction. Comparer les deux cartes clé
+     * par clé autorise tout le monde à réagir sans permettre à personne
+     * d'effacer la réaction d'un autre.
      *
      * Le `get(..., {})` n'est pas une précaution de style : la carte est
      * absente d'un message qui n'a jamais reçu de réaction, et Firestore la
@@ -90,6 +93,39 @@ service cloud.firestore {
             && request.resource.data[field].hasOnly([uid()]));
     }
 
+    /**
+     * Un compteur bouge d'un cran, jamais d'un chiffre inventé.
+     *
+     * Firestore applique `FieldValue.increment` AVANT d'évaluer les règles :
+     * `request.resource.data[field]` porte donc déjà la valeur finale. C'est
+     * le même mécanisme que `arrayUnion`, sur lequel repose [togglesSelfOnly].
+     */
+    function movesByOne(field) {
+      return !(field in changed())
+        || request.resource.data[field] == resource.data.get(field, 0) + 1
+        || request.resource.data[field] == resource.data.get(field, 0) - 1;
+    }
+
+    /** Idem, mais dans un seul sens : un vote ne se retire pas. */
+    function risesByOne(field) {
+      return !(field in changed())
+        || request.resource.data[field] == resource.data.get(field, 0) + 1;
+    }
+
+    /**
+     * Un sondage ne se vote qu'une fois.
+     *
+     * Le compteur ne peut bouger que par la même écriture qui fait entrer la
+     * personne dans `pollVoters`. Sans cette condition, `togglesSelfOnly`
+     * laissait passer une écriture qui n'ajoute personne — et le compteur
+     * montait autant de fois qu'on appuyait.
+     */
+    function castsOnePollVote() {
+      return (!('pollVotes1' in changed()) && !('pollVotes2' in changed()))
+        || (!(uid() in resource.data.get('pollVoters', []))
+            && uid() in request.resource.data.pollVoters);
+    }
+
     // ── Profils ────────────────────────────────────────────────────────────
 
     match /profiles/{userId} {
@@ -116,12 +152,25 @@ service cloud.firestore {
                  == (request.resource.data.classeENI != '')))
 
         // La réputation est modifiée par les autres (vote crédible / Scoop).
-        // ⚠️ Compromis assumé : sans Cloud Function, seul le client peut
-        //    incrémenter le clout de l'auteur. On restreint donc au minimum —
-        //    ces trois champs et rien d'autre. Passer par une Cloud Function
-        //    dès que le projet est sur le plan Blaze.
+        // Compromis assumé : sans Cloud Function, seul le client peut
+        // incrémenter le clout de l'auteur. On restreint donc au minimum —
+        // ces trois champs et rien d'autre. Passer par une Cloud Function
+        // dès que le projet est sur le plan Blaze.
         || (canWrite()
           && onlyChanges(['clout', 'confirmedRumors', 'debunkedRumors']))
+
+        // Supprimer un badge le retire de la panoplie de tous ceux qui le
+        // portaient — donc d'un profil qui n'est pas le sien.
+        //
+        // Uniquement un RETRAIT : la différence dans l'autre sens doit être
+        // vide, ce qui interdit de décerner à quiconque un badge qu'il n'a
+        // pas créé. Reste possible : retirer un badge cosmétique à quelqu'un
+        // par malice. C'est réversible d'un geste, et c'est le prix à payer
+        // tant que le ménage se fait depuis le téléphone.
+        || (canWrite()
+          && onlyChanges(['badgeIds'])
+          && request.resource.data.badgeIds.toSet()
+               .difference(resource.data.badgeIds.toSet()).size() == 0)
 
         // L'admin peut tout, y compris accorder un badge ou bannir.
         || isAdmin();
@@ -155,8 +204,12 @@ service cloud.firestore {
 
       allow update: if
         // L'auteur corrige son texte — et rien d'autre.
+        //
+        // `username` en fait partie : changer de pseudo le répercute sur tout
+        // ce qu'on a déjà publié. Sans lui, renommer son compte échouait en
+        // silence et les anciennes rumeurs gardaient l'ancien nom.
         (canWrite() && resource.data.userId == uid()
-          && onlyChanges(['content', 'tags', 'isEdited']))
+          && onlyChanges(['content', 'tags', 'isEdited', 'username']))
 
         // N'importe qui réagit, tranche, offre son Scoop, donne sa clé ou vote
         // au sondage — mais uniquement en s'ajoutant ou se retirant lui-même.
@@ -179,7 +232,13 @@ service cloud.firestore {
           && togglesSelfOnly('keysBy')
           && togglesSelfOnly('repliedBy')
           && togglesSelfOnly('chainAuthors')
-          && togglesSelfOnly('pollVoters'))
+          && togglesSelfOnly('pollVoters')
+          // Les compteurs suivent les tableaux au lieu de flotter librement.
+          && movesByOne('commentCount')
+          && risesByOne('chainCount')
+          && risesByOne('pollVotes1')
+          && risesByOne('pollVotes2')
+          && castsOnePollVote())
 
         // Seul l'admin épingle.
         || isAdmin();
@@ -198,8 +257,8 @@ service cloud.firestore {
           || request.time.toMillis() >= resource.data.unsealAt
           // Ou le campus a réuni assez de clés.
           || (resource.data.keysNeeded > 0
-              && get(/databases/$(database)/documents/posts/$(postId)).data.keysBy.size()
-                 >= resource.data.keysNeeded)
+              && get(/databases/$(database)/documents/posts/$(postId))
+                   .data.get('keysBy', []).size() >= resource.data.keysNeeded)
         );
         allow create: if canWrite() && request.resource.data.authorId == uid();
         // Une capsule ne se réécrit pas : sinon on pourrait changer le contenu
@@ -215,9 +274,13 @@ service cloud.firestore {
           && request.resource.data.userId == uid()
           && request.resource.data.content is string
           && request.resource.data.content.size() <= 140
-          // Un seul maillon par personne, sept au total.
-          && !(uid() in get(/databases/$(database)/documents/posts/$(postId)).data.chainAuthors)
-          && get(/databases/$(database)/documents/posts/$(postId)).data.chainCount < 7;
+          // Un seul maillon par personne, sept au total. Les `get(champ,
+          // défaut)` couvrent les rumeurs d'avant la chaîne : sans eux, la
+          // règle ne renvoie pas faux, elle échoue.
+          && !(uid() in get(/databases/$(database)/documents/posts/$(postId))
+                          .data.get('chainAuthors', []))
+          && get(/databases/$(database)/documents/posts/$(postId))
+               .data.get('chainCount', 0) < 7;
         // Un maillon posé ne se réécrit pas : la chaîne serait falsifiable.
         allow update: if false;
         allow delete: if signedIn() && (resource.data.userId == uid() || isAdmin());
@@ -244,12 +307,16 @@ service cloud.firestore {
       }
 
       // ── Le droit de réponse ──────────────────────────────────────────────
+      // Les trois verbes sont séparés à dessein. `allow write` couvrait aussi
+      // la suppression, où `request.resource` vaut null : lire `.data` dessus
+      // ne renvoie pas faux, ça fait échouer la règle. Retirer sa réponse
+      // était donc refusé.
       match /replies/{replyUid} {
         allow read: if signedIn();
-        allow write: if canWrite()
+        allow create, update: if canWrite()
           && replyUid == uid()
-          && (request.resource.data == null
-              || request.resource.data.userId == uid());
+          && request.resource.data.userId == uid();
+        allow delete: if signedIn() && (replyUid == uid() || isAdmin());
       }
 
       match /comments/{commentId} {
@@ -260,7 +327,14 @@ service cloud.firestore {
           && request.resource.data.content.size() <= 500;
         allow update: if canWrite()
           && (resource.data.userId == uid() || onlyChanges(['likedBy']));
-        allow delete: if signedIn() && (resource.data.userId == uid() || isAdmin());
+        // L'auteur de la rumeur peut faire le ménage chez lui. C'est ce qui
+        // permet à la suppression de compte d'emporter les commentaires des
+        // autres sous ses propres rumeurs, au lieu de les laisser orphelins.
+        allow delete: if signedIn() && (
+          resource.data.userId == uid()
+          || get(/databases/$(database)/documents/posts/$(postId)).data.userId == uid()
+          || isAdmin()
+        );
       }
     }
 
@@ -271,18 +345,37 @@ service cloud.firestore {
       allow create: if canWrite()
         && request.resource.data.userId == uid()
         && request.resource.data.content.size() <= 200;
-      allow update: if canWrite() && onlyChanges(['viewedBy']);
+      // L'auteur répercute son changement de pseudo ; n'importe qui marque
+      // la story comme vue.
+      allow update: if canWrite() && (
+        (resource.data.userId == uid() && onlyChanges(['username']))
+        || onlyChanges(['viewedBy'])
+      );
       allow delete: if signedIn() && (resource.data.userId == uid() || isAdmin());
     }
 
     // ── Messages privés ────────────────────────────────────────────────────
 
     match /conversations/{convId} {
-      // Seuls les participants voient la conversation.
-      allow read: if signedIn() && uid() in resource.data.participants;
+      // `get` et `list` sont séparés à dessein.
+      //
+      // Ouvrir une conversation commence par vérifier si elle existe. Sur un
+      // document absent, `resource` vaut null : lire `resource.data` fait
+      // échouer la règle, et Firestore répond « accès refusé » au lieu de
+      // « n'existe pas ». Démarrer une première conversation était donc
+      // impossible. Un document absent ne contient rien à protéger.
+      allow get: if signedIn()
+        && (resource == null || uid() in resource.data.participants);
+      // La liste, elle, reste filtrée : la requête de l'app porte un
+      // `whereArrayContains('participants', moi)`, que Firestore sait vérifier.
+      allow list: if signedIn() && uid() in resource.data.participants;
+
       allow create: if canWrite() && uid() in request.resource.data.participants;
+      // Un participant met à jour l'aperçu, les compteurs de non-lus et les
+      // pseudos — mais ne réécrit ni l'identifiant ni la liste des présents.
       allow update: if canWrite()
-        && uid() in resource.data.participants;
+        && uid() in resource.data.participants
+        && !changed().hasAny(['id', 'participants']);
       allow delete: if signedIn() && uid() in resource.data.participants;
 
       match /messages/{messageId} {
@@ -310,8 +403,13 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read: if signedIn();
       allow create: if canWrite() && uid() in request.resource.data.members;
-      allow update: if canWrite()
-        && (uid() in resource.data.members || isAdmin());
+      // Un membre écrit l'aperçu, s'ajoute ou se retire, met à jour son nom —
+      // mais ne se déclare pas fondateur du groupe.
+      allow update: if canWrite() && (
+        isAdmin()
+        || (uid() in resource.data.members
+            && !changed().hasAny(['id', 'createdBy']))
+      );
       allow delete: if signedIn()
         && (resource.data.createdBy == uid() || isAdmin());
 
@@ -334,14 +432,24 @@ service cloud.firestore {
     // ── Notifications ──────────────────────────────────────────────────────
 
     match /notifications/{notifId} {
-      // On ne lit que les siennes.
-      allow read: if signedIn() && resource.data.targetUserId == uid();
+      // On lit les siennes — et celles qu'on a soi-même envoyées, sans quoi
+      // ni le changement de pseudo ni la suppression de compte ne peuvent
+      // les retrouver pour les corriger ou les effacer.
+      allow read: if signedIn()
+        && (resource.data.targetUserId == uid()
+            || resource.data.fromUserId == uid());
       // Mais on peut en créer pour les autres (mention, message, nouveau post).
       allow create: if canWrite() && request.resource.data.fromUserId == uid();
-      // Seul le destinataire marque comme lu.
-      allow update: if signedIn()
-        && resource.data.targetUserId == uid()
-        && onlyChanges(['isRead']);
+      // Le destinataire marque comme lu ; l'expéditeur ne corrige que le
+      // pseudo qu'il y a laissé.
+      //
+      // Le champ s'appelle bien `isRead` en base : sans les annotations
+      // @PropertyName du modèle, Firestore ampute le préfixe `is` du getter
+      // et écrit `read` — la règle refusait alors chaque « tout lire ».
+      allow update: if signedIn() && (
+        (resource.data.targetUserId == uid() && onlyChanges(['isRead']))
+        || (resource.data.fromUserId == uid() && onlyChanges(['fromUsername']))
+      );
       allow delete: if signedIn()
         && (resource.data.targetUserId == uid()
             || resource.data.fromUserId == uid()
@@ -368,13 +476,30 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // ── Requêtes de groupe de collections ──────────────────────────────────
-    // Une requête `collectionGroup` n'est autorisée que par une règle à
-    // caractère générique récursif : les règles imbriquées ci-dessus ne la
-    // couvrent pas. Le filtre sur `userId` est celui que la requête applique,
-    // donc Firestore peut prouver qu'on ne lit que ses propres paris.
+    // ═════════════════════════════════════════════════════════════════════
+    //  Requêtes de groupe de collections
+    //
+    //  Une requête `collectionGroup` n'est PAS couverte par les règles
+    //  imbriquées ci-dessus : il lui faut une règle à caractère générique
+    //  récursif, sinon elle est refusée en bloc. Chacune de celles-ci
+    //  reprend exactement le filtre que l'app applique, ce qui permet à
+    //  Firestore de prouver qu'on ne lit rien d'autre que le sien.
+    // ═════════════════════════════════════════════════════════════════════
+
+    // Mes paris, sur toutes les rumeurs à la fois.
     match /{path=**}/bets/{betId} {
       allow read: if signedIn() && resource.data.userId == uid();
+    }
+
+    // Mes commentaires, pour les renommer ou les effacer avec mon compte.
+    match /{path=**}/comments/{commentId} {
+      allow read: if signedIn() && resource.data.userId == uid();
+    }
+
+    // Mes messages, privés comme de groupe, pour la même raison. La lecture
+    // n'ouvre rien de neuf : ce sont les messages que j'ai écrits moi-même.
+    match /{path=**}/messages/{messageId} {
+      allow read: if signedIn() && resource.data.senderId == uid();
     }
 
     // Tout ce qui n'est pas explicitement autorisé est refusé.
