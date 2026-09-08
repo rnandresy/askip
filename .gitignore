@@ -10,3 +10,8 @@
 # Dépendances de la Cloud Function : installées par npm, jamais versionnées.
 functions/node_modules/
 functions/*.log
+
+# Journal de bord entre sessions Claude : notes de travail, état du projet,
+# façon de travailler. Volontairement hors du dépôt — il peut contenir des
+# détails qui n'ont rien à faire sur GitHub ou GitLab.
+JOURNAL-CLAUDE.md
