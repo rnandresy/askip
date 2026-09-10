@@ -482,13 +482,46 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Cycle de vie ──────────────────────────────────────────────────────────
 
+    /**
+     * L'écouteur d'état d'authentification, gardé en champ pour pouvoir le
+     * retirer — il était posé anonymement, donc il ne pouvait plus l'être.
+     *
+     * `FirebaseAuth` est un singleton qui vit aussi longtemps que le processus.
+     * Un écouteur posé dessus garde une référence sur ce ViewModel, et donc sur
+     * l'`Application` : il survit à la destruction du ViewModel, continue de
+     * réagir aux changements de session, et rappelle `startAll()` sur un objet
+     * que le système a déjà jeté.
+     */
+    private val authListener = FirebaseAuth.AuthStateListener { fa ->
+        val logged = fa.currentUser != null
+        isLoggedIn.value = logged
+        if (logged) startAll() else stopAll()
+    }
+
     init {
-        FirebaseAuth.getInstance().addAuthStateListener { fa ->
-            val logged = fa.currentUser != null
-            isLoggedIn.value = logged
-            if (logged) startAll() else stopAll()
-        }
+        FirebaseAuth.getInstance().addAuthStateListener(authListener)
         if (authRepo.isLoggedIn) startAll()
+    }
+
+    /**
+     * Ce qu'il faut rendre à la main.
+     *
+     * Il n'y avait aucun `onCleared` dans le projet. La plupart du temps ça ne
+     * se voyait pas : `viewModelScope` est annulé tout seul, donc les quatorze
+     * `Job` d'écoute s'arrêtent sans qu'on s'en occupe. Mais deux choses vivent
+     * en dehors de cette portée et personne ne les libérait :
+     *
+     *  · l'écouteur posé sur le singleton `FirebaseAuth` ;
+     *  · le `MediaRecorder`, si l'app est détruite pendant un enregistrement.
+     *    C'est une ressource matérielle : le micro reste pris pour les autres
+     *    applications, et le fichier temporaire reste dans le cache. `cancel()`
+     *    relâche l'un et supprime l'autre.
+     */
+    override fun onCleared() {
+        FirebaseAuth.getInstance().removeAuthStateListener(authListener)
+        voiceRecorder?.cancel()
+        voiceRecorder = null
+        super.onCleared()
     }
 
     private fun startAll() {
