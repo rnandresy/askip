@@ -152,6 +152,11 @@ RUNTIME_COMPILATEUR=$({
     outil_par_cle "org.jetbrains:annotations"
 } | court | tr '\n' ';')
 
+# Déposé pour `lancer-tests.sh`, qui compile les sources de test avec le même
+# compilateur. Le redécouvrir de son côté ferait deux endroits à corriger le
+# jour où une version bouge.
+echo "$RUNTIME_COMPILATEUR" > "$SORTIE/runtime-compilateur.txt"
+
 # ── Compilation ──────────────────────────────────────────────────────────────
 # ── Le `R` de remplacement ───────────────────────────────────────────────────
 # `R` est généré par le processeur de ressources d'Android, qu'on ne lance pas

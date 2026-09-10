@@ -166,7 +166,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             posts.map { post ->
                 if (post.isAnonymous) {
                     post.copy(
-                        username = RumorEngine.anonAliasShort(post.userId, post.id),
+                        username = RumorEngine.anonAlias(post.userId, post.id),
                         userPhotoUrl = ""
                     )
                 } else {
@@ -276,7 +276,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         combine(_rawComments, _profilesMap) { list, profiles ->
             list.map { c ->
                 if (c.isAnonymous) {
-                    c.copy(username = RumorEngine.anonAliasShort(c.userId, c.postId))
+                    c.copy(username = RumorEngine.anonAlias(c.userId, c.postId))
                 } else {
                     val live = profiles[c.userId]?.username
                     if (live != null && live != c.username) c.copy(username = live) else c

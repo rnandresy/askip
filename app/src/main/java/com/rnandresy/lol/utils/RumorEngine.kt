@@ -34,6 +34,18 @@ object RumorEngine {
      * Pseudonyme stable pour un utilisateur dans le contexte d'un post donné.
      * Même personne + même post = même masque, toujours.
      * Même personne + autre post = autre masque : impossible de recouper.
+     *
+     * Il existait ici deux fonctions, `anonAlias` et une prétendue « version
+     * courte, pour les listes serrées ». Elles rendaient caractère pour
+     * caractère la même chaîne — le masque abrégé n'a jamais été écrit, et
+     * c'est la fausse version courte que l'app appelait. Il n'en reste qu'une.
+     * Si une forme réellement plus courte devient nécessaire, c'est ici, et il
+     * faudra décider ce qu'on sacrifie : le nom ou le numéro.
+     *
+     * Le numéro porte moins d'entropie qu'il n'en a l'air : `h / 7` ne jette
+     * que trois bits, donc deux hachages voisins partagent souvent le même
+     * `#XYZ`. Le nom du masque, lui, change — la paire reste distincte, ce que
+     * les tests vérifient sur cinquante rumeurs.
      */
     fun anonAlias(userId: String, postId: String): String {
         if (userId.isBlank()) return "Quelqu'un"
@@ -41,13 +53,6 @@ object RumorEngine {
         val mask = MASKS[(h % MASKS.size).toInt()]
         val tag = "%03X".format((h / 7) % 4096)
         return "$mask #$tag"
-    }
-
-    /** Version courte, pour les listes serrées. */
-    fun anonAliasShort(userId: String, postId: String): String {
-        if (userId.isBlank()) return "Quelqu'un"
-        val h = stableHash("$userId::$postId")
-        return "${MASKS[(h % MASKS.size).toInt()]} #${"%03X".format((h / 7) % 4096)}"
     }
 
     /** Hash déterministe et positif — [String.hashCode] suffit et ne change pas. */
