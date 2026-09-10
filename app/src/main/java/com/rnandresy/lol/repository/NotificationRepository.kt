@@ -1,13 +1,19 @@
 package com.rnandresy.lol.repository
 
+import android.util.Log
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.Query
 import com.rnandresy.lol.model.AppNotification
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.utils.COL_NOTIFICATIONS
+import com.rnandresy.lol.utils.NOTIFICATIONS_WINDOW
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+
+/** Étiquette de journal — c'est par `adb logcat` qu'on observe l'app ici. */
+private const val TAG = "AskipNotif"
 
 /**
  * Notifications in-app.
@@ -20,7 +26,23 @@ class NotificationRepository {
 
     private val notifications get() = db.collection(COL_NOTIFICATIONS)
 
-    fun listenToNotifications(uid: String, limit: Int = 80): Flow<List<AppNotification>> =
+    /**
+     * Les notifications de [uid], de la plus récente à la plus ancienne.
+     *
+     * La borne est **dans la requête**, pas après coup. Avant, l'écoute
+     * ramenait toute l'histoire du compte pour n'en garder que le haut : comme
+     * publier une rumeur écrit un document par membre du campus et que rien ne
+     * purge cette collection, chaque appareil retéléchargeait un stock qui ne
+     * fait que grossir, pour en jeter presque tout.
+     *
+     * ⚠ Exige l'index composite `targetUserId ASC / timestamp DESC` déclaré
+     * dans `firestore.indexes.json`. Sans lui la requête est refusée et
+     * l'éventail reste vide — d'où le journal sur le chemin d'erreur.
+     */
+    fun listenToNotifications(
+        uid: String,
+        limit: Long = NOTIFICATIONS_WINDOW
+    ): Flow<List<AppNotification>> =
         callbackFlow {
             if (uid.isBlank()) {
                 trySend(emptyList())
@@ -29,18 +51,22 @@ class NotificationRepository {
             }
             val reg = notifications
                 .whereEqualTo("targetUserId", uid)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(limit)
                 .addSnapshotListener { snap, err ->
                     if (err != null) {
+                        // Muet à l'écran, mais visible dans `adb logcat` : un
+                        // index absent ne ressemble à rien d'autre, et c'est
+                        // le seul moyen d'observer l'app sur cette machine.
+                        Log.w(TAG, "Notifications illisibles : ${err.message}")
                         trySend(emptyList())
                         return@addSnapshotListener
                     }
+                    // Plus de tri ici : la requête rend déjà l'ordre voulu.
                     trySend(
-                        snap?.documents.orEmpty()
-                            .mapNotNull { doc ->
-                                doc.toObject(AppNotification::class.java)?.copy(id = doc.id)
-                            }
-                            .sortedByDescending { it.timestamp }
-                            .take(limit)
+                        snap?.documents.orEmpty().mapNotNull { doc ->
+                            doc.toObject(AppNotification::class.java)?.copy(id = doc.id)
+                        }
                     )
                 }
             awaitClose { reg.remove() }
@@ -176,12 +202,24 @@ class NotificationRepository {
         notifications.document(notifId).update("isRead", true).await()
     }
 
-    /** Marque comme lues toutes les notifications non lues de [uid]. */
-    suspend fun markAllRead(uid: String) {
-        val unread = notifications.whereEqualTo("targetUserId", uid).get().await()
+    /**
+     * Marque comme lues les notifications non lues de [uid].
+     *
+     * Bornée à la même fenêtre que [listenToNotifications] : « Tout lire »
+     * couvre exactement ce que l'écran montre, et la pastille se compte sur
+     * cette même fenêtre. Sans la borne, ce geste relisait tout l'historique
+     * du compte — une lecture facturée par notification jamais affichée, et le
+     * commentaire ci-dessous (« la liste est déjà courte ») cessait d'être vrai
+     * dès que le campus publiait quelques centaines de rumeurs.
+     */
+    suspend fun markAllRead(uid: String, limit: Long = NOTIFICATIONS_WINDOW) {
+        val unread = notifications.whereEqualTo("targetUserId", uid)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(limit)
+            .get().await()
             .documents
             // Filtre côté client : Firestore facturerait un index composite
-            // pour un `whereNotEqualTo` ici, et la liste est déjà courte.
+            // de plus pour un `whereNotEqualTo` ici, et la fenêtre est courte.
             .filter { it.getBoolean("isRead") != true }
 
         if (unread.isEmpty()) return

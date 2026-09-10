@@ -49,6 +49,16 @@ const val MESSAGES_WINDOW     = 400L
 /** Commentaires chargés sous une rumeur. */
 const val COMMENTS_WINDOW     = 300L
 
+/**
+ * Notifications gardées à l'écran, et bornées côté serveur.
+ *
+ * Publier une rumeur écrit un document par membre du campus, et rien ne purge
+ * cette collection : le stock d'une personne grossit indéfiniment. Sans cette
+ * borne dans la requête, chaque appareil retéléchargeait toute l'histoire du
+ * compte pour n'en afficher que le haut.
+ */
+const val NOTIFICATIONS_WINDOW = 80L
+
 // ── Limites contenu ───────────────────────────────────────────────────────────
 const val MAX_POST_LENGTH       = 1000
 const val MAX_COMMENT_LENGTH    = 500

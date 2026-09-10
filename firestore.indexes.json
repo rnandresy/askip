@@ -51,6 +51,17 @@
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "//": "Éventail de notifications — listenToNotifications() et markAllRead().",
+      "//2": "Sans lui les deux requêtes sont REFUSÉES : la cloche reste vide et",
+      "//3": "« Tout lire » ne fait rien. À déployer AVANT de livrer l'APK.",
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "targetUserId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
