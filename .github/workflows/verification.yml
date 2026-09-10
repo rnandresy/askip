@@ -127,4 +127,30 @@ jobs:
       # Le banc tourne contre le projet fictif `demo-askip-regles` : il ne
       # touche jamais `kaiza-ac130`. Il sort en 1 dès qu'un cas échoue.
       - name: Rejouer les cas
-        run: bash tools/regles-firestore/lancer.sh
+        run: |
+          set -o pipefail
+          bash tools/regles-firestore/lancer.sh 2>&1 | tee "$RUNNER_TEMP/regles.log"
+
+      # Un échec ici veut dire qu'une règle ne fait pas ce qu'elle dit — la
+      # chose la plus importante que cette CI puisse apprendre. Encore
+      # faut-il pouvoir lire lesquels.
+      #
+      # Le journal complet d'un travail demande une authentification, même sur
+      # un dépôt public. Le résumé et les annotations, non : les cas en échec
+      # partent donc dans les deux, lisibles depuis la page du commit sans
+      # dérouler quoi que ce soit.
+      - name: Dire quels cas ont échoué
+        if: failure()
+        run: |
+          {
+            echo '## Banc de règles Firestore'
+            echo '```'
+            tail -80 "$RUNNER_TEMP/regles.log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          grep -E '^\s+[0-9]+ / [0-9]+ cas passent' "$RUNNER_TEMP/regles.log" \
+            | while read -r bilan; do echo "::error title=Banc de règles::${bilan}"; done
+
+          grep -E '^\s+·' "$RUNNER_TEMP/regles.log" | head -25 \
+            | while read -r ligne; do echo "::error title=Règle en échec::${ligne}"; done
