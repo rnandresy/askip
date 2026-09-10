@@ -36,7 +36,7 @@ jobs:
 
       # `jvmTarget = "17"` dans app/build.gradle.kts, et AGP 8.10 exige 17.
       - name: JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -112,7 +112,7 @@ jobs:
 
       # L'émulateur Firestore est une application Java, même lancé par Node.
       - name: JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'

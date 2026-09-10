@@ -51,6 +51,23 @@ android {
 }
 
 dependencies {
+
+    // ── Contraintes de version ────────────────────────────────────────────────
+    constraints {
+        // `firebase-auth` tire `play-services-base`, qui traîne encore une
+        // dépendance vers `androidx.fragment:fragment:1.1.0`. R8 la refuse
+        // — « Upgrade Fragment version to at least 1.3.0 » — et fait échouer
+        // tout build release. Rien dans l'app n'utilise Fragment
+        // directement : c'est le graphe transitif qu'on relève, pas une
+        // dépendance qu'on ajoute.
+        //
+        // Le build debug ne minifie pas, donc il passait : la panne ne se
+        // voyait qu'en release, c'est-à-dire nulle part avant la CI.
+        implementation("androidx.fragment:fragment:1.8.5") {
+            because("R8 refuse fragment < 1.3.0, tiré par play-services-base")
+        }
+    }
+
     // ── Compose ───────────────────────────────────────────────────────────────
     val composeBom = platform("androidx.compose:compose-bom:2024.11.00")
     implementation(composeBom)
