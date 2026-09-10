@@ -1,0 +1,130 @@
+# Ce que la machine de développement ne peut pas faire, un runner Linux le fait.
+#
+# Sur le poste de Christiano, aucun serveur JVM ne démarre : `./gradlew` échoue
+# sur `Unable to establish loopback connection` avant même de résoudre les
+# dépendances, et l'émulateur Firestore tombe sur la même exception à travers
+# Netty. Ce n'est pas une erreur de configuration, c'est l'OS qui ferme la
+# boucle locale à la JVM. Deux vérifications restaient donc hors de portée :
+#
+#   · Le vrai build Android. `tools/verifier-compilation.sh` appelle le
+#     compilateur Kotlin à la main : il ne voit ni les ressources, ni `R`, ni
+#     la fusion du manifeste, ni R8, ni le packaging. Il a déjà rendu un « ✓ »
+#     sur un dépôt où un `.txt` posé dans `res/font/` cassait aapt.
+#
+#   · Les 81 cas de `tools/regles-firestore/`, écrits et jamais exécutés faute
+#     d'émulateur. Les règles sont la seule barrière entre les données de l'app
+#     et n'importe qui, et la plupart des correctifs de la dernière séance sont
+#     raisonnés plutôt qu'éprouvés.
+#
+# Les deux tournent ici à chaque push. Les trois travaux sont séparés pour
+# qu'un échec dise tout de suite lequel des trois a lâché.
+
+name: Vérification
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+
+  # ── Le build que cette machine ne peut pas faire ────────────────────────────
+  build:
+    name: Build Android et tests unitaires
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # `jvmTarget = "17"` dans app/build.gradle.kts, et AGP 8.10 exige 17.
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: SDK Android
+        uses: android-actions/setup-android@v3
+
+      # Garde le cache Gradle entre deux exécutions : sans lui, chaque push
+      # retélécharge Compose, Firebase et le reste.
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug et tests unitaires
+        run: ./gradlew --no-daemon assembleDebug testDebugUnitTest
+
+      # L'APK sort d'ici, ce qui donne enfin un moyen d'installer une version
+      # récente sans passer par Android Studio.
+      #
+      # ⚠ Il est signé avec la clé de debug engendrée par le runner, pas avec
+      # celle d'Android Studio. Android refuse de remplacer une app par une
+      # autre signature : il faut désinstaller l'app avant de poser celle-ci,
+      # et donc se reconnecter. À réserver aux essais.
+      - name: Garder l'APK de debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: askip-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  # ── R8, que rien ne vérifie ailleurs ───────────────────────────────────────
+  # `release` active `isMinifyEnabled` et `isShrinkResources`. R8 supprime ce
+  # qu'il croit inutilisé : la réflexion de Firestore sur les modèles est
+  # exactement le genre de chose qu'il enlève à tort, et ça ne se voit qu'à
+  # l'exécution d'un build release. Le faire ici ne prouve pas que l'app tourne,
+  # mais ça prouve au moins que R8 passe.
+  #
+  # L'APK sort non signé (aucun `signingConfig` release dans le projet) : c'est
+  # une vérification, pas une livraison.
+  r8:
+    name: Build release (R8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: SDK Android
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release
+        run: ./gradlew --no-daemon assembleRelease
+
+  # ── Les 81 cas de règles, enfin joués ──────────────────────────────────────
+  regles:
+    name: Règles Firestore
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: tools/regles-firestore/package-lock.json
+
+      # L'émulateur Firestore est une application Java, même lancé par Node.
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Dépendances du banc d'essai
+        working-directory: tools/regles-firestore
+        run: npm ci
+
+      - name: firebase-tools
+        run: npm install --global firebase-tools
+
+      # Le banc tourne contre le projet fictif `demo-askip-regles` : il ne
+      # touche jamais `kaiza-ac130`. Il sort en 1 dès qu'un cas échoue.
+      - name: Rejouer les cas
+        run: bash tools/regles-firestore/lancer.sh
