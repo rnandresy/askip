@@ -74,7 +74,19 @@ const val MAX_TAGS_PER_POST     = 3
 const val MAX_IMAGE_DIMENSION   = 1440      // px — côté le plus long
 const val IMAGE_QUALITY         = 82        // qualité JPEG
 const val MAX_UPLOAD_SIZE_MB    = 25
-const val MAX_AUDIO_SECONDS     = 180       // 3 min
+/**
+ * Durée maximale d'un enregistrement vocal — chat, groupe, rumeur vocale.
+ *
+ * Valait 180 ici et ne servait à rien : le ViewModel coupait à `120` écrit en
+ * dur, et personne ne s'en apercevait puisque les deux nombres ne se
+ * rencontraient jamais. Tourner ce réglage n'avait donc aucun effet.
+ *
+ * La valeur est maintenant celle que l'app applique **réellement depuis
+ * toujours**, pour ne rien changer sous les pieds de qui s'en sert déjà. Si
+ * les trois minutes étaient l'intention, c'est ici que ça se règle — et
+ * désormais ça marchera.
+ */
+const val MAX_AUDIO_SECONDS     = 120       // 2 min
 const val STORY_DURATION_MS     = 24L * 60 * 60 * 1000  // 24 h
 
 // ── Rate limiting client ──────────────────────────────────────────────────────

@@ -188,7 +188,7 @@ fun CommentsScreen(
                             isRecording = isRecording,
                             seconds = recordingSeconds,
                             maxSeconds = MAX_VOICE_COMMENT_SECONDS,
-                            onStart = { vm.startVoiceRecording(context) },
+                            onStart = { vm.startVoiceRecording(context, MAX_VOICE_COMMENT_SECONDS) },
                             onStop = {
                                 vm.stopRecordingForPost()?.let { (file, seconds) ->
                                     vm.addVoiceComment(

@@ -41,6 +41,7 @@ import com.rnandresy.lol.utils.DataUsageTracker
 import com.rnandresy.lol.utils.FeedSection
 import com.rnandresy.lol.utils.FeedTab
 import com.rnandresy.lol.utils.HOT_WINDOW_SIZE
+import com.rnandresy.lol.utils.MAX_AUDIO_SECONDS
 import com.rnandresy.lol.utils.MAX_COMMENT_LENGTH
 import com.rnandresy.lol.utils.MAX_POSTS_PER_HOUR
 import com.rnandresy.lol.utils.MIN_MS_BETWEEN_COMMENTS
@@ -2255,7 +2256,22 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Note vocale ───────────────────────────────────────────────────────────
 
-    fun startVoiceRecording(context: android.content.Context) {
+    /**
+     * Démarre un enregistrement, avec le filet de sécurité qui va avec.
+     *
+     * [maxSeconds] est la coupure de dernier recours, côté ViewModel. Sous un
+     * commentaire, `VoiceComposer` coupe déjà à sa propre limite affichée —
+     * mais il ne le fait que tant qu'il est à l'écran, et les autres points
+     * d'entrée (chat, groupe, rumeur vocale) n'ont aucun garde-fou d'interface.
+     * D'où celui-ci, qui tient dans tous les cas.
+     *
+     * La valeur était écrite en dur ici, et ne correspondait à aucune des
+     * constantes censées la gouverner.
+     */
+    fun startVoiceRecording(
+        context: android.content.Context,
+        maxSeconds: Int = MAX_AUDIO_SECONDS
+    ) {
         if (_isRecording.value) return
         voiceRecorder = VoiceRecorder(context)
         runCatching { voiceRecorder?.start() }
@@ -2266,7 +2282,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                     while (isActive) {
                         delay(1000L)
                         _recordingSeconds.value++
-                        if (_recordingSeconds.value >= 120) cancelVoiceRecording()
+                        if (_recordingSeconds.value >= maxSeconds) cancelVoiceRecording()
                     }
                 }
             }
