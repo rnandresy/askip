@@ -111,11 +111,19 @@ jobs:
           cache-dependency-path: tools/regles-firestore/package-lock.json
 
       # L'émulateur Firestore est une application Java, même lancé par Node.
-      - name: JDK 17
+      #
+      # 21 et non 17, contrairement aux deux autres travaux : ce JDK-ci ne
+      # compile rien de l'app, il ne fait tourner que l'émulateur, et
+      # `firebase-tools` refuse désormais de démarrer en dessous de 21
+      # (« no longer supports Java version before 21 »). Les travaux `build` et
+      # `r8` restent en 17, qui est le `jvmTarget` du projet — les deux
+      # versions n'ont rien à voir l'une avec l'autre et ne doivent pas être
+      # alignées par réflexe.
+      - name: JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Dépendances du banc d'essai
         working-directory: tools/regles-firestore
