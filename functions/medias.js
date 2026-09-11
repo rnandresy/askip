@@ -23,8 +23,10 @@
  *
  * ── Ça ne supprime rien tant que tu ne l'as pas décidé ──────────────────────
  *
- * `CLOUDINARY_SUPPRESSION_REELLE` vaut `false` dans `functions/.env`. Dans cet
- * état, la fonction **journalise ce qu'elle supprimerait sans rien supprimer**.
+ * `CLOUDINARY_SUPPRESSION_REELLE` vaut `false` par défaut. Dans cet état, la
+ * fonction **journalise ce qu'elle supprimerait sans rien supprimer**. Pour
+ * l'armer : copier `functions/.env.example` en `functions/.env` (non versionné)
+ * et y passer la valeur à `true`.
  * Une suppression est irréversible et rien de tout ceci n'a pu être essayé
  * ailleurs qu'ici : regarde les journaux quelques jours
  * (`firebase functions:log`), vérifie que les identifiants annoncés sont bien

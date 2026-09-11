@@ -229,8 +229,8 @@ cd functions && npm install
 firebase deploy --only functions
 ```
 
-**Étape 2 — passer du blanc au réel.** `functions/.env` contient
-`CLOUDINARY_SUPPRESSION_REELLE=false`. Dans cet état la fonction **journalise
+**Étape 2 — passer du blanc au réel.** Par défaut,
+`CLOUDINARY_SUPPRESSION_REELLE` vaut `false`. Dans cet état la fonction **journalise
 ce qu'elle supprimerait sans rien supprimer**. Supprime une rumeur avec photo,
 puis :
 
@@ -240,7 +240,16 @@ firebase functions:log --only purgeMediaRumeur
 
 Tu dois lire une ligne `[à blanc] rumeur <id> — serait supprimé :
 image/askip/img_…`. Vérifie que l'identifiant est bien celui de la photo de
-cette rumeur-là. Quand tu es convaincu, passe `.env` à `true` et redéploie.
+cette rumeur-là. Quand tu es convaincu :
+
+```bash
+cp functions/.env.example functions/.env
+# puis dans functions/.env : CLOUDINARY_SUPPRESSION_REELLE=true
+firebase deploy --only functions
+```
+
+`functions/.env` n'est pas versionné (`functions/.gitignore`) : c'est le
+fichier de ta machine, et aucun secret ne doit y figurer non plus.
 
 Une suppression est irréversible, et rien de tout ceci n'a pu être essayé
 avant d'atterrir chez toi : c'est la raison de ce détour.
