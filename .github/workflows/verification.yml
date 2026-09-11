@@ -147,8 +147,12 @@ jobs:
       # un dépôt public. Le résumé et les annotations, non : les cas en échec
       # partent donc dans les deux, lisibles depuis la page du commit sans
       # dérouler quoi que ce soit.
-      - name: Dire ce qui a échoué
-        if: failure()
+      # `always()` et non `failure()` : un banc vert qui ne dit pas combien de
+      # cas il a joués ne prouve rien. Le script sort en zéro quand aucun cas
+      # n'échoue — ce qui est aussi le cas quand aucun cas ne s'exécute. Le
+      # bilan est donc affiché dans les deux sens.
+      - name: Dire ce que le banc a donné
+        if: always()
         run: |
           LOG="$RUNNER_TEMP/regles.log"
           if [ ! -s "$LOG" ]; then
@@ -163,12 +167,19 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # Volontairement sans filtre. La version précédente ne remontait que
-          # les lignes « · [section] nom » du banc — or l'échec précédent est
-          # survenu AVANT que le banc ne s'exécute (4 secondes : l'émulateur
-          # n'a même pas eu le temps de démarrer), donc aucune de ces lignes
-          # n'existait et l'annotation ne disait rien. On remonte maintenant la
-          # fin brute du journal, quelle que soit la nature de la panne.
+          BILAN=$(grep -E '[0-9]+ / [0-9]+ cas passent' "$LOG" | head -1 | sed 's/^ *//')
+
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "::notice title=Banc de règles::${BILAN:-Aucun bilan dans la sortie : le banc a-t-il joué quoi que ce soit ?}"
+            exit 0
+          fi
+
+          # En échec, la fin du journal part telle quelle, sans filtre. Une
+          # version précédente ne remontait que les lignes propres au rapport
+          # du banc, et restait donc muette sur une panne survenue AVANT lui —
+          # ce qui est précisément arrivé : `firebase-tools` refusait de
+          # démarrer sous Java 21, en quatre secondes, sans jamais jouer un cas.
+          [ -n "$BILAN" ] && echo "::error title=Banc de règles::${BILAN}"
           tail -25 "$LOG" | while IFS= read -r ligne; do
             [ -z "$ligne" ] && continue
             echo "::error title=Banc de règles::${ligne}"
