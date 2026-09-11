@@ -139,18 +139,29 @@ jobs:
       # un dépôt public. Le résumé et les annotations, non : les cas en échec
       # partent donc dans les deux, lisibles depuis la page du commit sans
       # dérouler quoi que ce soit.
-      - name: Dire quels cas ont échoué
+      - name: Dire ce qui a échoué
         if: failure()
         run: |
+          LOG="$RUNNER_TEMP/regles.log"
+          if [ ! -s "$LOG" ]; then
+            echo "::error title=Banc de règles::Aucune sortie — le script n'a rien écrit du tout."
+            exit 0
+          fi
+
           {
             echo '## Banc de règles Firestore'
             echo '```'
-            tail -80 "$RUNNER_TEMP/regles.log"
+            cat "$LOG"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-          grep -E '^\s+[0-9]+ / [0-9]+ cas passent' "$RUNNER_TEMP/regles.log" \
-            | while read -r bilan; do echo "::error title=Banc de règles::${bilan}"; done
-
-          grep -E '^\s+·' "$RUNNER_TEMP/regles.log" | head -25 \
-            | while read -r ligne; do echo "::error title=Règle en échec::${ligne}"; done
+          # Volontairement sans filtre. La version précédente ne remontait que
+          # les lignes « · [section] nom » du banc — or l'échec précédent est
+          # survenu AVANT que le banc ne s'exécute (4 secondes : l'émulateur
+          # n'a même pas eu le temps de démarrer), donc aucune de ces lignes
+          # n'existait et l'annotation ne disait rien. On remonte maintenant la
+          # fin brute du journal, quelle que soit la nature de la panne.
+          tail -25 "$LOG" | while IFS= read -r ligne; do
+            [ -z "$ligne" ] && continue
+            echo "::error title=Banc de règles::${ligne}"
+          done
