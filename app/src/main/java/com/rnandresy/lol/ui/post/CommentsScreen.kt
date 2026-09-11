@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -110,7 +111,12 @@ fun CommentsScreen(
     val recordingSeconds by vm.recordingSeconds.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(postId) { vm.openPost(postId) }
+    // Une rumeur ouverte tient trois écoutes — commentaires, réponses
+    // épinglées, maillons de la chaîne. Aucune ne s'arrêtait en sortant.
+    DisposableEffect(postId) {
+        vm.openPost(postId)
+        onDispose { vm.closePost(postId) }
+    }
     LaunchedEffect(comments.size) {
         // La liste contient aussi les réponses épinglées et la chaîne :
         // l'index d'un commentaire n'est plus celui de l'élément affiché.

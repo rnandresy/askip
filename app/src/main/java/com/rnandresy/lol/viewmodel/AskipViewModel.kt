@@ -480,6 +480,23 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     private var chainJob: Job? = null
     private var repliesJob: Job? = null
 
+    // ── Ce que les écoutes d'écran suivent en ce moment ───────────────────────
+    //
+    // Les écoutes lancées depuis un écran — une conversation, un groupe, une
+    // rumeur ouverte — ne s'arrêtaient jamais. Elles restaient attachées à
+    // Firestore jusqu'à ce qu'un autre écran les remplace, ou jusqu'à la
+    // déconnexion : sortir d'une conversation continuait d'en télécharger les
+    // messages, indéfiniment. Sur des données mobiles, ça se paie.
+    //
+    // D'où ces trois repères. Un écran qui s'en va demande à couper **son**
+    // écoute, et on ne coupe que si c'est bien la sienne : Compose Navigation
+    // compose la destination d'arrivée AVANT de jeter celle de départ, donc
+    // passer d'une conversation à une autre ferait sinon couper, par l'écran
+    // qui part, l'écoute que celui qui arrive vient tout juste d'ouvrir.
+    private var convEcoutee: String? = null
+    private var groupeEcoute: String? = null
+    private var rumeurOuverte: String? = null
+
     // ── Cycle de vie ──────────────────────────────────────────────────────────
 
     /**
@@ -578,6 +595,13 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
             commentJob, badgesJob, profileJob, profilesJob, notifJob,
             betsJob, chainJob, repliesJob
         ).forEach { it?.cancel() }
+        // Les repères des écoutes d'écran partent avec : sinon, se reconnecter
+        // sur le même appareil laisserait `convEcoutee` pointer vers une
+        // conversation dont le job est déjà mort, et le prochain `onDispose`
+        // croirait avoir quelque chose à couper.
+        convEcoutee = null
+        groupeEcoute = null
+        rumeurOuverte = null
         _myBets.value = emptyMap()
         _sealedContents.value = emptyMap()
         _chainLinks.value = emptyList()
@@ -1895,12 +1919,38 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
      * notification, un classement…), d'où le repli sur une lecture directe.
      */
     fun openPost(postId: String) = viewModelScope.launch {
+        rumeurOuverte = postId
         val post = findPost(postId) ?: feedRepo.getPost(postId)
         _viewedPost.value = post
         listenComments(postId)
         listenReplies(postId)
         if (post?.isChain() == true) listenChain(postId)
         if (post?.isSealed() == true) revealSealed(postId)
+    }
+
+    /**
+     * L'écran d'une rumeur s'en va : on coupe ses trois écoutes.
+     *
+     * Une rumeur ouverte en tenait trois à la fois — commentaires, réponses
+     * épinglées, maillons de la chaîne — et aucune ne s'arrêtait en sortant.
+     *
+     * `_sealedContents` n'est pas vidé : c'est un cache de contenus déjà
+     * descellés, pas une écoute. Le vider ferait relire la capsule à chaque
+     * aller-retour.
+     */
+    fun closePost(postId: String) {
+        if (rumeurOuverte != postId) return
+        rumeurOuverte = null
+        commentJob?.cancel()
+        commentJob = null
+        repliesJob?.cancel()
+        repliesJob = null
+        chainJob?.cancel()
+        chainJob = null
+        _rawComments.value = emptyList()
+        _mentionReplies.value = emptyList()
+        _chainLinks.value = emptyList()
+        _viewedPost.value = null
     }
 
     fun listenComments(postId: String) {
@@ -2042,6 +2092,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     fun listenMessages(convId: String) {
         msgJob?.cancel()
+        convEcoutee = convId
         msgJob = viewModelScope.launch {
             msgRepo.listenToMessages(convId).collect { newMsgs ->
                 val prev = _rawMessages.value
@@ -2068,6 +2119,20 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                 _rawMessages.value = newMsgs
             }
         }
+    }
+
+    /**
+     * L'écran de conversation s'en va : on coupe l'écoute, et on vide.
+     *
+     * Sans le vider, la conversation suivante s'ouvrirait un instant sur les
+     * messages de la précédente, le temps que Firestore réponde.
+     */
+    fun stopListeningMessages(convId: String) {
+        if (convEcoutee != convId) return
+        convEcoutee = null
+        msgJob?.cancel()
+        msgJob = null
+        _rawMessages.value = emptyList()
     }
 
     fun sendMessage(convId: String, content: String, replyTo: Message? = null) {
@@ -2297,8 +2362,18 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Voir [stopListeningMessages] : même raison, même précaution. */
+    fun stopListeningGroupMessages(groupId: String) {
+        if (groupeEcoute != groupId) return
+        groupeEcoute = null
+        groupMsgJob?.cancel()
+        groupMsgJob = null
+        _groupMessages.value = emptyList()
+    }
+
     fun listenGroupMessages(groupId: String) {
         groupMsgJob?.cancel()
+        groupeEcoute = groupId
         groupMsgJob = viewModelScope.launch {
             msgRepo.listenToGroupMessages(groupId).collect { msgs ->
                 _groupMessages.value = msgs.map { msg ->

@@ -123,7 +123,11 @@ fun GroupChatScreen(
     var actionOn by remember { mutableStateOf<GroupMessage?>(null) }
     var replyTo by remember { mutableStateOf<GroupMessage?>(null) }
 
-    LaunchedEffect(groupId) { vm.listenGroupMessages(groupId) }
+    // Voir ChatScreen : sans `onDispose`, l'écoute survivait à l'écran.
+    DisposableEffect(groupId) {
+        vm.listenGroupMessages(groupId)
+        onDispose { vm.stopListeningGroupMessages(groupId) }
+    }
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
     }

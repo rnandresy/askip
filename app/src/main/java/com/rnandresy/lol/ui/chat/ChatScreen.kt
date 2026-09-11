@@ -125,9 +125,13 @@ fun ChatScreen(
     var actionOn by remember { mutableStateOf<Message?>(null) }
     var replyTo by remember { mutableStateOf<Message?>(null) }
 
-    LaunchedEffect(convId) {
+    // `DisposableEffect` et non `LaunchedEffect` : sans `onDispose`, l'écoute
+    // des messages de cette conversation restait attachée à Firestore après
+    // qu'on en soit sorti, et jusqu'à la déconnexion.
+    DisposableEffect(convId) {
         vm.listenMessages(convId)
         vm.markRead(convId)
+        onDispose { vm.stopListeningMessages(convId) }
     }
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
