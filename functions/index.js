@@ -222,3 +222,19 @@ exports.sendPushNotification = onDocumentCreated(
     }
   }
 );
+
+// ── Purge des médias Cloudinary ──────────────────────────────────────────────
+// Écrit dans `medias.js` plutôt qu'ici : ce fichier-ci n'a qu'un sujet, l'envoi
+// des push, et il est déjà assez long. Les déclencheurs sont réexportés
+// explicitement — Firebase ne déploie que ce qu'il trouve sur `exports`.
+//
+// Chargé après `setGlobalOptions` pour hériter de la région et du plafond
+// d'instances.
+const medias = require("./medias");
+
+exports.purgeMediaRumeur = medias.purgeMediaRumeur;
+exports.purgeMediaCapsule = medias.purgeMediaCapsule;
+exports.purgeMediaCommentaire = medias.purgeMediaCommentaire;
+exports.purgeMediaMessage = medias.purgeMediaMessage;
+exports.purgeMediaMessageGroupe = medias.purgeMediaMessageGroupe;
+exports.purgeMediaProfil = medias.purgeMediaProfil;

@@ -96,7 +96,25 @@ jobs:
       - name: Build release
         run: ./gradlew --no-daemon assembleRelease
 
-  # ── Les 81 cas de règles, enfin joués ──────────────────────────────────────
+  # ── L'analyse des URL Cloudinary ───────────────────────────────────────────
+  # La purge des médias supprime pour de bon, et se trompe silencieusement si
+  # elle lit mal une URL. Le module analysé n'a aucune dépendance : Node nu
+  # suffit, en quelques secondes.
+  medias:
+    name: URL Cloudinary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rejouer les cas
+        run: node functions/test-medias.mjs
+
+  # ── Les cas de règles, enfin joués ─────────────────────────────────────────
   regles:
     name: Règles Firestore
     runs-on: ubuntu-latest

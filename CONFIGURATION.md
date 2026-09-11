@@ -196,24 +196,61 @@ limite :
 - **Allowed formats** : `jpg,png,webp,mp4,m4a,pdf` plutôt que « tout ».
 - **Unique filename** : activé.
 
-### 3.4 Les médias supprimés ne le sont jamais vraiment 🟠
+### 3.4 La purge des médias — écrite, à armer en deux temps 🟢
 
-Quand quelqu'un supprime une rumeur ou son compte, l'app efface le document
-Firestore — mais **le fichier reste sur Cloudinary**. Une suppression exige la
-clé secrète de l'API, qui n'a rien à faire dans une app installée sur des
-téléphones.
+Quand quelqu'un supprimait une rumeur ou son compte, l'app effaçait le
+document Firestore — mais **le fichier restait sur Cloudinary, et son URL
+restait publiquement accessible**. Sur une app qui parle de gens réels,
+« j'ai supprimé mon post » doit vouloir dire quelque chose. Accessoirement le
+stockage ne faisait que monter, et **l'audio et la vidéo consomment bien plus
+que les photos** — c'est le premier plafond que tu atteindras avec l'actualité
+vocale.
 
-Conséquence : ton stockage ne fait que monter. Le plan gratuit donne 25 crédits
-par mois, et **l'audio et la vidéo en consomment bien plus que les photos** —
-c'est le premier plafond que tu atteindras avec la nouvelle actualité vocale.
+C'est fait, dans `functions/medias.js` : six déclencheurs, un par endroit où un
+média peut mourir (rumeur, capsule, commentaire, message, message de groupe,
+profil). Passer par la suppression du **document** plutôt que par le code de
+l'app couvre tous les chemins d'un coup — suppression par son auteur, par
+l'administration, ou en cascade lors d'une suppression de compte.
 
-Deux options :
-- **Ménage manuel** de temps en temps depuis la Media Library, en filtrant sur
-  le dossier `askip/`.
-- **Suppression propre** via une Cloud Function qui garde la clé secrète côté
-  serveur. Même prérequis que les push : plan Blaze.
+**Étape 1 — les clés.** Une suppression exige la clé secrète de l'API, qui n'a
+rien à faire dans une app installée sur des téléphones. Elle vit donc côté
+serveur :
 
-Surveille **Dashboard → Usage** en début de mois.
+```bash
+firebase functions:secrets:set CLOUDINARY_API_KEY
+firebase functions:secrets:set CLOUDINARY_API_SECRET
+```
+
+Les deux valeurs sont dans Cloudinary → **Settings → API Keys**. Sans elles le
+déploiement est refusé, et c'est voulu.
+
+```bash
+cd functions && npm install
+firebase deploy --only functions
+```
+
+**Étape 2 — passer du blanc au réel.** `functions/.env` contient
+`CLOUDINARY_SUPPRESSION_REELLE=false`. Dans cet état la fonction **journalise
+ce qu'elle supprimerait sans rien supprimer**. Supprime une rumeur avec photo,
+puis :
+
+```bash
+firebase functions:log --only purgeMediaRumeur
+```
+
+Tu dois lire une ligne `[à blanc] rumeur <id> — serait supprimé :
+image/askip/img_…`. Vérifie que l'identifiant est bien celui de la photo de
+cette rumeur-là. Quand tu es convaincu, passe `.env` à `true` et redéploie.
+
+Une suppression est irréversible, et rien de tout ceci n'a pu être essayé
+avant d'atterrir chez toi : c'est la raison de ce détour.
+
+**Ce que ça ne fait pas :** changer de photo de profil laisse encore l'ancienne
+sur Cloudinary. La supprimer casserait les `userPhotoUrl` recopiés sur les
+anciennes rumeurs et commentaires, que tous les écrans ne rafraîchissent pas
+depuis le profil vivant. Ce cas demande d'être traité pour lui-même.
+
+Surveille quand même **Dashboard → Usage** en début de mois.
 
 ---
 
@@ -256,4 +293,4 @@ Dans cet ordre, avec un compte de test :
 | Auth e-mail | — | ⬜ activer |
 | UID admin | ✅ en place | ⬜ confirmer que c'est le tien |
 | Preset Cloudinary | — | ⬜ vérifier *unsigned* + `m4a` |
-| Purge des médias | ❌ **absente** | ⬜ ménage manuel, ou Cloud Function |
+| Purge des médias | ✅ écrite (6 déclencheurs) | ⬜ secrets Cloudinary + déployer, puis armer (§3.4) |
