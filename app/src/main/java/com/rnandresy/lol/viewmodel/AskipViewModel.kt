@@ -41,6 +41,7 @@ import com.rnandresy.lol.utils.DataUsageTracker
 import com.rnandresy.lol.utils.FeedSection
 import com.rnandresy.lol.utils.FeedTab
 import com.rnandresy.lol.utils.HOT_WINDOW_SIZE
+import com.rnandresy.lol.utils.LISTENERS_PAUSE_DELAY_MS
 import com.rnandresy.lol.utils.MAX_AUDIO_SECONDS
 import com.rnandresy.lol.utils.MAX_COMMENT_LENGTH
 import com.rnandresy.lol.utils.MAX_POSTS_PER_HOUR
@@ -498,6 +499,15 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     private var groupeEcoute: String? = null
     private var rumeurOuverte: String? = null
 
+    // ── Mise en pause en arrière-plan ─────────────────────────────────────────
+    //
+    // `pauseJob` est le délai qui court entre le passage en arrière-plan et la
+    // coupure ; `enPause` dit que la coupure a eu lieu. Les deux sont
+    // nécessaires : revenir pendant le délai annule simplement la coupure,
+    // revenir après doit tout rallumer.
+    private var pauseJob: Job? = null
+    private var enPause = false
+
     // ── Cycle de vie ──────────────────────────────────────────────────────────
 
     /**
@@ -543,6 +553,22 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun startAll() {
+        // App en arrière-plan : les écoutes attendront le retour au premier
+        // plan, c'est `onAppForeground` qui les allumera.
+        if (!enPause) startListeners()
+        claimDailyBonus()
+        registerPushToken()
+    }
+
+    /**
+     * Les écoutes permanentes, celles que la mise en arrière-plan éteint.
+     *
+     * `claimDailyBonus` et `registerPushToken` n'en font pas partie : ce sont
+     * des gestes ponctuels de connexion. Le bonus en particulier ne doit pas
+     * être rejoué à chaque retour au premier plan — tant qu'il n'est pas
+     * réclamé, il appelle `updateStreak`, une transaction Firestore.
+     */
+    private fun startListeners() {
         listenMyProfile()
         listenAllProfiles()
         listenPosts()
@@ -552,8 +578,6 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         listenAllBadges()
         listenNotifications()
         listenMyBets()
-        claimDailyBonus()
-        registerPushToken()
     }
 
     /**
@@ -590,12 +614,20 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Toutes les écoutes Firestore, permanentes et d'écran. */
+    private fun toutesLesEcoutes() = listOf(
+        postsJob, storiesJob, convJob, groupJob, groupMsgJob, msgJob,
+        commentJob, badgesJob, profileJob, profilesJob, notifJob,
+        betsJob, chainJob, repliesJob
+    )
+
     private fun stopAll() {
-        listOf(
-            postsJob, storiesJob, convJob, groupJob, groupMsgJob, msgJob,
-            commentJob, badgesJob, profileJob, profilesJob, notifJob,
-            betsJob, chainJob, repliesJob
-        ).forEach { it?.cancel() }
+        toutesLesEcoutes().forEach { it?.cancel() }
+        // Une déconnexion n'est pas une pause : le prochain compte repart de
+        // zéro, écoutes allumées dès sa connexion.
+        pauseJob?.cancel()
+        pauseJob = null
+        enPause = false
         // Les repères des écoutes d'écran partent avec : sinon, se reconnecter
         // sur le même appareil laisserait `convEcoutee` pointer vers une
         // conversation dont le job est déjà mort, et le prochain `onDispose`
@@ -622,6 +654,64 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         _notifications.value = emptyList()
         _tagPosts.value = emptyList()
         lastKnownLevel = -1
+    }
+
+    // ── Premier plan, arrière-plan ────────────────────────────────────────────
+    //
+    // Les écoutes restaient allumées de la connexion à la déconnexion. App en
+    // arrière-plan, le processus continuait de recevoir chaque changement — un
+    // vote, et le `clout` de quelqu'un bougeait chez tous les clients
+    // connectés, le sien compris, téléphone en poche.
+    //
+    // Ce que la pause coupe : les écoutes, toutes. Ce qu'elle garde : l'état.
+    // Au retour, l'écran se réaffiche immédiatement avec ce qu'il montrait, et
+    // les écoutes relancées ne font que le mettre à jour — Firestore sert le
+    // premier instantané depuis son cache local.
+    //
+    // Les notifications n'en dépendent pas. Aucune écoute globale n'en émet ;
+    // seule celle de la conversation ouverte le faisait, et le push du serveur
+    // (`sendPushNotification`) couvre déjà toutes les autres conversations.
+    //
+    // Pour le vérifier sur le téléphone : `adb logcat -s AskipEcoutes`.
+
+    /** Appelé à chaque passage au premier plan, y compris le tout premier. */
+    fun onAppForeground() {
+        pauseJob?.cancel()
+        pauseJob = null
+        if (!enPause) return
+        enPause = false
+        if (!authRepo.isLoggedIn) return
+        android.util.Log.i("AskipEcoutes", "Premier plan : reprise des écoutes")
+        startListeners()
+        reprendreEcoutesEcran()
+    }
+
+    /** Appelé à chaque passage en arrière-plan. La coupure attend un peu. */
+    fun onAppBackground() {
+        if (enPause || pauseJob?.isActive == true) return
+        pauseJob = viewModelScope.launch {
+            delay(LISTENERS_PAUSE_DELAY_MS)
+            toutesLesEcoutes().forEach { it?.cancel() }
+            enPause = true
+            android.util.Log.i("AskipEcoutes", "Arrière-plan : écoutes coupées")
+        }
+    }
+
+    /**
+     * Relance les écoutes de l'écran qui était ouvert au moment de la pause.
+     *
+     * Les repères `convEcoutee`, `groupeEcoute` et `rumeurOuverte` ont survécu
+     * à la pause, justement pour ça : l'écran n'a pas été jeté, son
+     * `DisposableEffect` ne se relancera pas tout seul.
+     */
+    private fun reprendreEcoutesEcran() {
+        convEcoutee?.let { listenMessages(it) }
+        groupeEcoute?.let { listenGroupMessages(it) }
+        rumeurOuverte?.let { postId ->
+            listenComments(postId, vider = false)
+            listenReplies(postId, vider = false)
+            if (_viewedPost.value?.isChain() == true) listenChain(postId, vider = false)
+        }
     }
 
     // ── Authentification ──────────────────────────────────────────────────────
@@ -1754,9 +1844,10 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     //  Le Téléphone arabe
     // ═════════════════════════════════════════════════════════════════════════
 
-    fun listenChain(postId: String) {
+    /** [vider] à `false` pour une reprise après pause : l'écran garde ce qu'il montrait. */
+    fun listenChain(postId: String, vider: Boolean = true) {
         chainJob?.cancel()
-        _chainLinks.value = emptyList()
+        if (vider) _chainLinks.value = emptyList()
         chainJob = viewModelScope.launch {
             feedRepo.listenToChain(postId).collect { _chainLinks.value = it }
         }
@@ -1803,9 +1894,10 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     //  Le droit de réponse
     // ═════════════════════════════════════════════════════════════════════════
 
-    fun listenReplies(postId: String) {
+    /** [vider] à `false` pour une reprise après pause : l'écran garde ce qu'il montrait. */
+    fun listenReplies(postId: String, vider: Boolean = true) {
         repliesJob?.cancel()
-        _mentionReplies.value = emptyList()
+        if (vider) _mentionReplies.value = emptyList()
         repliesJob = viewModelScope.launch {
             feedRepo.listenToReplies(postId).collect { _mentionReplies.value = it }
         }
@@ -1954,9 +2046,10 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         _viewedPost.value = null
     }
 
-    fun listenComments(postId: String) {
+    /** [vider] à `false` pour une reprise après pause : l'écran garde ce qu'il montrait. */
+    fun listenComments(postId: String, vider: Boolean = true) {
         commentJob?.cancel()
-        _rawComments.value = emptyList()
+        if (vider) _rawComments.value = emptyList()
         commentJob = viewModelScope.launch {
             feedRepo.listenToComments(postId).collect { _rawComments.value = it }
         }
@@ -2093,11 +2186,22 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     fun listenMessages(convId: String) {
         msgJob?.cancel()
+        // Autre conversation : on vide, sinon B s'ouvrirait un instant sur les
+        // messages de A — `stopListeningMessages(A)` arrive après, et sa garde
+        // l'empêche à juste titre de toucher à ce qui appartient déjà à B.
+        // Même conversation (reprise après une pause) : on garde l'affichage.
+        if (convEcoutee != convId) _rawMessages.value = emptyList()
         convEcoutee = convId
         msgJob = viewModelScope.launch {
+            // Le premier instantané d'une écoute n'annonce rien. Il ne contient
+            // pas « un nouveau message » mais l'état de la conversation : à la
+            // reprise après une pause, les messages arrivés pendant l'absence —
+            // déjà annoncés par le push — auraient déclenché une seconde
+            // notification, l'app ouverte sous les yeux.
+            var premier = true
             msgRepo.listenToMessages(convId).collect { newMsgs ->
                 val prev = _rawMessages.value
-                if (prev.isNotEmpty()) {
+                if (!premier && prev.isNotEmpty()) {
                     newMsgs.firstOrNull { n ->
                         prev.none { it.id == n.id } && n.senderId != currentUserId
                     }?.let { msg ->
@@ -2117,6 +2221,7 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                 }
+                premier = false
                 _rawMessages.value = newMsgs
             }
         }
@@ -2389,6 +2494,9 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     fun listenGroupMessages(groupId: String) {
         groupMsgJob?.cancel()
+        // Même raison que dans `listenMessages` : un autre groupe s'ouvre vide,
+        // une reprise garde son affichage.
+        if (groupeEcoute != groupId) _groupMessages.value = emptyList()
         groupeEcoute = groupId
         groupMsgJob = viewModelScope.launch {
             msgRepo.listenToGroupMessages(groupId).collect { msgs ->

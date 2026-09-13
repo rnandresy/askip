@@ -59,6 +59,21 @@ const val COMMENTS_WINDOW     = 300L
  */
 const val NOTIFICATIONS_WINDOW = 80L
 
+/**
+ * Délai avant de couper les écoutes Firestore quand l'app passe en arrière-plan.
+ *
+ * Sans pause, les neuf écoutes permanentes — dont les 500 profils dont le
+ * `clout` bouge à chaque vote de n'importe qui — continuaient de recevoir
+ * chaque changement tant que le système laissait vivre le processus, app
+ * fermée ou pas.
+ *
+ * Pas de coupure immédiate pour autant : une rotation d'écran arrête et
+ * relance l'activité, et choisir une photo à envoyer ouvre une autre
+ * application — dans les deux cas on revient en quelques secondes, et tout
+ * relancer serait du gaspillage. Une minute couvre ces allers-retours.
+ */
+const val LISTENERS_PAUSE_DELAY_MS = 60_000L
+
 // ── Limites contenu ───────────────────────────────────────────────────────────
 const val MAX_POST_LENGTH       = 1000
 const val MAX_COMMENT_LENGTH    = 500

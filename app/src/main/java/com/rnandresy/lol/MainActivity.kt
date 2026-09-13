@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -87,6 +88,16 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val vm: AskipViewModel = viewModel()
+
+            // Les écoutes Firestore suivent la visibilité de l'app : elles
+            // restaient allumées de la connexion à la déconnexion, arrière-plan
+            // compris. La coupure elle-même attend un peu — voir
+            // `LISTENERS_PAUSE_DELAY_MS`.
+            LifecycleStartEffect(vm) {
+                vm.onAppForeground()
+                onStopOrDispose { vm.onAppBackground() }
+            }
+
             val theme by vm.appTheme.collectAsState()
             val haptics by vm.haptics.collectAsState()
             val reduceMotion by vm.reduceMotion.collectAsState()
