@@ -69,6 +69,53 @@ Console → **Firestore → Règles → Terrain de jeu**. Le minimum à vérifie
 | Lire cette même capsule après l'heure | autorisé |
 | Écrire dans `reports` puis le relire sans être admin | écriture OK, lecture **refusée** |
 
+### 1.6 Bloquer les anciennes versions de l'app
+
+L'app lit le document Firestore **`config/app`** au lancement, puis au plus
+toutes les 30 minutes quand elle revient au premier plan. **Tant que ce
+document n'existe pas, il ne se passe rien** : personne n'est prévenu, personne
+n'est bloqué.
+
+**D'abord, redéployer les règles** — sans elles, le document est illisible et
+l'app ne bloque personne :
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+**Créer le document** : console → Firestore → *Démarrer une collection* `config`
+→ document `app`, avec ces champs :
+
+| Champ | Type | Rôle |
+| --- | --- | --- |
+| `minVersionCode` | **number** | En dessous, l'app affiche un écran bloquant, sans « plus tard ». |
+| `latestVersionCode` | **number** | En dessous, l'app propose la mise à jour, sans rien imposer. |
+| `downloadUrl` | string | Lien de téléchargement, en `https://`. Vide : l'écran dit de demander le lien à l'administrateur. |
+| `message` | string | Facultatif : remplace le texte de l'app. |
+
+> ⚠️ **Type number, pas string.** Un numéro saisi comme texte fait échouer la
+> lecture, et l'app ne bloque alors personne. C'est voulu — une erreur de
+> saisie ne doit jamais enfermer tout le campus dehors — mais ça veut dire
+> qu'elle ne bloque rien non plus.
+
+**Le numéro à comparer** est le `versionCode` de `app/build.gradle.kts`, qui
+vaut maintenant **3**. **Il faut l'augmenter à chaque version distribuée**,
+sinon l'ancienne et la nouvelle ont le même numéro et ne se distinguent plus.
+
+**Limite :** seules les versions qui contiennent ce mécanisme savent se
+bloquer. Tout APK de numéro 2 ou moins — celui du 7 septembre compris — ignore
+ce document. Chacun devra installer la version 3 une première fois de lui-même.
+
+**Marche conseillée pour une nouvelle version :**
+
+1. Publier l'APK, mettre `latestVersionCode` à son numéro et `downloadUrl` à son lien : tout le monde est prévenu, personne n'est bloqué.
+2. Attendre quelques jours que la plupart l'aient installée.
+3. Mettre `minVersionCode` au même numéro : les retardataires sont bloqués.
+
+**Pour tout débloquer d'urgence** : supprimer le document `config/app`, ou
+remettre `minVersionCode` à 0. Une app ouverte le voit au plus tard 30 minutes
+après, ou tout de suite si on la ferme et la rouvre.
+
 ---
 
 ## 2. Ce que je n'ai pas pu faire — et qui manque vraiment
@@ -303,3 +350,4 @@ Dans cet ordre, avec un compte de test :
 | UID admin | ✅ en place | ⬜ confirmer que c'est le tien |
 | Preset Cloudinary | — | ⬜ vérifier *unsigned* + `m4a` |
 | Purge des médias | ✅ écrite (6 déclencheurs) | ⬜ secrets Cloudinary + déployer, puis armer (§3.4) |
+| Blocage des anciennes versions | ✅ écrit, `versionCode` 3 | ⬜ redéployer les règles, créer `config/app` (§1.6) |

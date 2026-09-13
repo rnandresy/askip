@@ -73,6 +73,9 @@ import com.rnandresy.lol.ui.settings.SettingsScreen
 import com.rnandresy.lol.ui.components.AskipBackdrop
 import com.rnandresy.lol.ui.components.barEdge
 import com.rnandresy.lol.ui.theme.AskipTheme
+import com.rnandresy.lol.ui.update.MiseAJourDisponibleDialog
+import com.rnandresy.lol.ui.update.MiseAJourRequiseScreen
+import com.rnandresy.lol.utils.EtatMiseAJour
 import com.rnandresy.lol.viewmodel.AskipViewModel
 
 class MainActivity : ComponentActivity() {
@@ -131,6 +134,16 @@ private enum class Tab(
 
 @Composable
 fun AskipApp(vm: AskipViewModel) {
+    // Une version trop vieille ne voit rien d'autre : ni la navigation, ni
+    // l'écran de connexion. Placé avant tout le reste pour qu'aucune écoute
+    // d'écran ni aucun formulaire ne soit composé derrière.
+    val miseAJour by vm.miseAJour.collectAsState()
+    val requise = miseAJour
+    if (requise is EtatMiseAJour.Requise) {
+        MiseAJourRequiseScreen(requise)
+        return
+    }
+
     val nav = rememberNavController()
     val isLoggedIn by vm.isLoggedIn.collectAsState()
     val backStack by nav.currentBackStackEntryAsState()
@@ -172,6 +185,11 @@ fun AskipApp(vm: AskipViewModel) {
             restoreState = true
             popUpTo("feed") { saveState = true }
         }
+    }
+
+    val disponible = miseAJour
+    if (disponible is EtatMiseAJour.Disponible) {
+        MiseAJourDisponibleDialog(disponible, onDismiss = { vm.fermerAnnonceMiseAJour() })
     }
 
     Scaffold(

@@ -2,6 +2,7 @@ package com.rnandresy.lol.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -22,6 +23,9 @@ import com.rnandresy.lol.model.SealedPayload
 import com.rnandresy.lol.model.Story
 import com.rnandresy.lol.model.UserProfile
 import com.rnandresy.lol.model.Verdict
+import com.rnandresy.lol.repository.AppConfigRepository
+import com.rnandresy.lol.utils.EtatMiseAJour
+import com.rnandresy.lol.utils.etatMiseAJour
 import com.rnandresy.lol.repository.AuthRepository
 import com.rnandresy.lol.repository.FeedRepository
 import com.rnandresy.lol.repository.MessagingRepository
@@ -42,6 +46,7 @@ import com.rnandresy.lol.utils.FeedSection
 import com.rnandresy.lol.utils.FeedTab
 import com.rnandresy.lol.utils.HOT_WINDOW_SIZE
 import com.rnandresy.lol.utils.LISTENERS_PAUSE_DELAY_MS
+import com.rnandresy.lol.utils.UPDATE_CHECK_INTERVAL_MS
 import com.rnandresy.lol.utils.MAX_AUDIO_SECONDS
 import com.rnandresy.lol.utils.MAX_COMMENT_LENGTH
 import com.rnandresy.lol.utils.MAX_POSTS_PER_HOUR
@@ -100,6 +105,7 @@ import java.io.File
 class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     private val authRepo = AuthRepository()
+    private val configRepo = AppConfigRepository()
     private val profileRepo = ProfileRepository()
     private val feedRepo = FeedRepository()
     private val msgRepo = MessagingRepository()
@@ -529,6 +535,9 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
     init {
         FirebaseAuth.getInstance().addAuthStateListener(authListener)
         if (authRepo.isLoggedIn) startAll()
+        // Connecté ou non : une version bloquée doit le savoir dès l'écran de
+        // connexion, avant d'avoir pu écrire quoi que ce soit.
+        verifierMiseAJour(force = true)
     }
 
     /**
@@ -656,6 +665,67 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
         lastKnownLevel = -1
     }
 
+    // ── Mise à jour de l'app ──────────────────────────────────────────────────
+    //
+    // L'app n'avait aucun moyen de dire à qui que ce soit qu'une nouvelle
+    // version existait : un correctif restait sur le téléphone de celui qui
+    // l'avait compilé, et une version cassée restait installée indéfiniment.
+    //
+    // Le document Firestore `config/app` porte maintenant deux numéros. En
+    // dessous du premier, l'app se bloque ; en dessous du second, elle prévient.
+    //
+    // Désarmé par défaut, et tout échec vaut « ne bloquer personne » : un
+    // blocage à tort enfermerait le campus entier dehors, un blocage manqué ne
+    // coûte qu'un peu de retard. Voir `etatMiseAJour` et ses tests.
+    //
+    // Limite à connaître : seules les versions qui contiennent ce code savent
+    // se bloquer. Tout APK de `versionCode` 2 ou moins ignore ce document, et
+    // chacun devra installer une première fois la version 3 de lui-même.
+
+    private val _miseAJour = MutableStateFlow<EtatMiseAJour>(EtatMiseAJour.AJour)
+    val miseAJour: StateFlow<EtatMiseAJour> = _miseAJour
+
+    /** Le `versionCode` de l'APK installé, `null` s'il est illisible. */
+    private val versionInstallee: Long? by lazy {
+        runCatching {
+            val app = getApplication<Application>()
+            @Suppress("DEPRECATION")
+            val info = app.packageManager.getPackageInfo(app.packageName, 0)
+            PackageInfoCompat.getLongVersionCode(info)
+        }.getOrNull()
+    }
+
+    private var derniereVerification = 0L
+
+    /** Numéro de la dernière annonce fermée pendant ce lancement. */
+    private var annonceFermee = 0L
+
+    /**
+     * Relit `config/app`, au plus une fois par [UPDATE_CHECK_INTERVAL_MS].
+     *
+     * Une lecture ratée ne touche pas à l'état : ni ne bloque, ni ne débloque.
+     * C'est le document **absent** qui débloque (voir `AppConfigRepository`).
+     */
+    fun verifierMiseAJour(force: Boolean = false) {
+        val installee = versionInstallee ?: return
+        val maintenant = System.currentTimeMillis()
+        if (!force && maintenant - derniereVerification < UPDATE_CHECK_INTERVAL_MS) return
+        derniereVerification = maintenant
+        viewModelScope.launch {
+            val config = configRepo.lire() ?: return@launch
+            _miseAJour.value = etatMiseAJour(installee, config, annonceFermee)
+        }
+    }
+
+    /** « Plus tard » sur l'annonce. Sans effet sur un blocage. */
+    fun fermerAnnonceMiseAJour() {
+        val etat = _miseAJour.value
+        if (etat is EtatMiseAJour.Disponible) {
+            annonceFermee = etat.versionCode
+            _miseAJour.value = EtatMiseAJour.AJour
+        }
+    }
+
     // ── Premier plan, arrière-plan ────────────────────────────────────────────
     //
     // Les écoutes restaient allumées de la connexion à la déconnexion. App en
@@ -676,6 +746,11 @@ class AskipViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Appelé à chaque passage au premier plan, y compris le tout premier. */
     fun onAppForeground() {
+        // Avant tout le reste, et même sans pause à lever : l'app peut rester
+        // ouverte des jours en arrière-plan, et la version minimale changer
+        // entre-temps. Le plancher de `verifierMiseAJour` évite de relire le
+        // document à chaque rotation d'écran.
+        verifierMiseAJour()
         pauseJob?.cancel()
         pauseJob = null
         if (!enPause) return

@@ -13,8 +13,12 @@ android {
         applicationId = "com.rnandresy.lol"
         minSdk        = 26
         targetSdk     = 35
-        versionCode   = 2
-        versionName   = "2.0.0"
+        // À augmenter à CHAQUE version distribuée : c'est ce numéro que le
+        // document Firestore `config/app` compare pour bloquer ou prévenir.
+        // L'APK du 7 septembre portait déjà 2 : sans ce passage à 3, une version
+        // rebuildée et l'ancienne auraient été indiscernables.
+        versionCode   = 3
+        versionName   = "2.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }

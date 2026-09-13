@@ -17,6 +17,10 @@ const val COL_SEALED        = "sealed"
 const val COL_BETS          = "bets"
 const val COL_LINKS         = "links"
 const val COL_REPLIES       = "replies"
+const val COL_CONFIG        = "config"
+
+/** Document unique de la configuration de l'app : versions minimale et dernière. */
+const val DOC_APP_CONFIG    = "app"
 
 /** Document unique de la sous-collection scellée d'une rumeur. */
 const val DOC_SEALED        = "payload"
@@ -73,6 +77,15 @@ const val NOTIFICATIONS_WINDOW = 80L
  * relancer serait du gaspillage. Une minute couvre ces allers-retours.
  */
 const val LISTENERS_PAUSE_DELAY_MS = 60_000L
+
+/**
+ * Intervalle minimal entre deux vérifications de la version de l'app.
+ *
+ * La vérification a lieu au lancement, puis à chaque retour au premier plan —
+ * mais une rotation d'écran ou le choix d'une photo font aussi « revenir » :
+ * sans ce plancher, chacun de ces gestes relirait le document de configuration.
+ */
+const val UPDATE_CHECK_INTERVAL_MS = 30L * 60 * 1000
 
 // ── Limites contenu ───────────────────────────────────────────────────────────
 const val MAX_POST_LENGTH       = 1000

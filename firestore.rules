@@ -503,6 +503,17 @@ service cloud.firestore {
       allow read: if signedIn() && resource.data.senderId == uid();
     }
 
+    // Configuration de l'app : version minimale, dernière version, lien.
+    //
+    // Lisible SANS être connecté : une version bloquée doit l'apprendre dès
+    // l'écran de connexion, pas après avoir pu écrire. Rien de secret dedans.
+    // Modifiable par l'admin seul : quiconque pourrait écrire `minVersionCode`
+    // fermerait l'app à tout le campus d'un coup.
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Tout ce qui n'est pas explicitement autorisé est refusé.
     match /{document=**} {
       allow read, write: if false;

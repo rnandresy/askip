@@ -862,6 +862,44 @@ test('Divers', "une collection inconnue est fermée", async () => {
   await assertFails(setDoc(doc(db('mallory'), 'nimporte/quoi'), { x: 1 }));
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+//  Configuration de l'app — le blocage des anciennes versions
+// ════════════════════════════════════════════════════════════════════════════
+
+const configApp = {
+  minVersionCode: 3, latestVersionCode: 4,
+  downloadUrl: 'https://exemple.test/askip.apk', message: '',
+};
+
+test('Configuration', "une vieille version la lit sans être connectée", async () => {
+  await semer((d) => setDoc(doc(d, 'config/app'), configApp));
+  await assertSucceeds(getDoc(doc(anonyme(), 'config/app')));
+});
+
+test('Configuration', "un membre la lit", async () => {
+  await semer((d) => setDoc(doc(d, 'config/app'), configApp));
+  await assertSucceeds(getDoc(doc(db('alice'), 'config/app')));
+});
+
+test('Configuration', "un membre ne relève pas la version minimale", async () => {
+  await semer((d) => setDoc(doc(d, 'config/app'), configApp));
+  await assertFails(updateDoc(doc(db('alice'), 'config/app'), { minVersionCode: 999 }));
+});
+
+test('Configuration', "un inconnu ne la crée pas", async () => {
+  await assertFails(setDoc(doc(anonyme(), 'config/app'), configApp));
+});
+
+test('Configuration', "un membre ne la supprime pas", async () => {
+  await semer((d) => setDoc(doc(d, 'config/app'), configApp));
+  await assertFails(deleteDoc(doc(db('alice'), 'config/app')));
+});
+
+test('Configuration', "l'admin fixe la version minimale", async () => {
+  await semer((d) => setDoc(doc(d, 'config/app'), configApp));
+  await assertSucceeds(updateDoc(doc(db(ADMIN), 'config/app'), { minVersionCode: 4 }));
+});
+
 // ── Exécution ───────────────────────────────────────────────────────────────
 
 let reussis = 0;
