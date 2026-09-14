@@ -1,2 +1,7 @@
 /build
-/app/google-services.json
+
+# Propre a chaque projet Firebase : chacun pose le sien ici, il n'est jamais
+# versionne. L'ancienne regle ecrivait /app/google-services.json, ce qui,
+# lu depuis ce dossier, designait app/app/google-services.json : elle
+# n'excluait rien, et la vraie configuration est partie sur GitHub.
+/google-services.json

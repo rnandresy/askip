@@ -49,6 +49,12 @@ jobs:
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # google-services.json n'est plus versionne : il est propre a chaque projet
+      # Firebase. Le plugin Gradle en exige un pour construire ; un fichier
+      # factice suffit, l'app compilee ici ne se connecte a rien.
+      - name: google-services.json factice
+        run: cp tools/ci/google-services.factice.json app/google-services.json
+
       - name: Build debug et tests unitaires
         run: ./gradlew --no-daemon assembleDebug testDebugUnitTest
 
@@ -92,6 +98,12 @@ jobs:
 
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      # google-services.json n'est plus versionne : il est propre a chaque projet
+      # Firebase. Le plugin Gradle en exige un pour construire ; un fichier
+      # factice suffit, l'app compilee ici ne se connecte a rien.
+      - name: google-services.json factice
+        run: cp tools/ci/google-services.factice.json app/google-services.json
 
       - name: Build release
         run: ./gradlew --no-daemon assembleRelease

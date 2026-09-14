@@ -15,3 +15,7 @@ functions/*.log
 # façon de travailler. Volontairement hors du dépôt — il peut contenir des
 # détails qui n'ont rien à faire sur GitHub ou GitLab.
 JOURNAL-CLAUDE.md
+
+# Journaux et caches produits en local, sans interet pour le depot.
+.kotlin/
+firestore-debug.log
